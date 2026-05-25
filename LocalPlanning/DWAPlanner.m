@@ -1,16 +1,51 @@
 function [vx, vy, predictTraj] = DWAPlanner(robot, localGoal, map, ~, dt, params)
-%DWAPLANNER 局部规划器
-%   引力+斥力模型，带加速度限幅和接近减速
+%DWAPLANNER 局部规划器（引力+斥力势场模型）
+%   [vx, vy, predictTraj] = DWAPlanner(robot, localGoal, map, ~, dt, params)
+%
+%   通过引力（目标）和斥力（障碍物+边界）合成期望速度，
+%   经加速度限幅后输出，并生成预测轨迹用于可视化。
+%
+%   params 可选字段: maxSpeed, maxAccel（在 SimulationManager 中设置）
 
-maxSpeed = 1.0;
+% ===== 可调参数 ============================================================
+% 引力参数
+attrGain  = 1.0;     % 引力增益，增大使机器人更积极靠近目标
+
+% 斥力参数（障碍物）
+repulseGain  = 0.5;  % 障碍物斥力增益，增大使机器人更强烈避开障碍
+                     %   公式: repulseGain / d^2，d为机器人到障碍物距离
+                     %   参考：d=0.5时力=2.0，d=0.7时力≈1.0，d=1.0时力=0.5
+                     %   过大会在窄通道中卡住，过小则避障不灵敏
+repulseRange = 2.5;  % 斥力作用范围（连续单位），障碍物在此范围内才产生斥力
+                     %   增大使机器人提前规避，但过大在复杂环境中难以通行
+
+% 传感器参数
+sensorRange  = 4;    % 障碍物搜索半径（栅格数），决定检测多远处的障碍物
+                     %   增大可提前发现动态障碍，对避障效果配合 repulseRange 使用
+
+% 边界斥力参数
+boundaryGain   = 0.5;   % 边界斥力增益，增大使机器人更远离边界
+boundaryRange  = 0.5;   % 边界斥力作用范围（连续单位），距边界此范围内产生斥力
+boundaryMargin = 0.3;   % 边界附加安全距离（叠加 robot.radius）
+
+% 速度参数
+maxSpeed = 1.0;      % 机器人最大速度
 if isfield(params, 'maxSpeed'), maxSpeed = params.maxSpeed; end
-maxAccel = 2.0;
+maxAccel = 2.0;      % 最大加速度，限制每步速度变化量
 if isfield(params, 'maxAccel'), maxAccel = params.maxAccel; end
+
+% 侧向避让参数
+tangentGain  = 0.8;  % 侧向避让增益，增大使机器人更主动绕行前方障碍
+                     %   与径向斥力协同：斥力推开障碍，侧向力让机器人绕过去
+
+% 减速参数
+decelDist = 1.0;     % 接近目标此距离内开始线性减速
+% =========================================================================
 
 occGrid = map.getOccupancyGrid();
 n = map.mapSize;
 
-% 引力方向
+% ---- 引力：指向局部目标 ----
 goalVec = localGoal - robot.pos;
 goalDist = norm(goalVec);
 if goalDist < 1e-6
@@ -18,70 +53,84 @@ if goalDist < 1e-6
 end
 attrDir = goalVec / goalDist;
 
-% 接近目标时减速
-speedScale = min(1.0, goalDist / 2.0);
-desiredSpeed = maxSpeed * speedScale;
+% 接近目标时减速（线性缩放：距离 decelDist 内 scale = goalDist/decelDist）
+speedScale = min(1.0, goalDist / decelDist);
+desiredSpeed = maxSpeed * speedScale * attrGain;
 
-% 斥力：来自障碍物和边界
+% ---- 斥力：障碍物 + 边界 ----
 repVec = [0, 0];
 
-% 边界斥力
-margin = robot.radius + 0.3;
+% 边界斥力（坐标系：原点左下，x右 y上）
+margin = robot.radius + boundaryMargin;
+bottomDist = robot.pos(2) - margin;
+if bottomDist < boundaryRange && bottomDist > 0
+    repVec(2) = repVec(2) + boundaryGain / max(bottomDist, 0.01)^2;
+end
+topDist = n - robot.pos(2) - margin;
+if topDist < boundaryRange && topDist > 0
+    repVec(2) = repVec(2) - boundaryGain / max(topDist, 0.01)^2;
+end
 leftDist = robot.pos(1) - margin;
-if leftDist < 0.5 && leftDist > 0
-    repVec(1) = repVec(1) + 0.5 / max(leftDist, 0.01)^2;
+if leftDist < boundaryRange && leftDist > 0
+    repVec(1) = repVec(1) + boundaryGain / max(leftDist, 0.01)^2;
 end
 rightDist = n - robot.pos(1) - margin;
-if rightDist < 0.5 && rightDist > 0
-    repVec(1) = repVec(1) - 0.5 / max(rightDist, 0.01)^2;
-end
-topDist = robot.pos(2) - margin;
-if topDist < 0.5 && topDist > 0
-    repVec(2) = repVec(2) + 0.5 / max(topDist, 0.01)^2;
-end
-bottomDist = n - robot.pos(2) - margin;
-if bottomDist < 0.5 && bottomDist > 0
-    repVec(2) = repVec(2) - 0.5 / max(bottomDist, 0.01)^2;
+if rightDist < boundaryRange && rightDist > 0
+    repVec(1) = repVec(1) - boundaryGain / max(rightDist, 0.01)^2;
 end
 
-% 障碍物斥力
+% 障碍物斥力（遍历传感器范围内的占用栅格）
 r0 = ceil(robot.pos(2));
 c0 = ceil(robot.pos(1));
-sr = 3;
-for dr = -sr:sr
-    for dc = -sr:sr
+evadeVec = [0, 0];  % 侧向避让累计量
+for dr = -sensorRange:sensorRange
+    for dc = -sensorRange:sensorRange
         r = r0 + dr; c = c0 + dc;
         if r < 1 || r > n || c < 1 || c > n, continue; end
         if occGrid(r, c)
-            gx = c - 0.5; gy = r - 0.5;
-            diff = robot.pos - [gx, gy];
+            gx = c - 0.5; gy = r - 0.5;            % 障碍栅格中心连续坐标
+            diff = robot.pos - [gx, gy];           % 机器人→障碍物向量
             d = norm(diff);
-            if d < 1e-2, d = 1e-2; end
-            if d < 2.0
-                repVec = repVec + (diff / d) * (0.3 / d^2);
+            if d < 1e-2, d = 1e-2; end             % 避免除零
+            if d < repulseRange
+                % 径向斥力
+                repVec = repVec + (diff / d) * (repulseGain / d^2);
+                % 侧向避让：障碍物在前方时产生横向推力绕行
+                obstDir = -diff / d;                % 机器人→障碍物方向
+                forwardProj = dot(obstDir, attrDir);
+                if forwardProj > 0.3                % 障碍物在前进方向内
+                    lateral = obstDir - forwardProj * attrDir;
+                    latNorm = norm(lateral);
+                    if latNorm > 0.05
+                        evadeDir = -lateral / latNorm;
+                    else
+                        evadeDir = [-attrDir(2), attrDir(1)];
+                    end
+                    evadeVec = evadeVec + evadeDir * (tangentGain * repulseGain / d^2) * forwardProj;
+                end
             end
         end
     end
 end
 
-% 合成速度
-desiredV = attrDir * desiredSpeed + repVec;
+% ---- 合成速度 ----
+desiredV = attrDir * desiredSpeed + repVec + evadeVec;
 vMag = norm(desiredV);
 if vMag > maxSpeed
     desiredV = desiredV / vMag * maxSpeed;
 end
 
-% 加速度限幅
+% ---- 加速度限幅（防止速度突变）----
 dv = desiredV - robot.vel;
 dvMag = norm(dv);
-maxDV = maxAccel * dt;
+maxDV = maxAccel * dt;     % 一个时间步内允许的最大速度变化量
 if dvMag > maxDV
     dv = dv / dvMag * maxDV;
 end
 vx = robot.vel(1) + dv(1);
 vy = robot.vel(2) + dv(2);
 
-% 预测轨迹
+% ---- 预测轨迹（用于可视化）----
 if nargout > 2
     steps = 10;
     predictTraj = zeros(steps, 2);

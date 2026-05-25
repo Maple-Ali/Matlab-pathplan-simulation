@@ -44,6 +44,7 @@ else
     orderedPoints = [startGrid; goalGrid];
     segPaths = {AStar(map, startGrid, goalGrid, 0)};
     tTSP = 0;
+    tspCost = 0;
 end
 
 % --- 4. 对各段路径做后处理 ---
@@ -159,7 +160,7 @@ end
 dt = 0.1;  % 控制周期
 totalTime = 0;
 collision = false;
-arrivalThreshold = 0.15;  % 到达判定阈值（靠近栅格中心）
+arrivalThreshold = 0.3;  % 到达判定阈值（靠近栅格中心）
 
 % 局部规划器参数
 localParams = struct('maxSpeed', simParams.robotMaxSpeed);
@@ -193,6 +194,7 @@ pauseTimer = 0;
 pauseDuration = 1.0;  % 到达目标后停留1秒
 
 lookAheadDist = 1.0;  % 前瞻距离
+findLookAhead([], [], [], true);  % 重置持久索引
 
 while currentTargetIdx <= size(visitContSeq, 1)
     localGoal = visitContSeq(currentTargetIdx, :);
@@ -218,11 +220,11 @@ while currentTargetIdx <= size(visitContSeq, 1)
     else
         % 前瞻点：在参考路径上找前向点
         % 接近目标时直接用目标点
-if distToGoal < lookAheadDist + 0.5
-    lookAheadPt = visitContSeq(currentTargetIdx, :);
-else
-    lookAheadPt = findLookAhead(fullRef, robot.pos, lookAheadDist);
-end
+        if distToGoal < lookAheadDist + 0.5
+            lookAheadPt = visitContSeq(currentTargetIdx, :);
+        else
+            lookAheadPt = findLookAhead(fullRef, robot.pos, lookAheadDist);
+        end
 
         % 调用局部规划器
         switch simParams.localAlgo
@@ -329,27 +331,41 @@ function len = calcPathLenCont(path)
     end
 end
 
-function pt = findLookAhead(refPath, robotPos, lookAheadDist)
+function pt = findLookAhead(refPath, robotPos, lookAheadDist, resetFlag)
+    % 使用持久索引沿路径前进，防止重叠路径段跳回之前的分叉
+    persistent prevIdx
+    if nargin >= 4 && resetFlag
+        prevIdx = 1;
+    end
+    if isempty(prevIdx) || prevIdx > size(refPath, 1)
+        prevIdx = 1;
+    end
+
     if size(refPath, 1) < 2
         pt = robotPos;
         return;
     end
-    % 先找路径上距离机器人最近的点
+
+    % 从上次最近点向前搜索，避免跳到路径重叠段的错误分叉
+    startIdx = min(prevIdx, size(refPath, 1));
     minDist = inf;
-    closestIdx = 1;
-    for i = 1:size(refPath, 1)
+    closestIdx = startIdx;
+    for i = startIdx:size(refPath, 1)
         d = norm(refPath(i, :) - robotPos);
         if d < minDist
             minDist = d;
             closestIdx = i;
         end
     end
+
     % 从最近点向前找距离 >= lookAheadDist 的点
     for i = closestIdx:size(refPath, 1)
         if norm(refPath(i, :) - robotPos) >= lookAheadDist
             pt = refPath(i, :);
+            prevIdx = closestIdx;
             return;
         end
     end
     pt = refPath(end, :);
+    prevIdx = closestIdx;
 end
