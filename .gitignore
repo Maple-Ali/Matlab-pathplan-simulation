@@ -1,0 +1,26 @@
+# MATLAB
+*.asv
+*.mex*
+*.mexw64
+*.mexw32
+*.mexa64
+*.mexmaci64
+*.pcode
+*.slxc
+*.slx.autosave
+*.fig
+*.mat
+*.m~*
+*.mlx~
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+Desktop.ini
+
+# Claude local settings
+.claude/settings.local.json
