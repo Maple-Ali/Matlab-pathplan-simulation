@@ -10,8 +10,20 @@ function [vx, vy, predictTraj] = MPCPlanner(robot, localGoal, map, ~, dt, params
 %     2. 对速度变化率进行平滑（模拟 MPC 的控制平滑效果）
 %     3. 施加障碍物约束（软约束）
 
-persistent prevVx prevVy
-if isempty(prevVx), prevVx = 0; prevVy = 0; end
+persistent prevVelMap
+if isempty(prevVelMap)
+    prevVelMap = containers.Map('KeyType', 'double', 'ValueType', 'any');
+end
+
+% 获取机器人索引（多机器人时用于隔离状态）
+idx = 0;
+if isfield(params, 'robotIdx'), idx = params.robotIdx; end
+
+if prevVelMap.isKey(idx)
+    prevV = prevVelMap(idx);
+else
+    prevV = [0, 0];
+end
 
 % --- 参数 ---
 maxSpeed = 1.0;
@@ -27,7 +39,8 @@ if isfield(params, 'sensorRange'), sensorRange = params.sensorRange; end
 goalVec = localGoal - robot.pos;
 goalDist = norm(goalVec);
 if goalDist < 1e-6
-    vx = 0; vy = 0; prevVx = 0; prevVy = 0;
+    vx = 0; vy = 0;
+    prevVelMap(idx) = [0, 0];
     predictTraj = [];
     return;
 end
@@ -68,13 +81,12 @@ if norm(desiredV) > maxSpeed
 end
 
 % --- 速度平滑（类似 MPC 控制代价）---
-rawVx = (1 - smoothFactor) * prevVx + smoothFactor * desiredV(1);
-rawVy = (1 - smoothFactor) * prevVy + smoothFactor * desiredV(2);
+rawVx = (1 - smoothFactor) * prevV(1) + smoothFactor * desiredV(1);
+rawVy = (1 - smoothFactor) * prevV(2) + smoothFactor * desiredV(2);
 
 vx = rawVx;
 vy = rawVy;
-prevVx = vx;
-prevVy = vy;
+prevVelMap(idx) = [vx, vy];
 
 % --- MPC 预测轨迹 ---
 if nargout > 2

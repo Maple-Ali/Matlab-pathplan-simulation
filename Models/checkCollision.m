@@ -29,7 +29,7 @@ for r = rMin:rMax
             gridCY = r - 0.5;
             % 检查圆与正方形栅格的重叠（简化：检查栅格角点或中心）
             dist = sqrt((robotPos(1) - gridCX)^2 + (robotPos(2) - gridCY)^2);
-            if dist < robotRadius + 0.5  % 栅格半对角线 ≈ 0.707，取 0.5 保守
+            if dist < robotRadius + 0.5
                 collision = true;
                 return;
             end

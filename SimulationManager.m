@@ -1,9 +1,10 @@
 function results = SimulationManager(simParams)
-%SIMULATIONMANAGER 仿真控制主函数
+%SIMULATIONMANAGER 仿真控制主函数（支持多机器人协同）
 %   results = SimulationManager(simParams)
 %   simParams 结构体字段:
 %     mapSize, staticObstacles, dynamicObstacleDefs
-%     startPoint, targetPoints, goalPoint
+%     startPoint (单机器人) 或 startPoints (多机器人)
+%     targetPoints, goalPoint
 %     globalAlgo, localAlgo
 %     enableSimplify, enableSmooth
 %     stepDelay, robotMaxSpeed, robotRadius
@@ -12,12 +13,10 @@ function results = SimulationManager(simParams)
 % --- 1. 初始化地图 ---
 map = Map(simParams.mapSize);
 
-% 静态障碍物
 if isfield(simParams, 'staticObstacles') && ~isempty(simParams.staticObstacles)
     map.setStaticObstacle(simParams.staticObstacles(:, 1), simParams.staticObstacles(:, 2));
 end
 
-% 动态障碍物
 if isfield(simParams, 'dynamicObstacleDefs') && ~isempty(simParams.dynamicObstacleDefs)
     for i = 1:size(simParams.dynamicObstacleDefs, 1)
         def = simParams.dynamicObstacleDefs(i, :);
@@ -27,61 +26,138 @@ if isfield(simParams, 'dynamicObstacleDefs') && ~isempty(simParams.dynamicObstac
 end
 
 % --- 2. 初始化机器人 ---
-startCont = [simParams.startPoint(2) - 0.5, simParams.startPoint(1) - 0.5];
-robot = OmnidirectionalRobot(startCont, simParams.robotMaxSpeed, simParams.robotRadius);
+% 兼容单/多机器人：startPoints 优先，否则 fallback 到 startPoint
+if isfield(simParams, 'startPoints') && ~isempty(simParams.startPoints)
+    startPoints = simParams.startPoints;
+else
+    startPoints = simParams.startPoint;
+end
+numRobots = size(startPoints, 1);
 
-% --- 3. TSP 多目标排序 ---
+robots = cell(1, numRobots);
+for r = 1:numRobots
+    startCont = [startPoints(r, 2) - 0.5, startPoints(r, 1) - 0.5];
+    robots{r} = OmnidirectionalRobot(startCont, simParams.robotMaxSpeed, simParams.robotRadius);
+end
+
+% --- 3. 任务分配 ---
 tStart = tic;
 targets = simParams.targetPoints;
 goalGrid = simParams.goalPoint;
-startGrid = simParams.startPoint;
 
-if size(targets, 1) >= 1
-    [orderedPoints, segPaths, tspCost] = TSPsolver(...
-        startGrid, targets, goalGrid, map, simParams.globalAlgo);
+if numRobots > 1 && size(targets, 1) >= 1
+    % 多机器人：最近邻聚类 + 各机器人独立 TSP
+    robotTasks = MultiRobotTaskAllocation(startPoints, targets, goalGrid, map, simParams.globalAlgo);
     tTSP = toc(tStart);
+    % 汇总 TSP 成本
+    tspCost = sum([robotTasks.tspCost]);
+    orderedPoints = [];
+    for r = 1:numRobots
+        orderedPoints = [orderedPoints; robotTasks(r).orderedPoints];
+    end
+elseif size(targets, 1) >= 1
+    % 单机器人：原有 TSP 流程
+    [orderedPoints, segPaths, tspCost] = TSPsolver(...
+        startPoints(1, :), targets, goalGrid, map, simParams.globalAlgo);
+    tTSP = toc(tStart);
+    robotTasks = struct('orderedPoints', orderedPoints, ...
+        'segPaths', {segPaths}, 'tspCost', tspCost, ...
+        'assignedTargets', targets);
 else
-    orderedPoints = [startGrid; goalGrid];
-    segPaths = {AStar(map, startGrid, goalGrid, 0)};
+    % 无目标点
     tTSP = 0;
     tspCost = 0;
+    robotTasks = struct();
+    for r = 1:numRobots
+        robotTasks(r).orderedPoints = [startPoints(r, :); goalGrid];
+        robotTasks(r).segPaths = {AStar(map, startPoints(r, :), goalGrid, 0)};
+        robotTasks(r).tspCost = 0;
+        robotTasks(r).assignedTargets = [];
+    end
+    orderedPoints = [];
+    for r = 1:numRobots
+        orderedPoints = [orderedPoints; robotTasks(r).orderedPoints];
+    end
 end
 
-% --- 4. 对各段路径做后处理 ---
+% --- 4. 对各机器人路径做后处理 ---
 tPlanStart = tic;
-allRawPaths = {};
-allSimplePaths = {};
-allSmoothPaths = {};
+occGrid = map.getOccupancyGrid();
+
 totalRawLen = 0;
 totalSimpleLen = 0;
 totalSmoothLen = 0;
 
-occGrid = map.getOccupancyGrid();
+for r = 1:numRobots
+    segPaths = robotTasks(r).segPaths;
+    allRaw = {}; allSimple = {}; allSmooth = {};
+    rawLen = 0; simpleLen = 0; smoothLen = 0;
 
-for s = 1:length(segPaths)
-    rawPath = segPaths{s};
-    if isempty(rawPath), continue; end
-    allRawPaths{end + 1} = rawPath;
-    totalRawLen = totalRawLen + calcPathLen(rawPath);
+    for s = 1:length(segPaths)
+        rawPath = segPaths{s};
+        if isempty(rawPath), continue; end
+        allRaw{end + 1} = rawPath;
+        rawLen = rawLen + calcPathLen(rawPath);
 
-    simplePath = rawPath;
-    if simParams.enableSimplify
-        simplePath = SimplifyPath(rawPath, occGrid, map.mapSize);
+        simplePath = rawPath;
+        if simParams.enableSimplify
+            simplePath = SimplifyPath(rawPath, occGrid, map.mapSize);
+        end
+        allSimple{end + 1} = simplePath;
+        simpleLen = simpleLen + calcPathLen(simplePath);
+
+        smoothPathCont = simplePath;
+        if simParams.enableSmooth
+            smoothPathCont = SmoothPath(simplePath, 10);
+        end
+        allSmooth{end + 1} = smoothPathCont;
+        smoothLen = smoothLen + calcPathLenCont(smoothPathCont);
     end
-    allSimplePaths{end + 1} = simplePath;
-    totalSimpleLen = totalSimpleLen + calcPathLen(simplePath);
 
-    smoothPathCont = simplePath;
+    robotTasks(r).allRawPaths = allRaw;
+    robotTasks(r).allSimplePaths = allSimple;
+    robotTasks(r).allSmoothPaths = allSmooth;
+    robotTasks(r).rawLen = rawLen;
+    robotTasks(r).simpleLen = simpleLen;
+    robotTasks(r).smoothLen = smoothLen;
+
+    totalRawLen = totalRawLen + rawLen;
+    totalSimpleLen = totalSimpleLen + simpleLen;
+    totalSmoothLen = totalSmoothLen + smoothLen;
+
+    % 构建参考轨迹（连续坐标）
     if simParams.enableSmooth
-        smoothPathCont = SmoothPath(simplePath, 10);
+        fullRef = [];
+        for s = 1:length(allSmooth)
+            fullRef = [fullRef; allSmooth{s}];
+        end
+    elseif simParams.enableSimplify
+        fullRef = [];
+        for s = 1:length(allSimple)
+            p = allSimple{s};
+            fullRef = [fullRef; p(:, 2) - 0.5, p(:, 1) - 0.5];
+        end
+    else
+        fullRef = [];
+        for s = 1:length(allRaw)
+            p = allRaw{s};
+            fullRef = [fullRef; p(:, 2) - 0.5, p(:, 1) - 0.5];
+        end
     end
-    allSmoothPaths{end + 1} = smoothPathCont;
-    totalSmoothLen = totalSmoothLen + calcPathLenCont(smoothPathCont);
+    robotTasks(r).fullRef = fullRef;
+
+    % 访问序列（连续坐标）
+    visitSeq = robotTasks(r).orderedPoints;
+    robotTasks(r).visitContSeq = [visitSeq(:, 2) - 0.5, visitSeq(:, 1) - 0.5];
 end
 tPlan = toc(tPlanStart);
 
-% --- 5. 可视化：绘制静态地图和规划路径 ---
+% --- 5. 可视化初始化 ---
 hasViz = isfield(simParams, 'vizAxes') && ~isempty(simParams.vizAxes);
+robotHs = gobjects(numRobots, 1);
+trajHs = gobjects(numRobots, 1);
+predHs = gobjects(numRobots, 1);
+
 if hasViz
     ax = simParams.vizAxes;
     plotTools('setupAxes', ax, map.mapSize);
@@ -94,45 +170,61 @@ if hasViz
             'FaceColor', plotTools('getColor', 'staticObs'), 'EdgeColor', 'none');
     end
 
-    % 起点、目标点、终点
-    plot(ax, startGrid(2) - 0.5, startGrid(1) - 0.5, 'o', ...
-        'MarkerFaceColor', plotTools('getColor', 'start'), ...
-        'MarkerEdgeColor', 'none', 'MarkerSize', 8);
+    % 起点（多机器人用不同颜色）
+    for r = 1:numRobots
+        color = plotTools('multiRobotColor', r);
+        plot(ax, startPoints(r, 2) - 0.5, startPoints(r, 1) - 0.5, 'o', ...
+            'MarkerFaceColor', color, 'MarkerEdgeColor', 'none', 'MarkerSize', 8);
+        text(ax, startPoints(r, 2) - 0.2, startPoints(r, 1) - 0.2, ...
+            sprintf('R%d', r), 'FontSize', 8, 'Color', color, 'FontWeight', 'bold');
+    end
+
+    % 目标点
     for t = 1:size(targets, 1)
         plot(ax, targets(t, 2) - 0.5, targets(t, 1) - 0.5, 'o', ...
             'MarkerFaceColor', plotTools('getColor', 'target'), ...
             'MarkerEdgeColor', 'none', 'MarkerSize', 8);
     end
+
+    % 终点
     plot(ax, goalGrid(2) - 0.5, goalGrid(1) - 0.5, 'o', ...
         'MarkerFaceColor', plotTools('getColor', 'goal'), ...
         'MarkerEdgeColor', 'none', 'MarkerSize', 8);
 
-    % 原始路径（红色）
-    for s = 1:length(allRawPaths)
-        p = allRawPaths{s};
-        plot(ax, p(:, 2) - 0.5, p(:, 1) - 0.5, '-', ...
-            'Color', plotTools('getColor', 'globalPath'), 'LineWidth', 1);
-    end
-
-    % 简化路径（蓝色）
-    if simParams.enableSimplify
-        for s = 1:length(allSimplePaths)
-            p = allSimplePaths{s};
-            plot(ax, p(:, 2) - 0.5, p(:, 1) - 0.5, '--', ...
-                'Color', plotTools('getColor', 'simplifiedPath'), 'LineWidth', 1);
+    % 原始路径
+    if isfield(simParams, 'showRawPath') && simParams.showRawPath
+        for r = 1:numRobots
+            for s = 1:length(robotTasks(r).allRawPaths)
+                p = robotTasks(r).allRawPaths{s};
+                plot(ax, p(:, 2) - 0.5, p(:, 1) - 0.5, '-', ...
+                    'Color', plotTools('getColor', 'globalPath'), 'LineWidth', 1);
+            end
         end
     end
 
-    % 平滑路径（绿色）
-    if simParams.enableSmooth
-        for s = 1:length(allSmoothPaths)
-            p = allSmoothPaths{s};
-            plot(ax, p(:, 1), p(:, 2), '-', ...
-                'Color', plotTools('getColor', 'smoothPath'), 'LineWidth', 1.5);
+    % 简化路径
+    if simParams.enableSimplify && isfield(simParams, 'showSimplePath') && simParams.showSimplePath
+        for r = 1:numRobots
+            for s = 1:length(robotTasks(r).allSimplePaths)
+                p = robotTasks(r).allSimplePaths{s};
+                plot(ax, p(:, 2) - 0.5, p(:, 1) - 0.5, '--', ...
+                    'Color', plotTools('getColor', 'simplifiedPath'), 'LineWidth', 1);
+            end
         end
     end
 
-    % 动态障碍物初始位置标记
+    % 平滑路径
+    if simParams.enableSmooth && isfield(simParams, 'showSmoothPath') && simParams.showSmoothPath
+        for r = 1:numRobots
+            for s = 1:length(robotTasks(r).allSmoothPaths)
+                p = robotTasks(r).allSmoothPaths{s};
+                plot(ax, p(:, 1), p(:, 2), '-', ...
+                    'Color', plotTools('getColor', 'smoothPath'), 'LineWidth', 1.5);
+            end
+        end
+    end
+
+    % 动态障碍物
     dynH = gobjects(length(map.dynamicObstacles), 1);
     for i = 1:length(map.dynamicObstacles)
         obs = map.dynamicObstacles(i);
@@ -141,150 +233,163 @@ if hasViz
             'FaceColor', plotTools('getColor', 'dynamicObs'), 'EdgeColor', 'none');
     end
 
-    % 机器人标记
-    robotH = plot(ax, robot.pos(1), robot.pos(2), 'o', ...
-        'MarkerFaceColor', plotTools('getColor', 'robot'), ...
-        'MarkerEdgeColor', 'k', 'MarkerSize', 10);
-
-    % 实际轨迹
-    trajH = plot(ax, robot.trajectory(:, 1), robot.trajectory(:, 2), '-', ...
-        'Color', plotTools('getColor', 'actualTraj'), 'LineWidth', 2);
-
-    % 预测轨迹
-    predH = plot(ax, nan, nan, '--', 'Color', plotTools('getColor', 'predictTraj'));
+    % 机器人标记、轨迹、预测线
+    for r = 1:numRobots
+        c = plotTools('multiRobotColor', r);
+        robotHs(r) = plot(ax, robots{r}.pos(1), robots{r}.pos(2), 'o', ...
+            'MarkerFaceColor', c, 'MarkerEdgeColor', 'k', 'MarkerSize', 10);
+        if isfield(simParams, 'showTraj') && simParams.showTraj
+            trajHs(r) = plot(ax, robots{r}.trajectory(:, 1), robots{r}.trajectory(:, 2), '-', ...
+                'Color', c, 'LineWidth', 2);
+        else
+            trajHs(r) = gobjects(0);
+        end
+        predHs(r) = plot(ax, nan, nan, '--', 'Color', c);
+    end
 
     drawnow;
 end
 
 % --- 6. 仿真执行循环 ---
-dt = 0.1;  % 控制周期
+dt = 0.1;
 totalTime = 0;
 collision = false;
-arrivalThreshold = 0.3;  % 到达判定阈值（靠近栅格中心）
-
-% 局部规划器参数
+arrivalThreshold = 0.3;
+pauseDuration = 1.0;
+lookAheadDist = 1.0;
 localParams = struct('maxSpeed', simParams.robotMaxSpeed);
 
-% 构建完整参考轨迹（串联所有平滑路径段）
-if simParams.enableSmooth
-    fullRef = [];
-    for s = 1:length(allSmoothPaths)
-        fullRef = [fullRef; allSmoothPaths{s}];
-    end
-elseif simParams.enableSimplify
-    fullRef = [];
-    for s = 1:length(allSimplePaths)
-        p = allSimplePaths{s};
-        fullRef = [fullRef; p(:, 2) - 0.5, p(:, 1) - 0.5];
-    end
-else
-    fullRef = [];
-    for s = 1:length(allRawPaths)
-        p = allRawPaths{s};
-        fullRef = [fullRef; p(:, 2) - 0.5, p(:, 1) - 0.5];
-    end
+% 每机器人状态
+robotState = struct();
+for r = 1:numRobots
+    robotState(r).currentTargetIdx = 1;
+    robotState(r).targetReached = false;
+    robotState(r).pauseTimer = 0;
+    robotState(r).done = false;
+    robotState(r).prevIdx = 1;           % findLookAhead 的持久索引
+    robotState(r).latestPredictTraj = []; % 缓存最新预测轨迹
 end
 
-% 访问序列（连续坐标）
-visitSequence = orderedPoints;
-visitContSeq = [visitSequence(:, 2) - 0.5, visitSequence(:, 1) - 0.5];
-currentTargetIdx = 1;
-targetReached = false;
-pauseTimer = 0;
-pauseDuration = 1.0;  % 到达目标后停留1秒
+active = true(1, numRobots);
 
-lookAheadDist = 1.0;  % 前瞻距离
-findLookAhead([], [], [], true);  % 重置持久索引
+while any(active)
+    % ---- 每机器人控制 ----
+    for r = 1:numRobots
+        if ~active(r), continue; end
+        rs = robotState(r);
+        visitSeq = robotTasks(r).visitContSeq;
 
-while currentTargetIdx <= size(visitContSeq, 1)
-    localGoal = visitContSeq(currentTargetIdx, :);
-
-    % 检查是否到达当前目标
-    distToGoal = norm(robot.pos - localGoal);
-    if distToGoal < arrivalThreshold && ~targetReached
-        targetReached = true;
-        pauseTimer = 0;
-    end
-
-    % 到达后停留
-    if targetReached
-        pauseTimer = pauseTimer + dt;
-        vx = 0; vy = 0;
-        robot.vel = [0, 0];
-        predictTraj = [];
-
-        if pauseTimer >= pauseDuration
-            currentTargetIdx = currentTargetIdx + 1;
-            targetReached = false;
+        if rs.currentTargetIdx > size(visitSeq, 1)
+            active(r) = false;
+            rs.done = true;
+            robotState(r) = rs;
+            continue;
         end
-    else
-        % 前瞻点：在参考路径上找前向点
-        % 接近目标时直接用目标点
-        if distToGoal < lookAheadDist + 0.5
-            lookAheadPt = visitContSeq(currentTargetIdx, :);
+
+        localGoal = visitSeq(rs.currentTargetIdx, :);
+        rob = robots{r};
+        distToGoal = norm(rob.pos - localGoal);
+
+        % 到达检测
+        if distToGoal < arrivalThreshold && ~rs.targetReached
+            rs.targetReached = true;
+            rs.pauseTimer = 0;
+        end
+
+        if rs.targetReached
+            rs.pauseTimer = rs.pauseTimer + dt;
+            vx = 0; vy = 0;
+            rob.vel = [0, 0];
+            rs.latestPredictTraj = [];
+
+            if rs.pauseTimer >= pauseDuration
+                rs.currentTargetIdx = rs.currentTargetIdx + 1;
+                rs.targetReached = false;
+            end
         else
-            lookAheadPt = findLookAhead(fullRef, robot.pos, lookAheadDist);
+            % 前瞻点
+            if distToGoal < lookAheadDist + 0.5
+                lookAheadPt = visitSeq(rs.currentTargetIdx, :);
+            else
+                fullRef = robotTasks(r).fullRef;
+                [lookAheadPt, newIdx] = findLookAheadExt(fullRef, rob.pos, lookAheadDist, rs.prevIdx);
+                rs.prevIdx = newIdx;
+            end
+
+            % 局部规划（MPC 需要 robotIdx）
+            plannerParams = localParams;
+            if strcmp(simParams.localAlgo, 'MPC')
+                plannerParams.robotIdx = r;
+            end
+
+            switch simParams.localAlgo
+                case 'DWA'
+                    [vx, vy, predictTraj] = DWAPlanner(rob, lookAheadPt, map, [], dt, plannerParams);
+                case 'TEB'
+                    [vx, vy, predictTraj] = TEBPlanner(rob, lookAheadPt, map, [], dt, plannerParams);
+                case 'MPC'
+                    [vx, vy, predictTraj] = MPCPlanner(rob, lookAheadPt, map, [], dt, plannerParams);
+                otherwise
+                    [vx, vy, predictTraj] = DWAPlanner(rob, lookAheadPt, map, [], dt, plannerParams);
+            end
+
+            rob.applyVelocity(vx, vy, dt);
+            rs.latestPredictTraj = predictTraj;
         end
 
-        % 调用局部规划器
-        switch simParams.localAlgo
-            case 'DWA'
-                [vx, vy, predictTraj] = DWAPlanner(robot, lookAheadPt, map, [], dt, localParams);
-            case 'TEB'
-                [vx, vy, predictTraj] = TEBPlanner(robot, lookAheadPt, map, [], dt, localParams);
-            case 'MPC'
-                [vx, vy, predictTraj] = MPCPlanner(robot, lookAheadPt, map, [], dt, localParams);
-            otherwise
-                [vx, vy, predictTraj] = DWAPlanner(robot, lookAheadPt, map, [], dt, localParams);
-        end
-
-        % 机器人执行速度
-        robot.applyVelocity(vx, vy, dt);
+        robotState(r) = rs;
     end
 
-    % 更新动态障碍物
+    % ---- 更新动态障碍物 ----
     map.updateDynamicObstacles(dt);
 
-    % 碰撞检测
-    if checkCollision(robot.pos, robot.radius, map)
-        collision = true;
-        break;
+    % ---- 碰撞检测 ----
+    for r = 1:numRobots
+        if active(r) && checkCollision(robots{r}.pos, robots{r}.radius, map)
+            collision = true;
+            break;
+        end
+        % 边界检查
+        rob = robots{r};
+        if rob.pos(1) < rob.radius || rob.pos(1) > map.mapSize - rob.radius || ...
+           rob.pos(2) < rob.radius || rob.pos(2) > map.mapSize - rob.radius
+            collision = true;
+            break;
+        end
     end
-
-    % 边界检查
-    if robot.pos(1) < robot.radius || robot.pos(1) > map.mapSize - robot.radius || ...
-       robot.pos(2) < robot.radius || robot.pos(2) > map.mapSize - robot.radius
+    if ~collision && numRobots > 1 && checkRobotRobotCollision(robots)
         collision = true;
-        break;
     end
+    if collision, break; end
 
     totalTime = totalTime + dt;
 
-    % 可视化更新
+    % ---- 可视化更新 ----
     if hasViz
-        % 机器人
-        set(robotH, 'XData', robot.pos(1), 'YData', robot.pos(2));
-        % 轨迹
-        set(trajH, 'XData', robot.trajectory(:, 1), ...
-            'YData', robot.trajectory(:, 2));
-        % 动态障碍物
+        for r = 1:numRobots
+            rob = robots{r};
+            set(robotHs(r), 'XData', rob.pos(1), 'YData', rob.pos(2));
+            if ~isempty(trajHs(r))
+                set(trajHs(r), 'XData', rob.trajectory(:, 1), ...
+                    'YData', rob.trajectory(:, 2));
+            end
+            pred = robotState(r).latestPredictTraj;
+            if ~isempty(pred)
+                set(predHs(r), 'XData', pred(:, 1), 'YData', pred(:, 2));
+            else
+                set(predHs(r), 'XData', nan, 'YData', nan);
+            end
+        end
         for i = 1:length(map.dynamicObstacles)
             obs = map.dynamicObstacles(i);
             set(dynH(i), 'Position', ...
                 [obs.currentPos(1) - 0.5, obs.currentPos(2) - 0.5, 1, 1]);
-        end
-        % 预测轨迹
-        if ~isempty(predictTraj)
-            set(predH, 'XData', predictTraj(:, 1), 'YData', predictTraj(:, 2));
-        else
-            set(predH, 'XData', nan, 'YData', nan);
         end
 
         drawnow;
         pause(simParams.stepDelay);
     end
 
-    % 仿真时间上限
     if totalTime > 300
         break;
     end
@@ -292,11 +397,33 @@ end
 
 % --- 7. 统计结果 ---
 totalDist = 0;
-if size(robot.trajectory, 1) > 1
-    traj = robot.trajectory;
-    for i = 2:size(traj, 1)
-        totalDist = totalDist + norm(traj(i, :) - traj(i - 1, :));
+robotDetails = struct();
+for r = 1:numRobots
+    traj = robots{r}.trajectory;
+    dist = 0;
+    if size(traj, 1) > 1
+        for i = 2:size(traj, 1)
+            dist = dist + norm(traj(i, :) - traj(i - 1, :));
+        end
     end
+    totalDist = totalDist + dist;
+    robotDetails(r).totalDistance = dist;
+    robotDetails(r).visitOrder = robotTasks(r).orderedPoints;
+    robotDetails(r).assignedTargets = robotTasks(r).assignedTargets;
+    robotDetails(r).trajectory = traj;
+    robotDetails(r).rawLen = robotTasks(r).rawLen;
+    robotDetails(r).simpleLen = robotTasks(r).simpleLen;
+    robotDetails(r).smoothLen = robotTasks(r).smoothLen;
+end
+
+% 汇总全部路径用于向后兼容的字段
+allRawPaths = {}; allSimplePaths = {}; allSmoothPaths = {};
+allTrajectories = {};
+for r = 1:numRobots
+    allRawPaths = [allRawPaths, robotTasks(r).allRawPaths];
+    allSimplePaths = [allSimplePaths, robotTasks(r).allSimplePaths];
+    allSmoothPaths = [allSmoothPaths, robotTasks(r).allSmoothPaths];
+    allTrajectories{r} = robots{r}.trajectory;
 end
 
 results = struct(...
@@ -310,10 +437,12 @@ results = struct(...
     'simplePathLen', totalSimpleLen, ...
     'smoothPathLen', totalSmoothLen, ...
     'visitOrder', orderedPoints, ...
-    'robotTrajectory', robot.trajectory, ...
+    'robotTrajectory', robots{1}.trajectory, ...  % 向后兼容
     'allRawPaths', {allRawPaths}, ...
     'allSimplePaths', {allSimplePaths}, ...
-    'allSmoothPaths', {allSmoothPaths});
+    'allSmoothPaths', {allSmoothPaths}, ...
+    'robotDetails', robotDetails, ...
+    'numRobots', numRobots);
 end
 
 % -------------------------------------------------------------------------
@@ -331,22 +460,14 @@ function len = calcPathLenCont(path)
     end
 end
 
-function pt = findLookAhead(refPath, robotPos, lookAheadDist, resetFlag)
-    % 使用持久索引沿路径前进，防止重叠路径段跳回之前的分叉
-    persistent prevIdx
-    if nargin >= 4 && resetFlag
-        prevIdx = 1;
-    end
-    if isempty(prevIdx) || prevIdx > size(refPath, 1)
-        prevIdx = 1;
-    end
-
+function [pt, newIdx] = findLookAheadExt(refPath, robotPos, lookAheadDist, prevIdx)
+    % 前瞻点查找（无持久变量版本，支持多机器人）
     if size(refPath, 1) < 2
         pt = robotPos;
+        newIdx = 1;
         return;
     end
 
-    % 从上次最近点向前搜索，避免跳到路径重叠段的错误分叉
     startIdx = min(prevIdx, size(refPath, 1));
     minDist = inf;
     closestIdx = startIdx;
@@ -358,14 +479,27 @@ function pt = findLookAhead(refPath, robotPos, lookAheadDist, resetFlag)
         end
     end
 
-    % 从最近点向前找距离 >= lookAheadDist 的点
     for i = closestIdx:size(refPath, 1)
         if norm(refPath(i, :) - robotPos) >= lookAheadDist
             pt = refPath(i, :);
-            prevIdx = closestIdx;
+            newIdx = closestIdx;
             return;
         end
     end
     pt = refPath(end, :);
-    prevIdx = closestIdx;
+    newIdx = closestIdx;
+end
+
+function collision = checkRobotRobotCollision(robots)
+    collision = false;
+    n = length(robots);
+    for i = 1:n
+        for j = i + 1:n
+            dist = norm(robots{i}.pos - robots{j}.pos);
+            if dist < robots{i}.radius + robots{j}.radius
+                collision = true;
+                return;
+            end
+        end
+    end
 end

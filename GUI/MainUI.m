@@ -78,22 +78,40 @@ uilabel(ctrlPanel, 'Text', '每步延迟(秒):', 'Position', [10, 225, 90, 20]);
 delayEdit = uieditfield(ctrlPanel, 'numeric', 'Value', 0.02, ...
     'Position', [110, 223, 80, 22]);
 
+% 机器人数量
+uilabel(ctrlPanel, 'Text', '机器人数量:', 'Position', [10, 200, 80, 20]);
+robotCountSpinner = uispinner(ctrlPanel, ...
+    'Limits', [1, 5], 'Value', 1, 'Step', 1, ...
+    'Position', [95, 198, 70, 22], ...
+    'ValueChangedFcn', @(~,~) onRobotCountChanged());
+
+% 路径显示选项
+uilabel(ctrlPanel, 'Text', '仿真时显示:', 'Position', [10, 170, 80, 20]);
+showRawPathCB = uicheckbox(ctrlPanel, 'Text', '全局规划原始路径', ...
+    'Value', false, 'Position', [10, 148, 160, 20]);
+showSimplePathCB = uicheckbox(ctrlPanel, 'Text', '简化后全局路径', ...
+    'Value', false, 'Position', [180, 148, 160, 20]);
+showSmoothPathCB = uicheckbox(ctrlPanel, 'Text', '平滑后路径', ...
+    'Value', true, 'Position', [10, 126, 160, 20]);
+showTrajCB = uicheckbox(ctrlPanel, 'Text', '机器人移动路径', ...
+    'Value', true, 'Position', [180, 126, 160, 20]);
+
 % 按钮
 startBtn = uibutton(ctrlPanel, 'Text', '开始仿真', ...
-    'Position', [10, 160, 150, 40], ...
+    'Position', [10, 80, 150, 40], ...
     'ButtonPushedFcn', @(~,~) onStart());
 
 resetBtn = uibutton(ctrlPanel, 'Text', '重置地图', ...
-    'Position', [180, 160, 150, 40], ...
+    'Position', [180, 80, 150, 40], ...
     'ButtonPushedFcn', @(~,~) onReset());
 
 exitBtn = uibutton(ctrlPanel, 'Text', '退出', ...
-    'Position', [10, 110, 320, 40], ...
+    'Position', [10, 30, 320, 40], ...
     'ButtonPushedFcn', @(~,~) close(fig));
 
 % 可视化窗口按钮
 vizBtn = uibutton(ctrlPanel, 'Text', '打开可视化窗口', ...
-    'Position', [10, 60, 320, 40], ...
+    'Position', [10, -10, 320, 40], ...
     'ButtonPushedFcn', @(~,~) onOpenViz());
 
 % --- 状态栏 ---
@@ -110,6 +128,9 @@ state.targetPoints = [];
 state.goalPoint = [];
 state.dynObsCount = 0;
 state.dynStart = [];
+state.robotCount = 1;
+state.startPoints = [];
+state.startPointIdx = 1;
 state.vizFig = [];
 state.vizAxes = [];
 
@@ -158,25 +179,36 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
 
         switch selectedMode
             case '设置起点'
-                state.startPoint = [r, c];
-                statusLabel.Text = sprintf('起点已设置: (%d, %d)', r, c);
+                if state.robotCount == 1
+                    state.startPoint = [c, r];
+                    statusLabel.Text = sprintf('起点已设置: (%d, %d)', c, r);
+                else
+                    state.startPoints(state.startPointIdx, :) = [c, r];
+                    statusLabel.Text = sprintf('机器人 %d 起点已设置: (%d, %d) [%d/%d]', ...
+                        state.startPointIdx, c, r, state.startPointIdx, state.robotCount);
+                    if state.startPointIdx < state.robotCount
+                        state.startPointIdx = state.startPointIdx + 1;
+                    else
+                        statusLabel.Text = sprintf('全部 %d 个机器人起点已设置', state.robotCount);
+                    end
+                end
             case '添加目标点'
-                state.targetPoints(end + 1, :) = [r, c];
-                statusLabel.Text = sprintf('目标点已添加: (%d, %d)', r, c);
+                state.targetPoints(end + 1, :) = [c, r];
+                statusLabel.Text = sprintf('目标点已添加: (%d, %d)', c, r);
             case '设置终点'
-                state.goalPoint = [r, c];
-                statusLabel.Text = sprintf('终点已设置: (%d, %d)', r, c);
+                state.goalPoint = [c, r];
+                statusLabel.Text = sprintf('终点已设置: (%d, %d)', c, r);
             case '添加静态障碍'
-                state.staticObstacles(end + 1, :) = [r, c];
-                statusLabel.Text = sprintf('静态障碍已添加: (%d, %d)', r, c);
+                state.staticObstacles(end + 1, :) = [c, r];
+                statusLabel.Text = sprintf('静态障碍已添加: (%d, %d)', c, r);
             case '添加动态障碍'
                 % 第一次点击为起点，第二次为终点
                 if isempty(state.dynStart)
-                    state.dynStart = [r, c];
-                    statusLabel.Text = sprintf('动态障碍起点: (%d, %d)，请点击终点', r, c);
+                    state.dynStart = [c, r];
+                    statusLabel.Text = sprintf('动态障碍起点: (%d, %d)，请点击终点', c, r);
                 else
                     state.dynObsCount = state.dynObsCount + 1;
-                    state.dynamicObstacleDefs(end + 1, :) = [state.dynStart(1), state.dynStart(2), r, c, 0.25]; %动态障碍物速度
+                    state.dynamicObstacleDefs(end + 1, :) = [state.dynStart(1), state.dynStart(2), c, r, 0.25]; %动态障碍物速度
                     statusLabel.Text = sprintf('动态障碍 %d 已添加', state.dynObsCount);
                     state.dynStart = [];
                 end
@@ -189,10 +221,11 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
     end
 
     function removeNearest(r, c)
-        % 只匹配被点击的精确栅格（曼哈顿距离为0）
+        % state 以 (x,y) 存储，x=c 为列1，y=r 为列2
+        x = c; y = r;
         % 检查静态障碍
         if ~isempty(state.staticObstacles)
-            match = state.staticObstacles(:, 1) == r & state.staticObstacles(:, 2) == c;
+            match = state.staticObstacles(:, 1) == x & state.staticObstacles(:, 2) == y;
             if any(match)
                 state.staticObstacles(match, :) = [];
                 statusLabel.Text = '静态障碍已删除';
@@ -201,8 +234,8 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
         end
         % 检查动态障碍（起点或终点）
         if ~isempty(state.dynamicObstacleDefs)
-            match = (state.dynamicObstacleDefs(:, 1) == r & state.dynamicObstacleDefs(:, 2) == c) | ...
-                    (state.dynamicObstacleDefs(:, 3) == r & state.dynamicObstacleDefs(:, 4) == c);
+            match = (state.dynamicObstacleDefs(:, 1) == x & state.dynamicObstacleDefs(:, 2) == y) | ...
+                    (state.dynamicObstacleDefs(:, 3) == x & state.dynamicObstacleDefs(:, 4) == y);
             if any(match)
                 state.dynamicObstacleDefs(match, :) = [];
                 state.dynObsCount = state.dynObsCount - sum(match);
@@ -212,7 +245,7 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
         end
         % 检查目标点
         if ~isempty(state.targetPoints)
-            match = state.targetPoints(:, 1) == r & state.targetPoints(:, 2) == c;
+            match = state.targetPoints(:, 1) == x & state.targetPoints(:, 2) == y;
             if any(match)
                 state.targetPoints(match, :) = [];
                 statusLabel.Text = '目标点已删除';
@@ -220,12 +253,20 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
             end
         end
         % 检查起/终点
-        if ~isempty(state.startPoint) && state.startPoint(1) == r && state.startPoint(2) == c
+        if ~isempty(state.startPoint) && state.startPoint(1) == x && state.startPoint(2) == y
             state.startPoint = [];
             statusLabel.Text = '起点已删除';
             return;
         end
-        if ~isempty(state.goalPoint) && state.goalPoint(1) == r && state.goalPoint(2) == c
+        if ~isempty(state.startPoints)
+            match = state.startPoints(:, 1) == x & state.startPoints(:, 2) == y;
+            if any(match)
+                state.startPoints(match, :) = [];
+                statusLabel.Text = '机器人起点已删除';
+                return;
+            end
+        end
+        if ~isempty(state.goalPoint) && state.goalPoint(1) == x && state.goalPoint(2) == y
             state.goalPoint = [];
             statusLabel.Text = '终点已删除';
             return;
@@ -237,39 +278,48 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
         cla(mapAxes);
         setupMapDisplay();
 
+        % state 以 (x,y) 存储，列1=x，列2=y
         % 绘制静态障碍
         for i = 1:size(state.staticObstacles, 1)
-            r = state.staticObstacles(i, 1);
-            c = state.staticObstacles(i, 2);
-            rectangle(mapAxes, 'Position', [c-1, r-1, 1, 1], ...
+            x = state.staticObstacles(i, 1);
+            y = state.staticObstacles(i, 2);
+            rectangle(mapAxes, 'Position', [x-1, y-1, 1, 1], ...
                 'FaceColor', [0, 0, 0], 'EdgeColor', 'none');
         end
 
         % 绘制起点
-        if ~isempty(state.startPoint)
-            plot(mapAxes, state.startPoint(2) - 0.5, state.startPoint(1) - 0.5, ...
+        if state.robotCount == 1 && ~isempty(state.startPoint)
+            plot(mapAxes, state.startPoint(1) - 0.5, state.startPoint(2) - 0.5, ...
                 'o', 'MarkerFaceColor', [0, 0.8, 0], 'MarkerEdgeColor', 'none', 'MarkerSize', 10);
+        elseif state.robotCount > 1 && ~isempty(state.startPoints)
+            for r = 1:size(state.startPoints, 1)
+                color = plotTools('multiRobotColor', r);
+                plot(mapAxes, state.startPoints(r, 1) - 0.5, state.startPoints(r, 2) - 0.5, ...
+                    'o', 'MarkerFaceColor', color, 'MarkerEdgeColor', 'none', 'MarkerSize', 10);
+                text(mapAxes, state.startPoints(r, 1) - 0.2, state.startPoints(r, 2) - 0.2, ...
+                    sprintf('R%d', r), 'FontSize', 8, 'Color', color, 'FontWeight', 'bold');
+            end
         end
 
         % 绘制目标点
         for i = 1:size(state.targetPoints, 1)
-            plot(mapAxes, state.targetPoints(i, 2) - 0.5, state.targetPoints(i, 1) - 0.5, ...
+            plot(mapAxes, state.targetPoints(i, 1) - 0.5, state.targetPoints(i, 2) - 0.5, ...
                 'o', 'MarkerFaceColor', [0, 0, 1], 'MarkerEdgeColor', 'none', 'MarkerSize', 8);
         end
 
         % 绘制终点
         if ~isempty(state.goalPoint)
-            plot(mapAxes, state.goalPoint(2) - 0.5, state.goalPoint(1) - 0.5, ...
+            plot(mapAxes, state.goalPoint(1) - 0.5, state.goalPoint(2) - 0.5, ...
                 'o', 'MarkerFaceColor', [1, 0, 0], 'MarkerEdgeColor', 'none', 'MarkerSize', 10);
         end
 
-        % 绘制动态障碍物线段标记
+        % 绘制动态障碍物线段标记 (def = [x1,y1,x2,y2,speed])
         for i = 1:size(state.dynamicObstacleDefs, 1)
             def = state.dynamicObstacleDefs(i, :);
-            plot(mapAxes, [def(2)-0.5, def(4)-0.5], [def(1)-0.5, def(3)-0.5], ...
+            plot(mapAxes, [def(1)-0.5, def(3)-0.5], [def(2)-0.5, def(4)-0.5], ...
                 'm--', 'LineWidth', 1.5);
-            plot(mapAxes, def(2)-0.5, def(1)-0.5, 'ms', 'MarkerSize', 6);
-            plot(mapAxes, def(4)-0.5, def(3)-0.5, 'm^', 'MarkerSize', 6);
+            plot(mapAxes, def(1)-0.5, def(2)-0.5, 'ms', 'MarkerSize', 6);
+            plot(mapAxes, def(3)-0.5, def(4)-0.5, 'm^', 'MarkerSize', 6);
         end
 
         % 使所有子图元不拦截点击，确保ButtonDownFcn能正确获取点击坐标
@@ -281,41 +331,42 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
         state.mapSize = 30;
         sz = 30;
 
+        % 所有坐标采用 (x,y) 顺序
         switch name
             case '空白地图'
                 % 不做任何事
             case '简单障碍'
-                % 几个散落障碍物
-                obsList = [6,1; 6,2; 6,3; 6,4; 6,5; 6,6; 6,7; 6,8; 6,9; 6,10; 6,11; 6,12; 6,13; 6,14; 6,15; 6,16; 6,17; 6,18; 6,19; 6,20; 6,21; 6,22; 6,23; 6,24; 6,25; 6,26; 6,27; 6,28; 6,29; 6,30; ...
-                           25,1; 25,2; 25,3; 25,4; 25,5; 25,6; 25,7; 25,8; 25,9; 25,10; 25,11; 25,12; 25,13; 25,14; 25,15; 25,16; 25,17; 25,18; 25,19; 25,20; 25,21; 25,22; 25,23; 25,24; 25,25; 25,26; 25,27; 25,28; 25,29; 25,30; 11,5; 11,6; 11,7; 11,8; 11,9; 11,10; 11,11; 12,5; 12,6; 12,7; 12,8; 12,9; 12,10; 12,11; 19,5; 19,6; 19,7; 19,8; 19,9; 19,10; 19,11; 20,5; 20,6; 20,7; 20,8; 20,9; 20,10; 20,11; 10,15; 11,15; 12,15; 13,15; 14,15; 15,15; 16,15; 17,15; 18,15; 19,15; 20,15; 21,15; 10,16; 11,16; 12,16; 13,16; 14,16; 15,16; 16,16; 17,16; 18,16; 19,16; 20,16; 21,16; 11,19; 12,19; 11,20; 12,20; 11,23; 12,23; 11,24; 12,24; 11,27; 12,27; 11,28; 12,28; 19,19; 20,19; 19,20; 20,20; 19,25; 20,25; 19,26; 20,26; 7,1; 24,1; 15,3; 16,3; 7,17; 24,17];
+                % 几个散落障碍物 (x,y)
+                obsList = [1,6; 2,6; 3,6; 4,6; 5,6; 6,6; 7,6; 8,6; 9,6; 10,6; 11,6; 12,6; 13,6; 14,6; 15,6; 16,6; 17,6; 18,6; 19,6; 20,6; 21,6; 22,6; 23,6; 24,6; 25,6; 26,6; 27,6; 28,6; 29,6; 30,6; ...
+                           1,25; 2,25; 3,25; 4,25; 5,25; 6,25; 7,25; 8,25; 9,25; 10,25; 11,25; 12,25; 13,25; 14,25; 15,25; 16,25; 17,25; 18,25; 19,25; 20,25; 21,25; 22,25; 23,25; 24,25; 25,25; 26,25; 27,25; 28,25; 29,25; 30,25; 5,11; 6,11; 7,11; 8,11; 9,11; 10,11; 11,11; 5,12; 6,12; 7,12; 8,12; 9,12; 10,12; 11,12; 5,19; 6,19; 7,19; 8,19; 9,19; 10,19; 11,19; 5,20; 6,20; 7,20; 8,20; 9,20; 10,20; 11,20; 15,10; 15,11; 15,12; 15,13; 15,14; 15,15; 15,16; 15,17; 15,18; 15,19; 15,20; 15,21; 16,10; 16,11; 16,12; 16,13; 16,14; 16,15; 16,16; 16,17; 16,18; 16,19; 16,20; 16,21; 19,11; 19,12; 20,11; 20,12; 23,11; 23,12; 24,11; 24,12; 27,11; 27,12; 28,11; 28,12; 19,19; 19,20; 20,19; 20,20; 25,19; 25,20; 26,19; 26,20; 1,7; 1,24; 3,15; 3,16; 17,7; 17,24];
                 state.staticObstacles = obsList;
 
             case '迷宫地图'
                 for i = 3:3:27
                     for j = 1:20
                         if mod(floor(i/3), 2) == 1
-                            state.staticObstacles(end+1, :) = [i, j];
+                            state.staticObstacles(end+1, :) = [j, i];
                         else
-                            state.staticObstacles(end+1, :) = [i, j + 10];
+                            state.staticObstacles(end+1, :) = [j + 10, i];
                         end
                     end
                 end
-                state.startPoint = [1, 15];
-                state.targetPoints = [15, 5];
-                state.goalPoint = [29, 15];
+                state.startPoint = [15, 1];
+                state.targetPoints = [5, 15];
+                state.goalPoint = [15, 29];
             case '走廊地图'
                 for i = 8:12
                     for j = 1:15
-                        state.staticObstacles(end+1, :) = [i, j];
+                        state.staticObstacles(end+1, :) = [j, i];
                     end
                 end
                 for i = 18:22
                     for j = 15:30
-                        state.staticObstacles(end+1, :) = [i, j];
+                        state.staticObstacles(end+1, :) = [j, i];
                     end
                 end
                 state.startPoint = [2, 2];
-                state.targetPoints = [25, 8; 10, 25];
+                state.targetPoints = [8, 25; 25, 10];
                 state.goalPoint = [28, 28];
         end
 
@@ -328,6 +379,8 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
         state.staticObstacles = [];
         state.dynamicObstacleDefs = [];
         state.startPoint = [];
+        state.startPoints = [];
+        state.startPointIdx = 1;
         state.targetPoints = [];
         state.goalPoint = [];
         state.dynObsCount = 0;
@@ -342,8 +395,17 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
     end
 
     function onStart()
-        if isempty(state.startPoint)
+        if state.robotCount == 1 && isempty(state.startPoint)
             statusLabel.Text = '错误: 请先设置起点';
+            return;
+        end
+        if state.robotCount > 1 && isempty(state.startPoints)
+            statusLabel.Text = '错误: 请先设置所有机器人起点';
+            return;
+        end
+        if state.robotCount > 1 && size(state.startPoints, 1) < state.robotCount
+            statusLabel.Text = sprintf('错误: 还需设置 %d 个机器人起点', ...
+                state.robotCount - size(state.startPoints, 1));
             return;
         end
         if isempty(state.goalPoint)
@@ -354,18 +416,39 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
         statusLabel.Text = '正在规划路径...';
         drawnow;
 
-        % 构建 simParams
+        % 构建 simParams（state 用 (x,y)，转为 (row,col) 传算法层）
         simParams = struct();
         simParams.mapSize = state.mapSize;
-        simParams.staticObstacles = state.staticObstacles;
-        simParams.dynamicObstacleDefs = state.dynamicObstacleDefs;
-        simParams.startPoint = state.startPoint;
-        simParams.targetPoints = state.targetPoints;
-        simParams.goalPoint = state.goalPoint;
+        if ~isempty(state.staticObstacles)
+            simParams.staticObstacles = [state.staticObstacles(:,2), state.staticObstacles(:,1)];
+        else
+            simParams.staticObstacles = [];
+        end
+        if ~isempty(state.dynamicObstacleDefs)
+            simParams.dynamicObstacleDefs = [state.dynamicObstacleDefs(:,2), state.dynamicObstacleDefs(:,1), ...
+                state.dynamicObstacleDefs(:,4), state.dynamicObstacleDefs(:,3), state.dynamicObstacleDefs(:,5)];
+        else
+            simParams.dynamicObstacleDefs = [];
+        end
+        if state.robotCount > 1
+            simParams.startPoints = [state.startPoints(:,2), state.startPoints(:,1)];
+        else
+            simParams.startPoint = [state.startPoint(2), state.startPoint(1)];
+        end
+        if ~isempty(state.targetPoints)
+            simParams.targetPoints = [state.targetPoints(:,2), state.targetPoints(:,1)];
+        else
+            simParams.targetPoints = [];
+        end
+        simParams.goalPoint = [state.goalPoint(2), state.goalPoint(1)];
         simParams.globalAlgo = globalAlgoDD.Value;
         simParams.localAlgo = localAlgoDD.Value;
         simParams.enableSimplify = simplifyCB.Value;
         simParams.enableSmooth = smoothCB.Value;
+        simParams.showRawPath = showRawPathCB.Value;
+        simParams.showSimplePath = showSimplePathCB.Value;
+        simParams.showSmoothPath = showSmoothPathCB.Value;
+        simParams.showTraj = showTrajCB.Value;
         simParams.stepDelay = delayEdit.Value;
         simParams.robotMaxSpeed = speedEdit.Value;
         simParams.robotRadius = radiusEdit.Value;
@@ -388,6 +471,19 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
         catch ME
             statusLabel.Text = sprintf('仿真错误: %s', ME.message);
             rethrow(ME);
+        end
+    end
+
+    function onRobotCountChanged()
+        state.robotCount = robotCountSpinner.Value;
+        state.startPoints = [];
+        state.startPointIdx = 1;
+        state.startPoint = [];
+        refreshMapDisplay();
+        if state.robotCount > 1
+            statusLabel.Text = sprintf('已切换为 %d 机器人模式，请逐个设置起点', state.robotCount);
+        else
+            statusLabel.Text = '已切换为单机器人模式';
         end
     end
 

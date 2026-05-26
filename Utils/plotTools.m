@@ -31,6 +31,10 @@ switch action
         end
     case 'getAllColors'
         varargout{1} = colors;
+    case 'multiRobotColor'
+        idx = varargin{1};
+        palette = [0, 0.6, 0.6;  1, 0.5, 0;  0.6, 0, 0.6;  0, 0.7, 0;  0.7, 0.2, 0];
+        varargout{1} = palette(mod(idx - 1, size(palette, 1)) + 1, :);
     case 'setupAxes'
         ax = varargin{1};
         mapSize = varargin{2};
