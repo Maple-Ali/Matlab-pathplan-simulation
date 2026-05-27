@@ -126,6 +126,8 @@ state.dynamicObstacleDefs = [];  % [r1, c1, r2, c2, speed]
 state.startPoint = [];
 state.targetPoints = [];
 state.goalPoint = [];
+state.goalPoints = [];
+state.goalPointIdx = 1;
 state.dynObsCount = 0;
 state.dynStart = [];
 state.robotCount = 1;
@@ -196,8 +198,19 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
                 state.targetPoints(end + 1, :) = [c, r];
                 statusLabel.Text = sprintf('目标点已添加: (%d, %d)', c, r);
             case '设置终点'
-                state.goalPoint = [c, r];
-                statusLabel.Text = sprintf('终点已设置: (%d, %d)', c, r);
+                if state.robotCount == 1
+                    state.goalPoint = [c, r];
+                    statusLabel.Text = sprintf('终点已设置: (%d, %d)', c, r);
+                else
+                    state.goalPoints(state.goalPointIdx, :) = [c, r];
+                    statusLabel.Text = sprintf('机器人 %d 终点已设置: (%d, %d) [%d/%d]', ...
+                        state.goalPointIdx, c, r, state.goalPointIdx, state.robotCount);
+                    if state.goalPointIdx < state.robotCount
+                        state.goalPointIdx = state.goalPointIdx + 1;
+                    else
+                        statusLabel.Text = sprintf('全部 %d 个机器人终点已设置', state.robotCount);
+                    end
+                end
             case '添加静态障碍'
                 state.staticObstacles(end + 1, :) = [c, r];
                 statusLabel.Text = sprintf('静态障碍已添加: (%d, %d)', c, r);
@@ -271,6 +284,14 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
             statusLabel.Text = '终点已删除';
             return;
         end
+        if ~isempty(state.goalPoints)
+            match = state.goalPoints(:, 1) == x & state.goalPoints(:, 2) == y;
+            if any(match)
+                state.goalPoints(match, :) = [];
+                statusLabel.Text = '机器人终点已删除';
+                return;
+            end
+        end
         statusLabel.Text = '未找到可删除的对象';
     end
 
@@ -307,10 +328,18 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
                 'o', 'MarkerFaceColor', [0, 0, 1], 'MarkerEdgeColor', 'none', 'MarkerSize', 8);
         end
 
-        % 绘制终点
-        if ~isempty(state.goalPoint)
+        % 绘制终点（多机器人各自颜色）
+        if state.robotCount == 1 && ~isempty(state.goalPoint)
             plot(mapAxes, state.goalPoint(1) - 0.5, state.goalPoint(2) - 0.5, ...
                 'o', 'MarkerFaceColor', [1, 0, 0], 'MarkerEdgeColor', 'none', 'MarkerSize', 10);
+        elseif state.robotCount > 1 && ~isempty(state.goalPoints)
+            for r = 1:size(state.goalPoints, 1)
+                color = plotTools('multiRobotColor', r);
+                plot(mapAxes, state.goalPoints(r, 1) - 0.5, state.goalPoints(r, 2) - 0.5, ...
+                    'o', 'MarkerFaceColor', color, 'MarkerEdgeColor', 'k', 'MarkerSize', 10);
+                text(mapAxes, state.goalPoints(r, 1) - 0.2, state.goalPoints(r, 2) - 0.2, ...
+                    sprintf('G%d', r), 'FontSize', 8, 'Color', color, 'FontWeight', 'bold');
+            end
         end
 
         % 绘制动态障碍物线段标记 (def = [x1,y1,x2,y2,speed])
@@ -383,6 +412,8 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
         state.startPointIdx = 1;
         state.targetPoints = [];
         state.goalPoint = [];
+        state.goalPoints = [];
+        state.goalPointIdx = 1;
         state.dynObsCount = 0;
         try
             state.mapSize = sscanf(mapSizeDropdown.Value, '%d×%d');
@@ -408,8 +439,17 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
                 state.robotCount - size(state.startPoints, 1));
             return;
         end
-        if isempty(state.goalPoint)
+        if state.robotCount == 1 && isempty(state.goalPoint)
             statusLabel.Text = '错误: 请先设置终点';
+            return;
+        end
+        if state.robotCount > 1 && isempty(state.goalPoints)
+            statusLabel.Text = '错误: 请先设置所有机器人终点';
+            return;
+        end
+        if state.robotCount > 1 && size(state.goalPoints, 1) < state.robotCount
+            statusLabel.Text = sprintf('错误: 还需设置 %d 个机器人终点', ...
+                state.robotCount - size(state.goalPoints, 1));
             return;
         end
 
@@ -440,7 +480,12 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
         else
             simParams.targetPoints = [];
         end
-        simParams.goalPoint = [state.goalPoint(2), state.goalPoint(1)];
+        if state.robotCount > 1
+            simParams.goalPoints = [state.goalPoints(:,2), state.goalPoints(:,1)];
+            simParams.goalPoint = simParams.goalPoints(1, :);  % 向后兼容
+        else
+            simParams.goalPoint = [state.goalPoint(2), state.goalPoint(1)];
+        end
         simParams.globalAlgo = globalAlgoDD.Value;
         simParams.localAlgo = localAlgoDD.Value;
         simParams.enableSimplify = simplifyCB.Value;
@@ -479,6 +524,9 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
         state.startPoints = [];
         state.startPointIdx = 1;
         state.startPoint = [];
+        state.goalPoints = [];
+        state.goalPointIdx = 1;
+        state.goalPoint = [];
         refreshMapDisplay();
         if state.robotCount > 1
             statusLabel.Text = sprintf('已切换为 %d 机器人模式，请逐个设置起点', state.robotCount);

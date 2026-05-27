@@ -2,10 +2,10 @@ function [vx, vy, predictTraj] = DWAPlanner(robot, localGoal, map, ~, dt, params
 %DWAPLANNER 局部规划器（引力+斥力势场模型）
 %   [vx, vy, predictTraj] = DWAPlanner(robot, localGoal, map, ~, dt, params)
 %
-%   通过引力（目标）和斥力（障碍物+边界）合成期望速度，
+%   通过引力（目标）和斥力（障碍物+边界+其他机器人）合成期望速度，
 %   经加速度限幅后输出，并生成预测轨迹用于可视化。
 %
-%   params 可选字段: maxSpeed, maxAccel（在 SimulationManager 中设置）
+%   params 可选字段: maxSpeed, maxAccel, allRobots, robotIdx
 
 % ===== 可调参数 ============================================================
 % 引力参数
@@ -40,6 +40,12 @@ tangentGain  = 0.8;  % 侧向避让增益，增大使机器人更主动绕行前
 
 % 减速参数
 decelDist = 1.0;     % 接近目标此距离内开始线性减速
+
+% 其他机器人斥力参数
+robotRepulseGain  = 0.5;   % 机器人间斥力增益，需大于障碍物斥力以保证避碰
+                            %   碰撞风险高于静态障碍，需要更强排斥
+robotRepulseRange = 2.5;   % 机器人间斥力作用范围（连续单位）
+                            %   比障碍物斥力范围大，提前规避对向/侧向机器人
 % =========================================================================
 
 occGrid = map.getOccupancyGrid();
@@ -113,8 +119,41 @@ for dr = -sensorRange:sensorRange
     end
 end
 
+% ---- 其他机器人斥力 ----
+robotRepVec = [0, 0];
+if isfield(params, 'allRobots') && ~isempty(params.allRobots) ...
+        && isfield(params, 'robotIdx') && params.robotIdx > 0
+    allRobots = params.allRobots;
+    myIdx = params.robotIdx;
+    for j = 1:length(allRobots)
+        if j == myIdx, continue; end
+        other = allRobots{j};
+        diff = robot.pos - other.pos;           % 自身→对方向量（排斥方向）
+        d = norm(diff);
+        if d < 1e-2, d = 1e-2; end
+        if d < robotRepulseRange
+            % 径向斥力：距离越近斥力越强，与障碍物斥力公式一致但增益更大
+            robotRepVec = robotRepVec + (diff / d) * (robotRepulseGain / d^2);
+            % 对向接近时额外侧向避让
+            relVel = robot.vel - other.vel;
+            closingSpeed = -dot(relVel, diff / d);  % 正=正在靠近
+            if closingSpeed > 0.1
+                % 横向偏转：选择与 attrDir 投影更大的侧向
+                lateral1 = [-diff(2), diff(1)] / d;
+                lateral2 = [diff(2), -diff(1)] / d;
+                if abs(dot(lateral1, attrDir)) > abs(dot(lateral2, attrDir))
+                    evadeDir = lateral1 * sign(dot(lateral1, attrDir) + 1e-6);
+                else
+                    evadeDir = lateral2 * sign(dot(lateral2, attrDir) + 1e-6);
+                end
+                robotRepVec = robotRepVec + evadeDir * (robotRepulseGain * closingSpeed / d^2);
+            end
+        end
+    end
+end
+
 % ---- 合成速度 ----
-desiredV = attrDir * desiredSpeed + repVec + evadeVec;
+desiredV = attrDir * desiredSpeed + repVec + evadeVec + robotRepVec;
 vMag = norm(desiredV);
 if vMag > maxSpeed
     desiredV = desiredV / vMag * maxSpeed;

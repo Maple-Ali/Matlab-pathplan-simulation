@@ -104,15 +104,19 @@ if isfield(results, 'robotDetails')
         uilabel(rPanel, 'Text', sprintf('规划耗时: %.1f 毫秒', results.planTime * 1000), ...
             'Position', [260, p - 25, 110, 20]);
 
+        if isfield(rd, 'goalPoint') && ~isempty(rd.goalPoint)
+            uilabel(rPanel, 'Text', sprintf('终点: (%d, %d)', rd.goalPoint(2), rd.goalPoint(1)), ...
+                'Position', [10, p - 47, 170, 20]);
+        end
         uilabel(rPanel, 'Text', sprintf('原始路径: %.2f 单位', rd.rawLen), ...
-            'Position', [10, p - 47, 170, 20]);
+            'Position', [185, p - 47, 170, 20]);
         if simParams.enableSimplify
             uilabel(rPanel, 'Text', sprintf('简化后: %.2f 单位', rd.simpleLen), ...
-                'Position', [185, p - 47, 170, 20]);
+                'Position', [10, p - 69, 170, 20]);
         end
         if simParams.enableSmooth
             uilabel(rPanel, 'Text', sprintf('平滑后: %.2f 单位', rd.smoothLen), ...
-                'Position', [10, p - 69, 200, 20]);
+                'Position', [185, p - 69, 170, 20]);
         end
 
         % 访问顺序

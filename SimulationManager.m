@@ -4,7 +4,7 @@ function results = SimulationManager(simParams)
 %   simParams 结构体字段:
 %     mapSize, staticObstacles, dynamicObstacleDefs
 %     startPoint (单机器人) 或 startPoints (多机器人)
-%     targetPoints, goalPoint
+%     targetPoints, goalPoint (或 goalPoints 多机器人)
 %     globalAlgo, localAlgo
 %     enableSimplify, enableSmooth
 %     stepDelay, robotMaxSpeed, robotRadius
@@ -43,11 +43,19 @@ end
 % --- 3. 任务分配 ---
 tStart = tic;
 targets = simParams.targetPoints;
-goalGrid = simParams.goalPoint;
+
+% 构建各机器人终点矩阵 goalPoints (N×2)
+if isfield(simParams, 'goalPoints') && ~isempty(simParams.goalPoints)
+    goalPoints = simParams.goalPoints;
+else
+    % 向后兼容：单终点复制给所有机器人
+    goalGrid = simParams.goalPoint;
+    goalPoints = repmat(goalGrid, numRobots, 1);
+end
 
 if numRobots > 1 && size(targets, 1) >= 1
     % 多机器人：最近邻聚类 + 各机器人独立 TSP
-    robotTasks = MultiRobotTaskAllocation(startPoints, targets, goalGrid, map, simParams.globalAlgo);
+    robotTasks = MultiRobotTaskAllocation(startPoints, targets, goalPoints, map, simParams.globalAlgo);
     tTSP = toc(tStart);
     % 汇总 TSP 成本
     tspCost = sum([robotTasks.tspCost]);
@@ -58,21 +66,23 @@ if numRobots > 1 && size(targets, 1) >= 1
 elseif size(targets, 1) >= 1
     % 单机器人：原有 TSP 流程
     [orderedPoints, segPaths, tspCost] = TSPsolver(...
-        startPoints(1, :), targets, goalGrid, map, simParams.globalAlgo);
+        startPoints(1, :), targets, goalPoints(1, :), map, simParams.globalAlgo);
     tTSP = toc(tStart);
     robotTasks = struct('orderedPoints', orderedPoints, ...
         'segPaths', {segPaths}, 'tspCost', tspCost, ...
-        'assignedTargets', targets);
+        'assignedTargets', targets, 'goalPoint', goalPoints(1, :));
 else
     % 无目标点
     tTSP = 0;
     tspCost = 0;
     robotTasks = struct();
     for r = 1:numRobots
-        robotTasks(r).orderedPoints = [startPoints(r, :); goalGrid];
-        robotTasks(r).segPaths = {AStar(map, startPoints(r, :), goalGrid, 0)};
+        myGoal = goalPoints(r, :);
+        robotTasks(r).orderedPoints = [startPoints(r, :); myGoal];
+        robotTasks(r).segPaths = {AStar(map, startPoints(r, :), myGoal, 0)};
         robotTasks(r).tspCost = 0;
         robotTasks(r).assignedTargets = [];
+        robotTasks(r).goalPoint = myGoal;
     end
     orderedPoints = [];
     for r = 1:numRobots
@@ -186,10 +196,14 @@ if hasViz
             'MarkerEdgeColor', 'none', 'MarkerSize', 8);
     end
 
-    % 终点
-    plot(ax, goalGrid(2) - 0.5, goalGrid(1) - 0.5, 'o', ...
-        'MarkerFaceColor', plotTools('getColor', 'goal'), ...
-        'MarkerEdgeColor', 'none', 'MarkerSize', 8);
+    % 终点（多机器人各自颜色）
+    for r = 1:numRobots
+        gColor = plotTools('multiRobotColor', r);
+        plot(ax, goalPoints(r, 2) - 0.5, goalPoints(r, 1) - 0.5, 'o', ...
+            'MarkerFaceColor', gColor, 'MarkerEdgeColor', 'k', 'MarkerSize', 10);
+        text(ax, goalPoints(r, 2) - 0.2, goalPoints(r, 1) - 0.2, ...
+            sprintf('G%d', r), 'FontSize', 8, 'Color', gColor, 'FontWeight', 'bold');
+    end
 
     % 原始路径
     if isfield(simParams, 'showRawPath') && simParams.showRawPath
@@ -316,11 +330,10 @@ while any(active)
                 rs.prevIdx = newIdx;
             end
 
-            % 局部规划（MPC 需要 robotIdx）
+            % 局部规划（传递所有机器人信息用于避碰）
             plannerParams = localParams;
-            if strcmp(simParams.localAlgo, 'MPC')
-                plannerParams.robotIdx = r;
-            end
+            plannerParams.allRobots = robots;
+            plannerParams.robotIdx = r;
 
             switch simParams.localAlgo
                 case 'DWA'
@@ -410,6 +423,7 @@ for r = 1:numRobots
     robotDetails(r).totalDistance = dist;
     robotDetails(r).visitOrder = robotTasks(r).orderedPoints;
     robotDetails(r).assignedTargets = robotTasks(r).assignedTargets;
+    robotDetails(r).goalPoint = robotTasks(r).goalPoint;
     robotDetails(r).trajectory = traj;
     robotDetails(r).rawLen = robotTasks(r).rawLen;
     robotDetails(r).simpleLen = robotTasks(r).simpleLen;
