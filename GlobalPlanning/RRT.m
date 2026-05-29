@@ -1,9 +1,12 @@
-function path = RRT(map, startGrid, goalGrid, delay)
+function path = RRT(map, startGrid, goalGrid, delay, callback)
 %RRT 快速随机扩展树路径规划
-%   path = RRT(map, startGrid, goalGrid, delay)
+%   path = RRT(map, startGrid, goalGrid, delay, callback)
 
 if nargin < 4
     delay = 0;
+end
+if nargin < 5
+    callback = [];
 end
 
 n = map.mapSize;
@@ -26,6 +29,8 @@ nodes = [startGrid(1), startGrid(2), 0];
 if delay > 0
     hold on;
 end
+
+reachedGoal = false;
 
 for iter = 1:maxIter
     % 采样
@@ -80,6 +85,22 @@ for iter = 1:maxIter
     newIdx = size(nodes, 1) + 1;
     nodes(newIdx, :) = [nr, nc, nearestIdx];
 
+    % ---- callback 模式（每 5 次迭代报告一次以减少开销） ----
+    if ~isempty(callback) && mod(iter, 5) == 0
+        treeGrid = false(n, n);
+        for i = 1:size(nodes, 1)
+            treeGrid(nodes(i,1), nodes(i,2)) = true;
+        end
+        stateInfo = struct('type', 'step', ...
+            'current', [nr, nc], ...
+            'openSet', treeGrid, 'closedSet', false(n,n), ...
+            'iteration', iter);
+        action = callback(stateInfo);
+        if strcmp(action, 'stop')
+            path = []; return;
+        end
+    end
+
     % 可视化
     if delay > 0
         plot([nodes(nearestIdx, 2) - 0.5, nc - 0.5], ...
@@ -92,13 +113,18 @@ for iter = 1:maxIter
     if norm([nr - goalGrid(1), nc - goalGrid(2)]) < goalThreshold
         if isLineFree([nr, nc], goalGrid, occGrid, n)
             nodes(end + 1, :) = [goalGrid(1), goalGrid(2), newIdx];
+            reachedGoal = true;
             break;
         end
     end
 end
 
 % 重建路径
-if nodes(end, 1) ~= goalGrid(1) || nodes(end, 2) ~= goalGrid(2)
+if ~reachedGoal
+    if ~isempty(callback)
+        callback(struct('type', 'finish', 'path', [], ...
+            'iteration', iter, 'success', false));
+    end
     path = [];
     return;
 end
@@ -108,6 +134,11 @@ parentIdx = nodes(end, 3);
 while parentIdx > 0
     path = [nodes(parentIdx, 1:2); path];
     parentIdx = nodes(parentIdx, 3);
+end
+
+if ~isempty(callback)
+    callback(struct('type', 'finish', 'path', path, ...
+        'iteration', iter, 'success', true));
 end
 end
 

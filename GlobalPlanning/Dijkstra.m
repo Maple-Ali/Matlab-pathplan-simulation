@@ -1,9 +1,12 @@
-function path = Dijkstra(map, startGrid, goalGrid, delay)
+function path = Dijkstra(map, startGrid, goalGrid, delay, callback)
 %DIJKSTRA Dijkstra 全局路径规划
 %   与 A* 接口一致，使用 8 邻域扩展
 
 if nargin < 4
     delay = 0;
+end
+if nargin < 5
+    callback = [];
 end
 
 n = map.mapSize;
@@ -45,8 +48,26 @@ for iter = 1:unvisitedCount
 
     visited(cr, cc) = true;
 
+    % ---- callback 模式 ----
+    if ~isempty(callback)
+        current = [cr, cc];
+        stateInfo = struct('type', 'step', ...
+            'current', current, ...
+            'openSet', (~visited) & (~occGrid) & (dist < inf), ...
+            'closedSet', visited, ...
+            'dist', dist, 'iteration', iter);
+        action = callback(stateInfo);
+        if strcmp(action, 'stop')
+            path = []; return;
+        end
+    end
+
     if cr == goalGrid(1) && cc == goalGrid(2)
         path = reconstructPath(parent, startGrid, goalGrid);
+        if ~isempty(callback)
+            callback(struct('type', 'finish', 'path', path, ...
+                'iteration', iter, 'success', true));
+        end
         return;
     end
 
@@ -81,6 +102,11 @@ for iter = 1:unvisitedCount
     end
 end
 
+% 无路径
+if ~isempty(callback)
+    callback(struct('type', 'finish', 'path', [], ...
+        'iteration', iter, 'success', false));
+end
 path = [];
 end
 

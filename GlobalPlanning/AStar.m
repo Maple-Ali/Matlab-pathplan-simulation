@@ -1,13 +1,17 @@
-function path = AStar(map, startGrid, goalGrid, delay)
+function path = AStar(map, startGrid, goalGrid, delay, callback)
 %ASTAR A* 全局路径规划
-%   path = AStar(map, startGrid, goalGrid, delay)
+%   path = AStar(map, startGrid, goalGrid, delay, callback)
 %   map: Map 对象
 %   startGrid, goalGrid: [row, col] 栅格索引
-%   delay: 可视化延迟（0=不绘制）
+%   delay: 可视化延迟（0=不绘制，仅 callback 为空时生效）
+%   callback: 可选回调函数 @(stateInfo) 返回 'continue'/'pause'/'stop'
 %   path: N×2 [row, col] 路径点数组
 
 if nargin < 4
     delay = 0;
+end
+if nargin < 5
+    callback = [];
 end
 
 n = map.mapSize;
@@ -45,6 +49,9 @@ openSet(startGrid(1), startGrid(2)) = true;
 % 已展开节点
 closedSet = false(n, n);
 
+% 迭代计数（供 callback 使用）
+iter = 0;
+
 % 可视化准备
 if delay > 0
     figure(gcf);
@@ -66,9 +73,26 @@ while any(openSet, 'all')
     end
     current = [openRows(minIdx), openCols(minIdx)];
 
+    % ---- callback 模式：向 GUI 报告当前状态 ----
+    if ~isempty(callback)
+        iter = iter + 1;
+        stateInfo = struct('type', 'step', ...
+            'current', current, ...
+            'openSet', openSet, 'closedSet', closedSet, ...
+            'gScore', gScore, 'fScore', fScore, 'iteration', iter);
+        action = callback(stateInfo);
+        if strcmp(action, 'stop')
+            path = []; return;
+        end
+    end
+
     % 到达目标
     if current(1) == goalGrid(1) && current(2) == goalGrid(2)
         path = reconstructPath(parent, startGrid, goalGrid);
+        if ~isempty(callback)
+            callback(struct('type', 'finish', 'path', path, ...
+                'iteration', iter, 'success', true));
+        end
         return;
     end
 
@@ -121,6 +145,10 @@ while any(openSet, 'all')
 end
 
 % 无路径
+if ~isempty(callback)
+    callback(struct('type', 'finish', 'path', [], ...
+        'iteration', iter, 'success', false));
+end
 path = [];
 end
 

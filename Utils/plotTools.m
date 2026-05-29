@@ -18,7 +18,11 @@ if isempty(colors)
         'goal',          [1.0, 0.0, 0.0], ...  % 红色 - 终点
         'robot',         [0.0, 0.5, 0.5], ...  % 青色 - 机器人
         'explored',      [0.8, 0.8, 0.8], ...  % 浅灰 - 探索区域
-        'predictTraj',   [1.0, 0.0, 0.0]);     % 黄色 - 预测轨迹
+        'predictTraj',   [1.0, 0.0, 0.0], ...  % 红色 - 预测轨迹
+        'openSet',       [0.6, 0.95, 0.6], ... % 浅绿 - 搜索中 open set
+        'closedSet',     [0.75, 0.75, 0.75], ... % 中灰 - 已扩展 closed set
+        'currentNode',   [1.0, 0.5, 0.0], ...  % 橙色 - 当前扩展节点
+        'finalPath',     [0.0, 0.3, 1.0]);     % 亮蓝 - 最终规划路径
 end
 
 switch action

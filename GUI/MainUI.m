@@ -105,13 +105,17 @@ resetBtn = uibutton(ctrlPanel, 'Text', '重置地图', ...
     'Position', [180, 80, 150, 40], ...
     'ButtonPushedFcn', @(~,~) onReset());
 
+algoTestBtn = uibutton(ctrlPanel, 'Text', '全局规划测试', ...
+    'Position', [10, 45, 320, 28], ...
+    'ButtonPushedFcn', @(~,~) onOpenAlgoTester());
+
 exitBtn = uibutton(ctrlPanel, 'Text', '退出', ...
-    'Position', [10, 30, 320, 40], ...
+    'Position', [10, 10, 150, 30], ...
     'ButtonPushedFcn', @(~,~) close(fig));
 
 % 可视化窗口按钮
 vizBtn = uibutton(ctrlPanel, 'Text', '打开可视化窗口', ...
-    'Position', [10, -10, 320, 40], ...
+    'Position', [180, 10, 150, 30], ...
     'ButtonPushedFcn', @(~,~) onOpenViz());
 
 % --- 状态栏 ---
@@ -135,6 +139,7 @@ state.startPoints = [];
 state.startPointIdx = 1;
 state.vizFig = [];
 state.vizAxes = [];
+state.algoTesterFig = [];
 
 % 初始化地图显示
 setupMapDisplay();
@@ -405,6 +410,12 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
     end
 
     function onReset()
+        % 关闭算法测试窗口
+        if ~isempty(state.algoTesterFig) && isvalid(state.algoTesterFig)
+            delete(state.algoTesterFig);
+            state.algoTesterFig = [];
+        end
+
         state.staticObstacles = [];
         state.dynamicObstacleDefs = [];
         state.startPoint = [];
@@ -532,6 +543,20 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
             statusLabel.Text = sprintf('已切换为 %d 机器人模式，请逐个设置起点', state.robotCount);
         else
             statusLabel.Text = '已切换为单机器人模式';
+        end
+    end
+
+    function onOpenAlgoTester()
+        if ~isempty(state.algoTesterFig) && isvalid(state.algoTesterFig)
+            figure(state.algoTesterFig);
+            return;
+        end
+        try
+            state.algoTesterFig = AlgorithmTesterUI(state);
+            statusLabel.Text = '算法测试窗口已打开';
+        catch ME
+            statusLabel.Text = sprintf('打开失败: %s', ME.message);
+            fprintf(2, 'AlgorithmTesterUI 错误: %s\n', ME.getReport());
         end
     end
 
