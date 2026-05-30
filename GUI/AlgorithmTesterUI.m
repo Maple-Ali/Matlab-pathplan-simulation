@@ -29,14 +29,18 @@ h = struct('openScatter', [], ...
     'closedScatter', [], ...
     'currentPlot', [], ...
     'pathPlot', [], ...
+    'treeLines', [], ...
     'obsRects', [], ...
     'startPlot', [], ...
     'goalPlot', []);
 
-% ===== 持久状态用于 step 间保存 open/closed =====
+% ===== 持久状态 =====
 prevOpen = [];
 prevClosed = [];
-algStartTime = [];
+algAccumTime = 0;    % 纯算法累计耗时（排除暂停）
+algTimer = [];       % 算法时间计时器
+lastOpen = 0;        % 上次 open set 大小（完成时保留）
+lastClosed = 0;      % 上次 closed set 大小（完成时保留）
 
 % ===== 右键设置起点/终点的临时状态 =====
 setMode = 'none';    % 'none', 'start', 'goal'
@@ -356,6 +360,8 @@ end
         ctrl.paused = false;
         ctrl.stopRequested = false;
         ctrl.stepRequested = false;
+        algAccumTime = 0;        % 重置累计时间
+        algTimer = tic;          % 启动计时
         resetVisualization();
         setStatus('运行中...');
         runAlgorithm();
@@ -435,9 +441,7 @@ end
             m.setStaticObstacle(obsR, obsC);
         end
 
-        algStartTime = tic;
-
-        % 调用 A*（带 callback）
+        % 调用算法（带 callback）
         algoName = algoDD.Value;
         switch algoName
             case 'AStar'
@@ -456,14 +460,36 @@ end
 
         % 处理 'finish' 类型
         if strcmp(info.type, 'finish')
-            elapsed = toc(algStartTime);
-            updateStats(info.iteration, 0, 0, info.path);
-            set(timeLabel, 'Text', sprintf('耗时: %.3fs', elapsed));
+            % 累计最后一段算法时间
+            if ~isempty(algTimer)
+                algAccumTime = algAccumTime + toc(algTimer);
+            end
+            % 保留搜索标记（不删除），只更新统计信息
+            lastOpen = 0; lastClosed = 0;
+            set(timeLabel, 'Text', sprintf('耗时: %.3fs', algAccumTime));
+            if info.success
+                set(pathLabel, 'Text', sprintf('路径长度: %d', size(info.path, 1)));
+                set(openLabel, 'Text', 'Open集: 0');
+                set(closedLabel, 'Text', sprintf('已探索: %d', info.iteration));
+                set(iterLabel, 'Text', sprintf('迭代: %d', info.iteration));
+            else
+                set(pathLabel, 'Text', '路径长度: 无解');
+                set(openLabel, 'Text', 'Open集: 0');
+                set(closedLabel, 'Text', sprintf('已探索: %d', info.iteration));
+                set(iterLabel, 'Text', sprintf('迭代: %d', info.iteration));
+            end
+            % 隐藏当前节点标记
+            if ~isempty(h.currentPlot) && isvalid(h.currentPlot)
+                delete(h.currentPlot);
+                h.currentPlot = [];
+            end
+            % 绘制最终路径（open/closed 保留在图上）
             drawFinalPath(info);
             if info.success
-                setStatus(sprintf('完成! 路径 %d 点', size(info.path, 1)));
+                setStatus(sprintf('完成! 路径 %d 点, 纯算法耗时 %.3fs', ...
+                    size(info.path, 1), algAccumTime));
             else
-                setStatus('搜索完成: 无可行路径');
+                setStatus(sprintf('搜索完成: 无可行路径, 耗时 %.3fs', algAccumTime));
             end
             action = 'continue';
             return;
@@ -474,7 +500,7 @@ end
         nClosed = nnz(info.closedSet);
         updateStats(info.iteration, nOpen, nClosed, []);
 
-        % 增量更新可视化
+        % 增量更新可视化（按算法类型区分）
         updateSearchVis(info);
 
         % 检查停止
@@ -487,6 +513,11 @@ end
 
         % 单步/暂停控制
         if ctrl.paused && ~ctrl.stepRequested
+            % 暂停前记录已消耗的纯算法时间
+            if ~isempty(algTimer)
+                algAccumTime = algAccumTime + toc(algTimer);
+                algTimer = [];  % 标记计时器暂停
+            end
             setStatus('已暂停 - 点击单步或运行');
             uiwait(fig);  % 等待 uiresume
 
@@ -497,6 +528,8 @@ end
                 setStatus('已停止');
                 return;
             end
+            % 重新启动计时器
+            algTimer = tic;
         end
         ctrl.stepRequested = false;
 
@@ -505,9 +538,15 @@ end
             setStatus('单步已完成 - 点击单步或运行');
         end
 
-        % 速度控制
+        % 速度控制（暂停期间不计入耗时）
         if ~ctrl.paused && ctrl.speed > 0
+            % 暂停计时器，避免速度等待被计入算法时间
+            if ~isempty(algTimer)
+                algAccumTime = algAccumTime + toc(algTimer);
+                algTimer = [];
+            end
             pause(ctrl.speed);
+            algTimer = tic;  % 重新启动计时器
         end
         drawnow;
 
@@ -532,15 +571,33 @@ end
         if ~isempty(h.pathPlot) && isvalid(h.pathPlot)
             delete(h.pathPlot);
         end
+        % 删除 RRT 树线
+        allTreeLines = findobj(ax, 'Tag', 'RRTtree');
+        for k = 1:length(allTreeLines)
+            delete(allTreeLines(k));
+        end
         h.openScatter = [];
         h.closedScatter = [];
         h.currentPlot = [];
         h.pathPlot = [];
+        h.treeLines = [];
         prevOpen = [];
         prevClosed = [];
     end
 
     function updateSearchVis(info)
+        algoName = algoDD.Value;
+
+        if strcmp(algoName, 'RRT')
+            % RRT 模式：画随机树的连线
+            updateRRTTreeVis(info);
+        else
+            % A*/Dijkstra 模式：散点图显示 open/closed
+            updateGridSearchVis(info);
+        end
+    end
+
+    function updateGridSearchVis(info)
         % 将栅格 [row, col] 转为连续坐标 [x, y] = [col-0.5, row-0.5]
         [openRows, openCols] = find(info.openSet);
         [closedRows, closedCols] = find(info.closedSet);
@@ -584,22 +641,73 @@ end
         end
     end
 
-    function drawFinalPath(info)
-        % 清除搜索覆盖层
+    function updateRRTTreeVis(info)
+        % RRT 可视化：用细线画出随机扩展树，节点用散点标出
+        if ~isfield(info, 'nodes') || isempty(info.nodes)
+            return;
+        end
+
+        % 清除之前的树线（完成时保留，但搜索中增量更新）
+        if ~isempty(h.treeLines) && isvalid(h.treeLines)
+            % 不删除，使用 set 增量更新——但 RRT 新增节点较快，这里简化：
+            % 每回调时判定：如果节点数翻了多倍才重绘，否则跳过本次可视化
+        end
+
+        nodes = info.nodes;
+        nNodes = size(nodes, 1);
+
+        % 树节点散点（用 open set 颜色）
+        nodeX = nodes(:, 2) - 0.5;
+        nodeY = nodes(:, 1) - 0.5;
         if ~isempty(h.openScatter) && isvalid(h.openScatter)
-            delete(h.openScatter);
+            set(h.openScatter, 'XData', nodeX, 'YData', nodeY);
+        else
+            h.openScatter = scatter(ax, nodeX, nodeY, 10, ...
+                plotTools('getColor', 'openSet'), 'filled', ...
+                'MarkerFaceAlpha', 0.6, ...
+                'HitTest', 'off', 'PickableParts', 'none');
         end
+
+        % 清除旧 closed scatter（RRT 不用）
         if ~isempty(h.closedScatter) && isvalid(h.closedScatter)
-            delete(h.closedScatter);
+            set(h.closedScatter, 'XData', [], 'YData', []);
         end
+
+        % 画树连线：只画新增的边（从最近的祖先连到新节点附近）
+        % 简化策略：每次画当前节点和其父节点的连线
+        if isfield(info, 'nearestIdx') && info.nearestIdx > 0
+            parentR = nodes(info.nearestIdx, 1);
+            parentC = nodes(info.nearestIdx, 2);
+            curR = info.current(1);
+            curC = info.current(2);
+            plot(ax, [parentC-0.5, curC-0.5], [parentR-0.5, curR-0.5], ...
+                'Color', [0.6, 0.9, 0.6], 'LineWidth', 0.4, ...
+                'Tag', 'RRTtree', ...
+                'HitTest', 'off', 'PickableParts', 'none');
+        end
+
+        % 当前节点高亮（橙色方块）
+        curX = info.current(2) - 0.5;
+        curY = info.current(1) - 0.5;
+        if ~isempty(h.currentPlot) && isvalid(h.currentPlot)
+            set(h.currentPlot, 'XData', curX, 'YData', curY);
+        else
+            h.currentPlot = plot(ax, curX, curY, 's', ...
+                'MarkerSize', 12, ...
+                'MarkerFaceColor', plotTools('getColor', 'currentNode'), ...
+                'MarkerEdgeColor', 'none', ...
+                'HitTest', 'off', 'PickableParts', 'none');
+        end
+    end
+
+    function drawFinalPath(info)
+        % 保留 open/closed 搜索标记，只清除当前节点标记
         if ~isempty(h.currentPlot) && isvalid(h.currentPlot)
             delete(h.currentPlot);
+            h.currentPlot = [];
         end
-        h.openScatter = [];
-        h.closedScatter = [];
-        h.currentPlot = [];
 
-        % 绘制最终路径
+        % 绘制最终路径（叠加在搜索标记上方）
         if ~isempty(info.path) && info.success
             pathX = info.path(:, 2) - 0.5;
             pathY = info.path(:, 1) - 0.5;

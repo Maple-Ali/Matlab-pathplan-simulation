@@ -79,7 +79,7 @@ else
     for r = 1:numRobots
         myGoal = goalPoints(r, :);
         robotTasks(r).orderedPoints = [startPoints(r, :); myGoal];
-        robotTasks(r).segPaths = {AStar(map, startPoints(r, :), myGoal, 0)};
+        robotTasks(r).segPaths = {callPlanner(simParams.globalAlgo, map, startPoints(r, :), myGoal)};
         robotTasks(r).tspCost = 0;
         robotTasks(r).assignedTargets = [];
         robotTasks(r).goalPoint = myGoal;
@@ -515,5 +515,18 @@ function collision = checkRobotRobotCollision(robots)
                 return;
             end
         end
+    end
+end
+
+function path = callPlanner(algoName, map, startGrid, goalGrid)
+    switch algoName
+        case 'AStar'
+            path = AStar(map, startGrid, goalGrid, 0);
+        case 'Dijkstra'
+            path = Dijkstra(map, startGrid, goalGrid, 0);
+        case 'RRT'
+            path = RRT(map, startGrid, goalGrid, 0);
+        otherwise
+            path = AStar(map, startGrid, goalGrid, 0);
     end
 end
