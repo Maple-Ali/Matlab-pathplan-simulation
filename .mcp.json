@@ -5,7 +5,7 @@
       "command": "cmd",
       "args": [
         "/c",
-        "D:\\Matlab claude\\matlab-mcp-core-server-win64.exe",
+        "D:\\Claude-File\\matlab-mcp-core-server-win64.exe",
         "--matlab-root", "D:\\Matlab",
         "--log-level", "debug"
       ],
