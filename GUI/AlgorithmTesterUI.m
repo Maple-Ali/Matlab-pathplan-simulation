@@ -75,7 +75,7 @@ panel = uipanel(fig, 'Position', [460, 10, 150, 510], ...
 % 算法选择
 uilabel(panel, 'Text', '算法:', 'Position', [10, 468, 40, 20]);
 algoDD = uidropdown(panel, ...
-    'Items', {'AStar', 'Dijkstra', 'RRT'}, ...
+    'Items', {'AStar', 'AStar_v1', 'AStar_v2', 'AStar_v3', 'Dijkstra', 'RRT'}, ...
     'Value', 'AStar', ...
     'Position', [50, 465, 90, 22], ...
     'ValueChangedFcn', @(~,~) onReset());
@@ -446,6 +446,12 @@ end
         switch algoName
             case 'AStar'
                 AStar(m, mapData.startGrid, mapData.goalGrid, 0, @algoCallback);
+            case 'AStar_v1'
+                AStar_v1(m, mapData.startGrid, mapData.goalGrid, 0, @algoCallback);
+            case 'AStar_v2'
+                AStar_v2(m, mapData.startGrid, mapData.goalGrid, 0, @algoCallback);
+            case 'AStar_v3'
+                AStar_v3(m, mapData.startGrid, mapData.goalGrid, 0, @algoCallback);
             case 'Dijkstra'
                 Dijkstra(m, mapData.startGrid, mapData.goalGrid, 0, @algoCallback);
             case 'RRT'

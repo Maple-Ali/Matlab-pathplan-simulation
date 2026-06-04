@@ -98,6 +98,12 @@ function path = callPlanner(algoName, map, startGrid, goalGrid)
     switch algoName
         case 'AStar'
             path = AStar(map, startGrid, goalGrid, 0);
+        case 'AStar_v1'
+            path = AStar_v1(map, startGrid, goalGrid, 0);
+        case 'AStar_v2'
+            path = AStar_v2(map, startGrid, goalGrid, 0);
+        case 'AStar_v3'
+            path = AStar_v3(map, startGrid, goalGrid, 0);
         case 'Dijkstra'
             path = Dijkstra(map, startGrid, goalGrid, 0);
         case 'RRT'
