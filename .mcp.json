@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "matlab": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "D:\\Matlab claude\\matlab-mcp-core-server-win64.exe",
+        "--matlab-root", "D:\\Matlab",
+        "--log-level", "debug"
+      ],
+      "env": {
+        "MSYS_NO_PATHCONV": "1"
+      }
+    }
+  }
+}
