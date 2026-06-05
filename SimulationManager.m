@@ -338,6 +338,12 @@ while any(active)
             switch simParams.localAlgo
                 case 'DWA'
                     [vx, vy, predictTraj] = DWAPlanner(rob, lookAheadPt, map, [], dt, plannerParams);
+                case 'DWA_v0'
+                    [vx, vy, predictTraj] = DWAPlanner_v0(rob, lookAheadPt, map, [], dt, plannerParams);
+                case 'DWA_v1'
+                    [vx, vy, predictTraj] = DWAPlanner_v1(rob, lookAheadPt, map, [], dt, plannerParams);
+                case 'DWA_v2'
+                    [vx, vy, predictTraj] = DWAPlanner_v2(rob, lookAheadPt, map, [], dt, plannerParams);
                 case 'TEB'
                     [vx, vy, predictTraj] = TEBPlanner(rob, lookAheadPt, map, [], dt, plannerParams);
                 case 'MPC'
