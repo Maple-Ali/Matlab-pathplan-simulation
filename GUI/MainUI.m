@@ -604,11 +604,6 @@ end
 % 局部函数：自动扫描 TSPOptimization 文件夹获取可用算法列表
 % =========================================================================
 function algoList = getTSPAlgoList()
-    persistent cachedList;
-    if ~isempty(cachedList)
-        algoList = cachedList;
-        return;
-    end
     % 扫描 TSPOptimization 文件夹下所有 TSP_*.m 文件
     tspDir = fullfile(fileparts(mfilename('fullpath')), '..', 'TSPOptimization');
     files = dir(fullfile(tspDir, 'TSP_*.m'));
@@ -619,5 +614,4 @@ function algoList = getTSPAlgoList()
     if isempty(algoList)
         algoList = {'TSP_GA'};  % 兜底默认值
     end
-    cachedList = algoList;
 end

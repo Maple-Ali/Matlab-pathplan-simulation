@@ -12,6 +12,7 @@ function [bestOrder, bestCost, history] = TSP_Permutation(costMatrix, nPts)
 %     history    - （可选）收敛历史结构体:
 %       .bestCostHistory  - 累积最优成本曲线
 %       .avgCostHistory   - 每个排列的成本
+%       .timeHistory      - 每步累计耗时（秒）
 %       .iterCount        - 总排列数
 %       .elapsedTime      - 纯计算耗时（秒）
 
@@ -25,6 +26,7 @@ if nMid == 0
     if trackHistory
         history = struct('bestCostHistory', bestCost, ...
             'avgCostHistory', bestCost, ...
+            'timeHistory', 0, ...
             'iterCount', 1, 'elapsedTime', 0);
     end
     return;
@@ -34,6 +36,7 @@ if trackHistory
     tStart = tic;
     bestCostHistory = [];
     avgCostHistory = [];
+    timeHistory = [];
 end
 
 perms_all = perms(midIdx);
@@ -58,6 +61,7 @@ for p = 1:size(perms_all, 1)
     if trackHistory && valid
         bestCostHistory(end + 1) = bestCost; %#ok<AGROW>
         avgCostHistory(end + 1) = c; %#ok<AGROW>
+        timeHistory(end + 1) = toc(tStart); %#ok<AGROW>
     end
 end
 
@@ -68,6 +72,7 @@ if trackHistory
     history = struct();
     history.bestCostHistory = bestCostHistory;
     history.avgCostHistory = avgCostHistory;
+    history.timeHistory = timeHistory;
     history.iterCount = size(perms_all, 1);
     history.elapsedTime = toc(tStart);
 end

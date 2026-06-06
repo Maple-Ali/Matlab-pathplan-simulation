@@ -146,6 +146,14 @@ title(compAx, '算法对比');
 ylabel(compAx, '平均最优成本');
 grid(compAx, 'on');
 
+% Tab 4: 耗时-成本收敛曲线
+tabTime = uitab(tabGroup, 'Title', '耗时-成本');
+timeAx = uiaxes(tabTime, 'Position', [40, 50, 400, 370]);
+title(timeAx, '耗时-成本收敛曲线');
+xlabel(timeAx, '累计耗时 (s)');
+ylabel(timeAx, '最优成本');
+grid(timeAx, 'on');
+
 statsLabel = uilabel(tabComp, 'Text', '', ...
     'Position', [10, 10, 430, 180], ...
     'VerticalAlignment', 'top', 'FontSize', 9);
@@ -275,6 +283,9 @@ end
                 sprintf('T%d', k), 'FontSize', 8, 'FontWeight', 'bold');
         end
 
+        % 使所有子图元不拦截点击，确保 ButtonDownFcn 能正确获取点击坐标
+        set(ax.Children, 'PickableParts', 'none');
+
         % 清除路径覆盖
         clearPathPlots();
         drawnow;
@@ -287,6 +298,23 @@ end
             end
         end
         h.pathPlots = {};
+    end
+
+    function clearConvergenceChart()
+        % 显式删除 fill 阴影带对象（cla 可能无法清除 fill）
+        fillObjs = findobj(convAx, 'Type', 'Patch');
+        for k = 1:length(fillObjs)
+            delete(fillObjs(k));
+        end
+        cla(convAx);
+    end
+
+    function clearTimeCostChart()
+        fillObjs = findobj(timeAx, 'Type', 'Patch');
+        for k = 1:length(fillObjs)
+            delete(fillObjs(k));
+        end
+        cla(timeAx);
     end
 
     function deleteObjectAt(row, col)
@@ -512,7 +540,10 @@ end
 
         % 更新可视化
         drawFinalPaths(allResults, allPoints);
+        clearConvergenceChart();
         updateConvergenceTab(allResults);
+        clearTimeCostChart();
+        updateTimeCostTab(allResults);
         updateHeatmapTab(costMatrix, allPoints);
         updateComparisonTab(allResults);
 
@@ -624,6 +655,52 @@ end
         hold(convAx, 'off');
     end
 
+    function updateTimeCostTab(results)
+        cla(timeAx);
+        hold(timeAx, 'on');
+
+        algoColors = {[1, 0, 0], [0, 0, 1], [0, 0.7, 0], [1, 0.5, 0], [0.6, 0, 0.6], [0, 0.6, 0.6]};
+
+        for ai = 1:length(results)
+            color = algoColors{mod(ai - 1, length(algoColors)) + 1};
+            nRuns = results(ai).nRuns;
+
+            if nRuns == 1
+                hist = results(ai).histories{1};
+                plot(timeAx, hist.timeHistory, hist.bestCostHistory, ...
+                    '-', 'Color', color, 'LineWidth', 1.5, ...
+                    'DisplayName', results(ai).algoName);
+            else
+                histories = results(ai).histories;
+                minLen = min(cellfun(@(h) length(h.timeHistory), histories));
+                allTimes = zeros(nRuns, minLen);
+                allCosts = zeros(nRuns, minLen);
+                for ri = 1:nRuns
+                    allTimes(ri, :) = histories{ri}.timeHistory(1:minLen)';
+                    allCosts(ri, :) = histories{ri}.bestCostHistory(1:minLen)';
+                end
+                meanTimes = mean(allTimes, 1);
+                meanCosts = mean(allCosts, 1);
+                stdCosts = std(allCosts, 0, 1);
+
+                % 标准差阴影带
+                fill(timeAx, [meanTimes, fliplr(meanTimes)], ...
+                    [meanCosts + stdCosts, fliplr(meanCosts - stdCosts)], ...
+                    color, 'FaceAlpha', 0.2, 'EdgeColor', 'none', ...
+                    'HandleVisibility', 'off');
+                plot(timeAx, meanTimes, meanCosts, '-', 'Color', color, 'LineWidth', 1.5, ...
+                    'DisplayName', sprintf('%s (n=%d)', results(ai).algoName, nRuns));
+            end
+        end
+
+        xlabel(timeAx, '累计耗时 (s)');
+        ylabel(timeAx, '最优成本');
+        title(timeAx, '耗时-成本收敛曲线');
+        legend(timeAx, 'show', 'Location', 'northeast');
+        grid(timeAx, 'on');
+        hold(timeAx, 'off');
+    end
+
     function updateHeatmapTab(costMatrix, allPoints)
         cla(heatAx);
 
@@ -698,8 +775,15 @@ end
         ctrl.lastCostMatrix = [];
         ctrl.lastAllPoints = [];
 
+        % 清空地图数据
+        mapData.startGrid = [];
+        mapData.goalGrid = [];
+        mapData.targetGrids = [];
+        mapData.occGrid = false(mapData.mapSize, mapData.mapSize);
+
         clearPathPlots();
-        cla(convAx);
+        clearConvergenceChart();
+        clearTimeCostChart();
         cla(heatAx);
         cla(compAx);
         set(statsLabel, 'Text', '');
@@ -760,11 +844,6 @@ function len = pathLength(path)
 end
 
 function algoList = getTSPAlgoList()
-    persistent cachedList;
-    if ~isempty(cachedList)
-        algoList = cachedList;
-        return;
-    end
     tspDir = fullfile(fileparts(mfilename('fullpath')), '..', 'TSPOptimization');
     files = dir(fullfile(tspDir, 'TSP_*.m'));
     algoList = cell(1, length(files));
@@ -774,5 +853,4 @@ function algoList = getTSPAlgoList()
     if isempty(algoList)
         algoList = {'TSP_GA'};
     end
-    cachedList = algoList;
 end

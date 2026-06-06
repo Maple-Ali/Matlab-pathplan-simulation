@@ -12,6 +12,7 @@ function [bestOrder, bestCost, history] = TSP_GA(costMatrix, nPts)
 %     history    - （可选）收敛历史结构体:
 %       .bestCostHistory  - 每代最优成本
 %       .avgCostHistory   - 每代平均成本
+%       .timeHistory      - 每代累计耗时（秒）
 %       .iterCount        - 总迭代代数
 %       .elapsedTime      - 纯计算耗时（秒）
 
@@ -27,6 +28,7 @@ if trackHistory
     tStart = tic;
     bestCostHistory = zeros(nGen, 1);
     avgCostHistory = zeros(nGen, 1);
+    timeHistory = zeros(nGen, 1);
 end
 
 % 初始化种群
@@ -54,6 +56,7 @@ for gen = 1:nGen
     if trackHistory
         bestCostHistory(gen) = min(fit);
         avgCostHistory(gen) = mean(fit);
+        timeHistory(gen) = toc(tStart);
     end
 
     % 选择（锦标赛）
@@ -120,6 +123,7 @@ if trackHistory
     history = struct();
     history.bestCostHistory = bestCostHistory;
     history.avgCostHistory = avgCostHistory;
+    history.timeHistory = timeHistory;
     history.iterCount = nGen;
     history.elapsedTime = toc(tStart);
 end
