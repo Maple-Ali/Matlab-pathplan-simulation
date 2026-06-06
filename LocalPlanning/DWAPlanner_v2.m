@@ -26,7 +26,7 @@ predictSteps = 10;   % 每条候选轨迹的前向模拟步数（dt=0.1时覆盖
 wHeading    = 2.0;   % 朝向目标对齐权重
 wObstacle   = 3.0;   % 障碍物避碰权重（安全项中最高）
 wBoundary   = 1.0;   % 边界距离权重
-wRobot      = 1.5;   % 机器人间距离权重
+wRobot      = 1.5;   % 机器人间距离权重（看到危险后反应强烈程度）
 wSpeed      = 0.5;   % 速度偏好权重
 wSmoothness = 0.0;   % 速度平滑权重。置零原因：动态窗口 v∈[vel±maxAccel×dt]
                      %   已硬约束加速度，加上此项会导致速度Cost（~0.5v）

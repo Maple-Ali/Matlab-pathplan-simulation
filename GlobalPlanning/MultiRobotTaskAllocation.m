@@ -1,4 +1,4 @@
-function robotTasks = MultiRobotTaskAllocation(startPoints, targets, goalPoints, map, algoName)
+function robotTasks = MultiRobotTaskAllocation(startPoints, targets, goalPoints, map, algoName, tspAlgo)
 %MULTIROBOTTASKALLOCATION 多机器人任务分配
 %   将目标点按最近邻聚类分配给各机器人，每台机器人独立求解 TSP
 %
@@ -8,6 +8,7 @@ function robotTasks = MultiRobotTaskAllocation(startPoints, targets, goalPoints,
 %     goalPoints  - N×2 [row, col] 各机器人终点（每行对应一台机器人）
 %     map         - Map 对象
 %     algoName    - 'AStar' | 'Dijkstra' | 'RRT'
+%     tspAlgo     - 'TSP_GA' | 'TSP_Permutation' 等 TSP 求解算法（可选）
 %
 %   Output:
 %     robotTasks  - 1×N 结构体数组，字段:
@@ -15,6 +16,10 @@ function robotTasks = MultiRobotTaskAllocation(startPoints, targets, goalPoints,
 %       .segPaths         - 段间路径 cell 数组
 %       .tspCost          - 该机器人路径总成本
 %       .assignedTargets  - 分配给该机器人的目标点 [row, col]
+
+if nargin < 6 || isempty(tspAlgo)
+    tspAlgo = 'TSP_GA';
+end
 
 numRobots = size(startPoints, 1);
 numTargets = size(targets, 1);
@@ -51,7 +56,7 @@ for r = 1:numRobots
         robotTasks(r).segPaths = {segPath};
         robotTasks(r).tspCost = 0;
     else
-        [ordered, segs, cost] = TSPsolver(startPoints(r, :), myTargets, myGoal, map, algoName);
+        [ordered, segs, cost] = TSPsolver(startPoints(r, :), myTargets, myGoal, map, algoName, tspAlgo);
         robotTasks(r).orderedPoints = ordered;
         robotTasks(r).segPaths = segs;
         robotTasks(r).tspCost = cost;

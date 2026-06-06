@@ -59,63 +59,73 @@ localAlgoDD = uidropdown(ctrlPanel, ...
     'Items', {'DWA', 'DWA_v0', 'DWA_v1', 'DWA_v2', 'TEB', 'MPC'}, ...
     'Value', 'DWA', 'Position', [120, 363, 100, 22]);
 
+% TSP 求解算法
+uilabel(ctrlPanel, 'Text', 'TSP 求解算法:', 'Position', [10, 333, 100, 20]);
+tspAlgoDD = uidropdown(ctrlPanel, ...
+    'Items', getTSPAlgoList(), ...
+    'Value', 'TSP_GA', 'Position', [120, 331, 100, 22]);
+
 % 后处理选项
 simplifyCB = uicheckbox(ctrlPanel, 'Text', '启用拐角裁剪', ...
-    'Value', false, 'Position', [10, 330, 130, 20]);
+    'Value', false, 'Position', [10, 298, 130, 20]);
 smoothCB = uicheckbox(ctrlPanel, 'Text', '启用路径平滑', ...
-    'Value', true, 'Position', [160, 330, 130, 20]);
+    'Value', true, 'Position', [160, 298, 130, 20]);
 
 % 速度设置
-uilabel(ctrlPanel, 'Text', '机器人最大速度:', 'Position', [10, 295, 110, 20]);
+uilabel(ctrlPanel, 'Text', '机器人最大速度:', 'Position', [10, 263, 110, 20]);
 speedEdit = uieditfield(ctrlPanel, 'numeric', 'Value', 1.0, ...
-    'Position', [130, 293, 80, 22]);
+    'Position', [130, 261, 80, 22]);
 
-uilabel(ctrlPanel, 'Text', '机器人半径:', 'Position', [10, 260, 80, 20]);
+uilabel(ctrlPanel, 'Text', '机器人半径:', 'Position', [10, 228, 80, 20]);
 radiusEdit = uieditfield(ctrlPanel, 'numeric', 'Value', 0.3, ...
-    'Position', [95, 258, 80, 22]);
+    'Position', [95, 226, 80, 22]);
 
-uilabel(ctrlPanel, 'Text', '每步延迟(秒):', 'Position', [10, 225, 90, 20]);
+uilabel(ctrlPanel, 'Text', '每步延迟(秒):', 'Position', [10, 193, 90, 20]);
 delayEdit = uieditfield(ctrlPanel, 'numeric', 'Value', 0.02, ...
-    'Position', [110, 223, 80, 22]);
+    'Position', [110, 191, 80, 22]);
 
 % 机器人数量
-uilabel(ctrlPanel, 'Text', '机器人数量:', 'Position', [10, 200, 80, 20]);
+uilabel(ctrlPanel, 'Text', '机器人数量:', 'Position', [10, 168, 80, 20]);
 robotCountSpinner = uispinner(ctrlPanel, ...
     'Limits', [1, 5], 'Value', 1, 'Step', 1, ...
-    'Position', [95, 198, 70, 22], ...
+    'Position', [95, 166, 70, 22], ...
     'ValueChangedFcn', @(~,~) onRobotCountChanged());
 
 % 路径显示选项
-uilabel(ctrlPanel, 'Text', '仿真时显示:', 'Position', [10, 170, 80, 20]);
+uilabel(ctrlPanel, 'Text', '仿真时显示:', 'Position', [10, 138, 80, 20]);
 showRawPathCB = uicheckbox(ctrlPanel, 'Text', '全局规划原始路径', ...
-    'Value', false, 'Position', [10, 148, 160, 20]);
+    'Value', false, 'Position', [10, 116, 160, 20]);
 showSimplePathCB = uicheckbox(ctrlPanel, 'Text', '简化后全局路径', ...
-    'Value', false, 'Position', [180, 148, 160, 20]);
+    'Value', false, 'Position', [180, 116, 160, 20]);
 showSmoothPathCB = uicheckbox(ctrlPanel, 'Text', '平滑后路径', ...
-    'Value', true, 'Position', [10, 126, 160, 20]);
+    'Value', true, 'Position', [10, 94, 160, 20]);
 showTrajCB = uicheckbox(ctrlPanel, 'Text', '机器人移动路径', ...
-    'Value', true, 'Position', [180, 126, 160, 20]);
+    'Value', true, 'Position', [180, 94, 160, 20]);
 
 % 按钮
 startBtn = uibutton(ctrlPanel, 'Text', '开始仿真', ...
-    'Position', [10, 80, 150, 40], ...
+    'Position', [10, 50, 150, 36], ...
     'ButtonPushedFcn', @(~,~) onStart());
 
 resetBtn = uibutton(ctrlPanel, 'Text', '重置地图', ...
-    'Position', [180, 80, 150, 40], ...
+    'Position', [180, 50, 150, 36], ...
     'ButtonPushedFcn', @(~,~) onReset());
 
 algoTestBtn = uibutton(ctrlPanel, 'Text', '全局规划测试', ...
-    'Position', [10, 45, 320, 28], ...
+    'Position', [10, 22, 155, 22], ...
     'ButtonPushedFcn', @(~,~) onOpenAlgoTester());
 
+tspTestBtn = uibutton(ctrlPanel, 'Text', 'TSP算法测试', ...
+    'Position', [175, 22, 155, 22], ...
+    'ButtonPushedFcn', @(~,~) onOpenTSPTester());
+
 exitBtn = uibutton(ctrlPanel, 'Text', '退出', ...
-    'Position', [10, 10, 150, 30], ...
+    'Position', [10, 2, 150, 18], ...
     'ButtonPushedFcn', @(~,~) close(fig));
 
 % 可视化窗口按钮
 vizBtn = uibutton(ctrlPanel, 'Text', '打开可视化窗口', ...
-    'Position', [180, 10, 150, 30], ...
+    'Position', [180, 2, 150, 18], ...
     'ButtonPushedFcn', @(~,~) onOpenViz());
 
 % --- 状态栏 ---
@@ -140,6 +150,7 @@ state.startPointIdx = 1;
 state.vizFig = [];
 state.vizAxes = [];
 state.algoTesterFig = [];
+state.tspTesterFig = [];
 
 % 初始化地图显示
 setupMapDisplay();
@@ -415,6 +426,11 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
             delete(state.algoTesterFig);
             state.algoTesterFig = [];
         end
+        % 关闭 TSP 测试窗口
+        if ~isempty(state.tspTesterFig) && isvalid(state.tspTesterFig)
+            delete(state.tspTesterFig);
+            state.tspTesterFig = [];
+        end
 
         state.staticObstacles = [];
         state.dynamicObstacleDefs = [];
@@ -499,6 +515,7 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
         end
         simParams.globalAlgo = globalAlgoDD.Value;
         simParams.localAlgo = localAlgoDD.Value;
+        simParams.tspAlgo = tspAlgoDD.Value;
         simParams.enableSimplify = simplifyCB.Value;
         simParams.enableSmooth = smoothCB.Value;
         simParams.showRawPath = showRawPathCB.Value;
@@ -560,6 +577,20 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
         end
     end
 
+    function onOpenTSPTester()
+        if ~isempty(state.tspTesterFig) && isvalid(state.tspTesterFig)
+            figure(state.tspTesterFig);
+            return;
+        end
+        try
+            state.tspTesterFig = TSPTesterUI(state);
+            statusLabel.Text = 'TSP 算法测试窗口已打开';
+        catch ME
+            statusLabel.Text = sprintf('打开失败: %s', ME.message);
+            fprintf(2, 'TSPTesterUI 错误: %s\n', ME.getReport());
+        end
+    end
+
     function onOpenViz()
         if ~isempty(state.vizFig) && isvalid(state.vizFig)
             figure(state.vizFig);
@@ -567,4 +598,26 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
         end
         [state.vizFig, state.vizAxes] = VisualizationUI();
     end
+end
+
+% =========================================================================
+% 局部函数：自动扫描 TSPOptimization 文件夹获取可用算法列表
+% =========================================================================
+function algoList = getTSPAlgoList()
+    persistent cachedList;
+    if ~isempty(cachedList)
+        algoList = cachedList;
+        return;
+    end
+    % 扫描 TSPOptimization 文件夹下所有 TSP_*.m 文件
+    tspDir = fullfile(fileparts(mfilename('fullpath')), '..', 'TSPOptimization');
+    files = dir(fullfile(tspDir, 'TSP_*.m'));
+    algoList = cell(1, length(files));
+    for i = 1:length(files)
+        [~, algoList{i}] = fileparts(files(i).name);
+    end
+    if isempty(algoList)
+        algoList = {'TSP_GA'};  % 兜底默认值
+    end
+    cachedList = algoList;
 end

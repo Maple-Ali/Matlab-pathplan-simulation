@@ -5,7 +5,7 @@ function results = SimulationManager(simParams)
 %     mapSize, staticObstacles, dynamicObstacleDefs
 %     startPoint (单机器人) 或 startPoints (多机器人)
 %     targetPoints, goalPoint (或 goalPoints 多机器人)
-%     globalAlgo, localAlgo
+%     globalAlgo, localAlgo, tspAlgo
 %     enableSimplify, enableSmooth
 %     stepDelay, robotMaxSpeed, robotRadius
 %     vizAxes (可选，可视化坐标轴)
@@ -44,6 +44,13 @@ end
 tStart = tic;
 targets = simParams.targetPoints;
 
+% TSP 算法选择（向后兼容：未指定时默认 TSP_GA）
+if isfield(simParams, 'tspAlgo') && ~isempty(simParams.tspAlgo)
+    tspAlgo = simParams.tspAlgo;
+else
+    tspAlgo = 'TSP_GA';
+end
+
 % 构建各机器人终点矩阵 goalPoints (N×2)
 if isfield(simParams, 'goalPoints') && ~isempty(simParams.goalPoints)
     goalPoints = simParams.goalPoints;
@@ -55,7 +62,7 @@ end
 
 if numRobots > 1 && size(targets, 1) >= 1
     % 多机器人：最近邻聚类 + 各机器人独立 TSP
-    robotTasks = MultiRobotTaskAllocation(startPoints, targets, goalPoints, map, simParams.globalAlgo);
+    robotTasks = MultiRobotTaskAllocation(startPoints, targets, goalPoints, map, simParams.globalAlgo, tspAlgo);
     tTSP = toc(tStart);
     % 汇总 TSP 成本
     tspCost = sum([robotTasks.tspCost]);
@@ -66,7 +73,7 @@ if numRobots > 1 && size(targets, 1) >= 1
 elseif size(targets, 1) >= 1
     % 单机器人：原有 TSP 流程
     [orderedPoints, segPaths, tspCost] = TSPsolver(...
-        startPoints(1, :), targets, goalPoints(1, :), map, simParams.globalAlgo);
+        startPoints(1, :), targets, goalPoints(1, :), map, simParams.globalAlgo, tspAlgo);
     tTSP = toc(tStart);
     robotTasks = struct('orderedPoints', orderedPoints, ...
         'segPaths', {segPaths}, 'tspCost', tspCost, ...
