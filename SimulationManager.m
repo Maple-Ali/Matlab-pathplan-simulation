@@ -51,6 +51,13 @@ else
     tspAlgo = 'TSP_GA';
 end
 
+% 聚类算法选择（向后兼容：未指定时默认 NearestNeighbor）
+if isfield(simParams, 'clusterAlgo') && ~isempty(simParams.clusterAlgo)
+    clusterAlgo = simParams.clusterAlgo;
+else
+    clusterAlgo = 'NearestNeighbor';
+end
+
 % 构建各机器人终点矩阵 goalPoints (N×2)
 if isfield(simParams, 'goalPoints') && ~isempty(simParams.goalPoints)
     goalPoints = simParams.goalPoints;
@@ -62,7 +69,7 @@ end
 
 if numRobots > 1 && size(targets, 1) >= 1
     % 多机器人：最近邻聚类 + 各机器人独立 TSP
-    robotTasks = MultiRobotTaskAllocation(startPoints, targets, goalPoints, map, simParams.globalAlgo, tspAlgo);
+    robotTasks = MultiRobotTaskAllocation(startPoints, targets, goalPoints, map, simParams.globalAlgo, tspAlgo, clusterAlgo);
     tTSP = toc(tStart);
     % 汇总 TSP 成本
     tspCost = sum([robotTasks.tspCost]);

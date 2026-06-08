@@ -65,59 +65,69 @@ tspAlgoDD = uidropdown(ctrlPanel, ...
     'Items', getTSPAlgoList(), ...
     'Value', 'TSP_GA', 'Position', [120, 331, 100, 22]);
 
+% 聚类算法
+uilabel(ctrlPanel, 'Text', '聚类算法:', 'Position', [10, 301, 100, 20]);
+clusterAlgoDD = uidropdown(ctrlPanel, ...
+    'Items', getClusterAlgoList(), ...
+    'Value', 'NearestNeighbor', 'Position', [120, 299, 100, 22]);
+
 % 后处理选项
 simplifyCB = uicheckbox(ctrlPanel, 'Text', '启用拐角裁剪', ...
-    'Value', false, 'Position', [10, 298, 130, 20]);
+    'Value', false, 'Position', [10, 268, 130, 20]);
 smoothCB = uicheckbox(ctrlPanel, 'Text', '启用路径平滑', ...
-    'Value', true, 'Position', [160, 298, 130, 20]);
+    'Value', true, 'Position', [160, 268, 130, 20]);
 
 % 速度设置
-uilabel(ctrlPanel, 'Text', '机器人最大速度:', 'Position', [10, 263, 110, 20]);
+uilabel(ctrlPanel, 'Text', '机器人最大速度:', 'Position', [10, 240, 110, 20]);
 speedEdit = uieditfield(ctrlPanel, 'numeric', 'Value', 1.0, ...
-    'Position', [130, 261, 80, 22]);
+    'Position', [130, 238, 80, 22]);
 
-uilabel(ctrlPanel, 'Text', '机器人半径:', 'Position', [10, 228, 80, 20]);
+uilabel(ctrlPanel, 'Text', '机器人半径:', 'Position', [10, 208, 80, 20]);
 radiusEdit = uieditfield(ctrlPanel, 'numeric', 'Value', 0.3, ...
-    'Position', [95, 226, 80, 22]);
+    'Position', [95, 206, 80, 22]);
 
-uilabel(ctrlPanel, 'Text', '每步延迟(秒):', 'Position', [10, 193, 90, 20]);
+uilabel(ctrlPanel, 'Text', '每步延迟(秒):', 'Position', [10, 176, 90, 20]);
 delayEdit = uieditfield(ctrlPanel, 'numeric', 'Value', 0.02, ...
-    'Position', [110, 191, 80, 22]);
+    'Position', [110, 174, 80, 22]);
 
 % 机器人数量
-uilabel(ctrlPanel, 'Text', '机器人数量:', 'Position', [10, 168, 80, 20]);
+uilabel(ctrlPanel, 'Text', '机器人数量:', 'Position', [10, 148, 80, 20]);
 robotCountSpinner = uispinner(ctrlPanel, ...
     'Limits', [1, 5], 'Value', 1, 'Step', 1, ...
-    'Position', [95, 166, 70, 22], ...
+    'Position', [95, 146, 70, 22], ...
     'ValueChangedFcn', @(~,~) onRobotCountChanged());
 
 % 路径显示选项
-uilabel(ctrlPanel, 'Text', '仿真时显示:', 'Position', [10, 138, 80, 20]);
+uilabel(ctrlPanel, 'Text', '仿真时显示:', 'Position', [10, 118, 80, 20]);
 showRawPathCB = uicheckbox(ctrlPanel, 'Text', '全局规划原始路径', ...
-    'Value', false, 'Position', [10, 116, 160, 20]);
+    'Value', false, 'Position', [10, 96, 160, 20]);
 showSimplePathCB = uicheckbox(ctrlPanel, 'Text', '简化后全局路径', ...
-    'Value', false, 'Position', [180, 116, 160, 20]);
+    'Value', false, 'Position', [180, 96, 160, 20]);
 showSmoothPathCB = uicheckbox(ctrlPanel, 'Text', '平滑后路径', ...
-    'Value', true, 'Position', [10, 94, 160, 20]);
+    'Value', true, 'Position', [10, 74, 160, 20]);
 showTrajCB = uicheckbox(ctrlPanel, 'Text', '机器人移动路径', ...
-    'Value', true, 'Position', [180, 94, 160, 20]);
+    'Value', true, 'Position', [180, 74, 160, 20]);
 
 % 按钮
 startBtn = uibutton(ctrlPanel, 'Text', '开始仿真', ...
-    'Position', [10, 50, 150, 36], ...
+    'Position', [10, 48, 150, 22], ...
     'ButtonPushedFcn', @(~,~) onStart());
 
 resetBtn = uibutton(ctrlPanel, 'Text', '重置地图', ...
-    'Position', [180, 50, 150, 36], ...
+    'Position', [180, 48, 150, 22], ...
     'ButtonPushedFcn', @(~,~) onReset());
 
 algoTestBtn = uibutton(ctrlPanel, 'Text', '全局规划测试', ...
-    'Position', [10, 22, 155, 22], ...
+    'Position', [10, 24, 108, 20], ...
     'ButtonPushedFcn', @(~,~) onOpenAlgoTester());
 
 tspTestBtn = uibutton(ctrlPanel, 'Text', 'TSP算法测试', ...
-    'Position', [175, 22, 155, 22], ...
+    'Position', [124, 24, 108, 20], ...
     'ButtonPushedFcn', @(~,~) onOpenTSPTester());
+
+clusterTestBtn = uibutton(ctrlPanel, 'Text', '聚类算法测试', ...
+    'Position', [238, 24, 108, 20], ...
+    'ButtonPushedFcn', @(~,~) onOpenClusterTester());
 
 exitBtn = uibutton(ctrlPanel, 'Text', '退出', ...
     'Position', [10, 2, 150, 18], ...
@@ -151,6 +161,7 @@ state.vizFig = [];
 state.vizAxes = [];
 state.algoTesterFig = [];
 state.tspTesterFig = [];
+state.clusterTesterFig = [];
 
 % 初始化地图显示
 setupMapDisplay();
@@ -431,6 +442,11 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
             delete(state.tspTesterFig);
             state.tspTesterFig = [];
         end
+        % 关闭聚类测试窗口
+        if ~isempty(state.clusterTesterFig) && isvalid(state.clusterTesterFig)
+            delete(state.clusterTesterFig);
+            state.clusterTesterFig = [];
+        end
 
         state.staticObstacles = [];
         state.dynamicObstacleDefs = [];
@@ -516,6 +532,7 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
         simParams.globalAlgo = globalAlgoDD.Value;
         simParams.localAlgo = localAlgoDD.Value;
         simParams.tspAlgo = tspAlgoDD.Value;
+        simParams.clusterAlgo = clusterAlgoDD.Value;
         simParams.enableSimplify = simplifyCB.Value;
         simParams.enableSmooth = smoothCB.Value;
         simParams.showRawPath = showRawPathCB.Value;
@@ -591,6 +608,20 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
         end
     end
 
+    function onOpenClusterTester()
+        if ~isempty(state.clusterTesterFig) && isvalid(state.clusterTesterFig)
+            figure(state.clusterTesterFig);
+            return;
+        end
+        try
+            state.clusterTesterFig = ClusterTesterUI(state);
+            statusLabel.Text = '聚类算法测试窗口已打开';
+        catch ME
+            statusLabel.Text = sprintf('打开失败: %s', ME.message);
+            fprintf(2, 'ClusterTesterUI 错误: %s\n', ME.getReport());
+        end
+    end
+
     function onOpenViz()
         if ~isempty(state.vizFig) && isvalid(state.vizFig)
             figure(state.vizFig);
@@ -613,5 +644,16 @@ function algoList = getTSPAlgoList()
     end
     if isempty(algoList)
         algoList = {'TSP_GA'};  % 兜底默认值
+    end
+end
+
+function algoList = getClusterAlgoList()
+    % 扫描 ClusteringOptimization 文件夹下所有 *_Cluster.m 文件
+    clusterDir = fullfile(fileparts(mfilename('fullpath')), '..', 'ClusteringOptimization');
+    files = dir(fullfile(clusterDir, '*_Cluster.m'));
+    algoList = cell(1, length(files) + 1);
+    algoList{1} = 'NearestNeighbor';
+    for i = 1:length(files)
+        [~, algoList{i + 1}] = fileparts(files(i).name);
     end
 end

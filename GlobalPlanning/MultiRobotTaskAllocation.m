@@ -1,6 +1,6 @@
-function robotTasks = MultiRobotTaskAllocation(startPoints, targets, goalPoints, map, algoName, tspAlgo)
+function robotTasks = MultiRobotTaskAllocation(startPoints, targets, goalPoints, map, algoName, tspAlgo, clusterAlgo)
 %MULTIROBOTTASKALLOCATION 多机器人任务分配
-%   将目标点按最近邻聚类分配给各机器人，每台机器人独立求解 TSP
+%   将目标点按聚类算法分配给各机器人，每台机器人独立求解 TSP
 %
 %   Inputs:
 %     startPoints - N×2 [row, col] 各机器人起点
@@ -9,6 +9,8 @@ function robotTasks = MultiRobotTaskAllocation(startPoints, targets, goalPoints,
 %     map         - Map 对象
 %     algoName    - 'AStar' | 'Dijkstra' | 'RRT'
 %     tspAlgo     - 'TSP_GA' | 'TSP_Permutation' 等 TSP 求解算法（可选）
+%     clusterAlgo - 聚类算法名称（可选，默认 'NearestNeighbor'）
+%                   'NearestNeighbor' | 'KMedoids_Cluster' | ...
 %
 %   Output:
 %     robotTasks  - 1×N 结构体数组，字段:
@@ -20,24 +22,34 @@ function robotTasks = MultiRobotTaskAllocation(startPoints, targets, goalPoints,
 if nargin < 6 || isempty(tspAlgo)
     tspAlgo = 'TSP_GA';
 end
+if nargin < 7 || isempty(clusterAlgo)
+    clusterAlgo = 'NearestNeighbor';
+end
 
 numRobots = size(startPoints, 1);
 numTargets = size(targets, 1);
 
-% --- 1. 最近邻目标分配 ---
-assignment = zeros(numTargets, 1);  % assignment(t) = 分配给机器人 r
-for t = 1:numTargets
-    tg = targets(t, :);
-    minDist = inf;
-    bestR = 1;
-    for r = 1:numRobots
-        d = norm(tg - startPoints(r, :));
-        if d < minDist
-            minDist = d;
-            bestR = r;
+% --- 1. 聚类分配 ---
+if strcmp(clusterAlgo, 'NearestNeighbor')
+    % 最近邻贪心分配
+    assignment = zeros(numTargets, 1);
+    for t = 1:numTargets
+        tg = targets(t, :);
+        minDist = inf;
+        bestR = 1;
+        for r = 1:numRobots
+            d = norm(tg - startPoints(r, :));
+            if d < minDist
+                minDist = d;
+                bestR = r;
+            end
         end
+        assignment(t) = bestR;
     end
-    assignment(t) = bestR;
+else
+    % 调用指定的聚类算法
+    clusterFunc = str2func(clusterAlgo);
+    [assignment, ~, ~] = clusterFunc(targets, numRobots, [], startPoints);
 end
 
 % --- 2. 各机器人独立 TSP ---

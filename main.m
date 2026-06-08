@@ -7,6 +7,7 @@ rootPath = fileparts(mfilename('fullpath'));
 addpath(genpath(fullfile(rootPath, 'Models')));
 addpath(genpath(fullfile(rootPath, 'GlobalPlanning')));
 addpath(genpath(fullfile(rootPath, 'TSPOptimization')));
+addpath(genpath(fullfile(rootPath, 'ClusteringOptimization')));
 addpath(genpath(fullfile(rootPath, 'LocalPlanning')));
 addpath(genpath(fullfile(rootPath, 'GUI')));
 addpath(genpath(fullfile(rootPath, 'Utils')));
