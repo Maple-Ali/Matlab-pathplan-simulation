@@ -50,7 +50,7 @@ ctrlPanel = uipanel(fig, 'Title', '控制面板', ...
 % 全局规划算法
 uilabel(ctrlPanel, 'Text', '全局规划算法:', 'Position', [10, 400, 100, 20]);
 globalAlgoDD = uidropdown(ctrlPanel, ...
-    'Items', {'AStar', 'AStar_v1', 'AStar_v2', 'AStar_v3', 'Dijkstra', 'RRT'}, ...
+    'Items', {'AStar', 'AStar_v1', 'AStar_v2', 'AStar_v3', 'Dijkstra', 'Dijkstra_v1', 'RRT'}, ...
     'Value', 'AStar', 'Position', [120, 398, 100, 22]);
 
 % 局部规划算法
@@ -650,7 +650,7 @@ end
 function algoList = getClusterAlgoList()
     % 扫描 ClusteringOptimization 文件夹下所有 *_Cluster.m 文件
     clusterDir = fullfile(fileparts(mfilename('fullpath')), '..', 'ClusteringOptimization');
-    files = dir(fullfile(clusterDir, '*_Cluster.m'));
+    files = dir(fullfile(clusterDir, '*_Cluster*.m'));
     algoList = cell(1, length(files) + 1);
     algoList{1} = 'NearestNeighbor';
     for i = 1:length(files)

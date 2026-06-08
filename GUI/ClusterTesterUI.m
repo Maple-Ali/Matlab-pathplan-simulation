@@ -76,7 +76,7 @@ clusterList = uilistbox(ctrlPanel, ...
 % 路径规划器下拉框
 uilabel(ctrlPanel, 'Text', '路径规划器:', 'Position', [155, 148, 80, 20]);
 plannerDD = uidropdown(ctrlPanel, ...
-    'Items', {'AStar', 'AStar_v1', 'AStar_v2', 'AStar_v3', 'Dijkstra', 'RRT'}, ...
+    'Items', {'AStar', 'AStar_v1', 'AStar_v2', 'AStar_v3', 'Dijkstra', 'Dijkstra_v1', 'RRT'}, ...
     'Value', 'AStar', 'Position', [240, 146, 120, 22]);
 
 % 地图大小
@@ -548,8 +548,13 @@ end
                 % 调用聚类算法
                 clusterFunc = str2func(algoName);
                 t0 = tic;
-                [assignment, medoids, clusterHistory] = clusterFunc(...
-                    mapData.targetGrids, nRobots, distMatrix, mapData.startGrids);
+                if needsMap(algoName)
+                    [assignment, medoids, clusterHistory] = clusterFunc(...
+                        mapData.targetGrids, nRobots, [], mapData.startGrids, m);
+                else
+                    [assignment, medoids, clusterHistory] = clusterFunc(...
+                        mapData.targetGrids, nRobots, distMatrix, mapData.startGrids);
+                end
                 elapsed = toc(t0);
                 clusterHistory.elapsedTime = elapsed;
             end
@@ -785,6 +790,8 @@ function path = callPlanner(algoName, map, startGrid, goalGrid)
             path = AStar_v3(map, startGrid, goalGrid, 0);
         case 'Dijkstra'
             path = Dijkstra(map, startGrid, goalGrid, 0);
+        case 'Dijkstra_v1'
+            path = Dijkstra_v1(map, startGrid, goalGrid, 0);
         case 'RRT'
             path = RRT(map, startGrid, goalGrid, 0);
         otherwise
@@ -801,10 +808,15 @@ end
 
 function algoList = getClusterAlgoList()
     clusterDir = fullfile(fileparts(mfilename('fullpath')), '..', 'ClusteringOptimization');
-    files = dir(fullfile(clusterDir, '*_Cluster.m'));
+    files = dir(fullfile(clusterDir, '*_Cluster*.m'));
     algoList = cell(1, length(files) + 1);
     algoList{1} = 'NearestNeighbor';
     for i = 1:length(files)
         [~, algoList{i + 1}] = fileparts(files(i).name);
     end
+end
+
+function tf = needsMap(algoName)
+    % 判断聚类算法是否需要 Map 对象（路径距离版本）
+    tf = contains(algoName, '_v1') || contains(algoName, '_v2');
 end

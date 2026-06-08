@@ -87,6 +87,8 @@ function path = callPlanner(algoName, map, startGrid, goalGrid)
             path = AStar_v3(map, startGrid, goalGrid, 0);
         case 'Dijkstra'
             path = Dijkstra(map, startGrid, goalGrid, 0);
+        case 'Dijkstra_v1'
+            path = Dijkstra_v1(map, startGrid, goalGrid, 0);
         case 'RRT'
             path = RRT(map, startGrid, goalGrid, 0);
         otherwise

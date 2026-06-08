@@ -49,7 +49,12 @@ if strcmp(clusterAlgo, 'NearestNeighbor')
 else
     % 调用指定的聚类算法
     clusterFunc = str2func(clusterAlgo);
-    [assignment, ~, ~] = clusterFunc(targets, numRobots, [], startPoints);
+    if contains(clusterAlgo, '_v1') || contains(clusterAlgo, '_v2')
+        % 路径距离版本：传入 map 对象
+        [assignment, ~, ~] = clusterFunc(targets, numRobots, [], startPoints, map);
+    else
+        [assignment, ~, ~] = clusterFunc(targets, numRobots, [], startPoints);
+    end
 end
 
 % --- 2. 各机器人独立 TSP ---
@@ -89,6 +94,8 @@ function path = callPlanner(algoName, map, startGrid, goalGrid)
             path = AStar_v3(map, startGrid, goalGrid, 0);
         case 'Dijkstra'
             path = Dijkstra(map, startGrid, goalGrid, 0);
+        case 'Dijkstra_v1'
+            path = Dijkstra_v1(map, startGrid, goalGrid, 0);
         case 'RRT'
             path = RRT(map, startGrid, goalGrid, 0);
         otherwise

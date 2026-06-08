@@ -55,26 +55,21 @@ end
 
 %% 初始化 medoids
 if ~isempty(initMedoids)
-    % 将初始 medoids 映射到最近的数据点索引
+    % 将初始 medoids 映射到最近的数据点索引（允许重复，算法会自行调整）
     medIdx = zeros(k, 1);
     for c = 1:k
-        dists = sum((points - initMedoids(c,:)).^2, 2);
-        [~, medIdx(c)] = min(dists);
-    end
-    medIdx = unique(medIdx, 'stable');
-    if length(medIdx) < k
-        % 补充随机选择
-        remaining = setdiff(1:n, medIdx);
-        if ~isempty(remaining)
-            extra = remaining(randperm(length(remaining), min(k - length(medIdx), length(remaining))));
-            medIdx = [medIdx; extra(:)];
-        end
+        mc = min(c, size(initMedoids, 1));
+        dists = sum((points - initMedoids(mc, :)).^2, 2);
+        [~, idx] = min(dists);
+        medIdx(c) = idx;
     end
 else
     % 随机初始化
     perm = randperm(n);
     medIdx = perm(1:k)';
 end
+% 确保为列向量、正整数
+medIdx = round(medIdx(:));
 
 %% K-Medoids 主循环（PAM 算法）
 maxIter = 100;
