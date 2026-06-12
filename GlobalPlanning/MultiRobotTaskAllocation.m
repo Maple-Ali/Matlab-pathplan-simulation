@@ -49,7 +49,11 @@ if strcmp(clusterAlgo, 'NearestNeighbor')
 else
     % 调用指定的聚类算法
     clusterFunc = str2func(clusterAlgo);
-    if contains(clusterAlgo, '_v1') || contains(clusterAlgo, '_v2')
+    if contains(clusterAlgo, '_v2')
+        % v2 负载均衡版本：传入终点、规划器、TSP 算法
+        [assignment, ~, ~] = clusterFunc(targets, numRobots, [], startPoints, map, ...
+            goalPoints, algoName, tspAlgo);
+    elseif contains(clusterAlgo, '_v1')
         % 路径距离版本：传入 map 对象
         [assignment, ~, ~] = clusterFunc(targets, numRobots, [], startPoints, map);
     else

@@ -6,6 +6,7 @@ function [vx, vy, predictTraj] = DWAPlanner_v2(robot, localGoal, map, ~, dt, par
 %     (1) 多轨迹采样 + 代价评估 — 在动态窗口内采样候选速度，
 %         每个候选前向模拟轨迹，加权代价函数评分选最优
 %     (2) 局部极小值逃逸 — 检测卡住状态，触发沿墙绕行模式
+%     (3) 动静态障碍物独立参数 — 动态障碍物时空预测 + 更大预警范围
 %
 %   V1 特性保留（从力向量映射为代价项）：
 %     - 障碍物/边界/机器人间距离 → 各代价项中的距离惩罚
@@ -13,14 +14,19 @@ function [vx, vy, predictTraj] = DWAPlanner_v2(robot, localGoal, map, ~, dt, par
 %     - 接近减速 → speedCost 中 desiredSpeed 随距离缩放
 %     - 加速度限幅 → 动态窗口边界
 %
+%   主要可调参数（文件顶部参数区块）：
+%     静态障碍物: staticSafeDist(0.4) / staticRepulseRange(1.2) — 越小贴得越近
+%     动态障碍物: dynSafeDist(0.8) / dynRepulseRange(2.0) — 越大预警越早
+%     整体避障强度: wObstacle(2.0) — 越大越保守
+%     margin = safeDist + robot.radius(≈0.2)
 %   params 可选字段: maxSpeed, maxAccel, allRobots, robotIdx
 
 % ===== 可调参数 ============================================================
 
 % --- 采样参数 ---
 numSamples   = 7;    % 每速度轴采样数（总数 = 7×7 = 49）
-predictSteps = 10;   % 每条候选轨迹的前向模拟步数（dt=0.1时覆盖2.5单位，
-                     %   确保追上 repulseRange，障碍物在可视范围内）
+predictSteps = 20;   % 每条候选轨迹的前向模拟步数（dt=0.1时覆盖2.0单位，
+                     %   配合 dynRepulseRange 实现 ~4 单位动态预警距离）
 
 % --- 代价权重 ---
 wHeading    = 2.0;   % 朝向目标对齐权重
@@ -32,18 +38,35 @@ wSmoothness = 0.0;   % 速度平滑权重。置零原因：动态窗口 v∈[vel
                      %   已硬约束加速度，加上此项会导致速度Cost（~0.5v）
                      %   被平滑Cost（~1.5v）压制，机器人拒绝加速
 
-% --- 安全距离阈值 ---
-obsSafeDist      = 0.5;  % 期望障碍物距离（低于此值代价激增）
+% --- 静态障碍物避碰参数（可独立调整）---
+%  调参: 减小 safeDist/repulseRange → 允许贴得更近（窄道通行更激进）
+%        增大 safeDist/repulseRange → 更远离静态障碍物
+staticSafeDist    = 0.4;  % 静态障碍物期望距离
+                          %   margin = 0.4 + robot.radius ≈ 0.6
+staticRepulseRange = 1.2; % 静态障碍物斥力作用范围，超过此距离完全无视
+                          %   硬危险区(<0.6) → 软警戒区(0.6~1.2) → 安全区(>1.2)
+
+% --- 动态障碍物避碰参数（可独立调整）---
+%  调参: 增大 safeDist/repulseRange → 更早预警、更强规避
+%        速度越快的动态障碍物，repulseRange 应越大（保证反应时间）
+dynSafeDist    = 1.0;  % 动态障碍物期望距离（比静态大：运动物体需提前预警）
+                       %   margin = 0.8 + robot.radius ≈ 1.0
+dynRepulseRange = 1.8; % 动态障碍物斥力作用范围（比静态大：速度越快范围应越大）
+                       %   硬危险区(<1.0) → 软警戒区(1.0~2.0) → 安全区(>2.0)
+
+% --- 边界 / 机器人间距离 ---
 boundarySafeDist = 0.5;  % 期望边界距离
-robotSafeDist    = 0.8;  % 期望机器人间距离（大于障碍物安全距）
+robotSafeDist    = 0.8;  % 期望机器人间距离（碰撞安全阈值）
+robotReactDist   = 3.6;  % 机器人间让行/优先判定距离（决定多早开始协商）
+                          %   增大 → 更早判定谁让谁行，避免十字交叉时的混乱避让
+                          %   减小 → 更接近时才判定（更激进）
+                          %   典型值: 2.0=保守(原值), 3.5=推荐, 5.0=很远预警
 
 % --- 传感器参数 ---
-sensorRange  = 4;    % 障碍物搜索半径（栅格数）
-repulseRange = 2.5;  % 斥力作用范围（连续单位），障碍物在此范围内产生渐进代价
-                     %   与 V1 的 repulseRange 一致，保证提前预警距离
+sensorRange  = 3;    % 障碍物搜索半径（栅格数），用于局部极小值逃逸方向计算
 
 % --- 减速参数（V1 保留）---
-decelDist = 1.5;    % 接近目标此距离内开始线性减速
+decelDist = 1.0;    % 接近目标此距离内开始线性减速
 
 % --- 局部极小值逃逸参数 ---
 stuckWindow         = 15;   % 卡住检测窗口（步数）
@@ -85,12 +108,21 @@ end
 goalDir = goalVec / goalDist;
 
 % ===== 3. 预计算共享数据 =====
-occGrid = map.getOccupancyGrid();
+occGrid = map.getOccupancyGrid();  % 含静态+动态（用于逃逸方向计算）
 n = map.mapSize;
 
-% 预计算占用栅格连续坐标列表（避免 obstacleCost 内重复遍历网格）
-[occRows, occCols] = find(occGrid);
+% 预计算静态障碍物栅格连续坐标列表（仅静态，动态障碍物由独立轨迹预测处理）
+staticGrid = double(map.grid == 1);
+[occRows, occCols] = find(staticGrid);
 occCoords = [occCols(:) - 0.5, occRows(:) - 0.5];  % N×2 [x, y] 连续坐标
+
+% 预计算动态障碍物未来轨迹（逐时间步预测位置，用于时空避碰）
+dynObs = map.dynamicObstacles;
+nDynObs = length(dynObs);
+dynObsTrajs = cell(nDynObs, 1);
+for o = 1:nDynObs
+    dynObsTrajs{o} = predictDynObsTraj(dynObs(o), dt, predictSteps);
+end
 
 % 收集其他机器人的位置和速度（用于运动预测）
 otherRobots = cell(0, 1);
@@ -167,9 +199,10 @@ for ix = 1:numSamples
         % 朝向代价
         cost = cost + wHeading * headingCost(vCand, goalDir);
 
-        % 障碍物代价
+        % 障碍物代价（静态 + 动态，各自独立参数）
         cost = cost + wObstacle * obstacleCost(traj, occCoords, ...
-            repulseRange, obsSafeDist, robot.radius);
+            staticRepulseRange, staticSafeDist, robot.radius, ...
+            dynObsTrajs, dynRepulseRange, dynSafeDist);
 
         % 边界代价
         cost = cost + wBoundary * boundaryCost(traj, n, ...
@@ -177,7 +210,7 @@ for ix = 1:numSamples
 
         % 机器人间代价（传入速度用于运动预测 + 方向用于对称打破）
         cost = cost + wRobot * robotCost(traj, otherRobots, dt, ...
-            robotSafeDist, goalDir);
+            robotSafeDist, robotReactDist, goalDir);
 
         % 速度代价
         cost = cost + wSpeed * speedCost(vMag, maxSpeed, goalDist, decelDist);
@@ -269,27 +302,48 @@ else
 end
 end
 
-function cost = obstacleCost(traj, occCoords, repulseRange, safeDist, radius)
-% 障碍物避碰代价（渐进式）
+function cost = obstacleCost(traj, occCoords, staticRange, staticSafe, radius, ...
+        dynObsTrajs, dynRange, dynSafe)
+% 障碍物避碰代价（静态 + 动态障碍物时空预测，各自独立参数）
+%   - 静态障碍物：各轨迹点检查与占栅格最近距离，用 staticRange/staticSafe
+%   - 动态障碍物：各轨迹点 k 检查与动态障碍物在时刻 k*dt 的预测位置距离，用 dynRange/dynSafe
 %   硬危险区（d < margin）：二次惩罚 (margin/d)²
 %   软警戒区（margin ≤ d < repulseRange）：线性衰减至0
 %   范围外（d ≥ repulseRange）：无代价
-%   与 V1 的 1/d² 斥力语义一致——远距离提供提前预警，近距离强力排斥
-margin = safeDist + radius;
+staticMargin = staticSafe + radius;
+dynMargin    = dynSafe + radius;
+nSteps = size(traj, 1);
 totalPenalty = 0;
-for k = 1:size(traj, 1)
+
+for k = 1:nSteps
     p = traj(k, :);
+
+    % 静态障碍物（使用静态参数：允许较近距离通过）
     minD = minDistToCoords(p, occCoords);
-    if minD < margin
-        % 硬危险区：二次惩罚（与 V1 1/d² 力等效）
-        totalPenalty = totalPenalty + (margin / max(minD, 0.01))^2;
-    elseif minD < repulseRange
-        % 软警戒区：线性衰减 [1, 0]，确保在 margin 处连续
-        alpha = (repulseRange - minD) / (repulseRange - margin);
-        totalPenalty = totalPenalty + alpha;
+    totalPenalty = totalPenalty + distPenalty(minD, staticMargin, staticRange);
+
+    % 动态障碍物（使用动态参数：更大的预警范围和期望距离）
+    for o = 1:length(dynObsTrajs)
+        predPos = dynObsTrajs{o}(k, :);
+        dDyn = norm(p - predPos);
+        totalPenalty = totalPenalty + distPenalty(dDyn, dynMargin, dynRange);
     end
 end
-cost = totalPenalty / size(traj, 1);  % 归一化
+cost = totalPenalty / nSteps;  % 归一化
+end
+
+function penalty = distPenalty(d, margin, repulseRange)
+% 单点距离→代价映射
+if d < margin
+    % 硬危险区：二次惩罚（与 V1 1/d² 力等效）
+    penalty = (margin / max(d, 0.01))^2;
+elseif d < repulseRange
+    % 软警戒区：线性衰减 [1, 0]，确保在 margin 处连续
+    alpha = (repulseRange - d) / (repulseRange - margin);
+    penalty = alpha;
+else
+    penalty = 0;
+end
 end
 
 function cost = boundaryCost(traj, n, safeDist, radius)
@@ -314,19 +368,35 @@ end
 cost = totalPenalty / size(traj, 1);
 end
 
-function cost = robotCost(traj, otherRobots, dt, safeDist, goalDir)
-% 机器人间避碰代价（预测运动 + 线性代价 + 路径偏离 + 右舷让行）
-%   - 预测它机未来位置（匀速假设）
-%   - 线性代价 safeDist/d（非二次），避免 6400× 悬崖导致转向绝对优先
-%   - 嵌路径偏离项：偏离目标线越多代价越高，鼓励减速而非绕行
-%   - 右舷规则打破对称：它机在右侧→让行（惩罚速度）
+function cost = robotCost(traj, otherRobots, dt, safeDist, reactDist, goalDir)
+% 机器人间避碰代价（互验左右 + 哈希破缺 + 紧急分离）
+%   解决纯自我中心左右判定的对称性破缺问题。
+%
+%   互验左右判定：
+%     cross_me  = goalDir × relDir        → 它机在我哪侧
+%     cross_other = otherDir × (-relDir)  → 我在它机哪侧（用其速度方向近似）
+%     经典非对称 → 按左右规则正常处理
+%     模糊（both-right/both-left）→ 位置哈希破缺保证恰好一车让行
+%
+%   紧急分离：当前距离 < sepDist 时强制侧向远离，不受左右分类约束
+%
+%   静止机器人 fallback：otherSpeed < 0.01 时退化为 -cross_me
+%
+%   参数说明：
+%     safeDist  — 碰撞安全距离，控制紧急避碰阈值
+%     reactDist — 让行/优先判定距离，控制多早开始协商（增大=更早判定）
 if isempty(otherRobots)
     cost = 0;
     return;
 end
-predictSteps = size(traj, 1);
 
-% 预计算所有它机的未来轨迹
+predictSteps = size(traj, 1);
+startPos = traj(1, :);
+
+% 候选速度大小
+vMag = norm(traj(2, :) - traj(1, :)) / max(dt, 1e-6);
+
+% 预计算所有它机未来轨迹
 numOthers = length(otherRobots);
 otherTrajs = cell(numOthers, 1);
 for r = 1:numOthers
@@ -334,60 +404,131 @@ for r = 1:numOthers
         otherRobots{r}.vel, dt, predictSteps);
 end
 
-% 沿轨迹计算最接近点代价（线性，非二次）
-maxPenalty = 0;
-minPredictedDist = inf;
-for k = 1:predictSteps
-    p = traj(k, :);
-    for r = 1:numOthers
-        otherP = otherTrajs{r}(k, :);
-        d = norm(p - otherP);
-        if d < minPredictedDist
-            minPredictedDist = d;
-        end
-        if d < safeDist
-            penalty = safeDist / max(d, 0.01);  % 线性（非二次），d=0.01→80×
-            if penalty > maxPenalty
-                maxPenalty = penalty;
-            end
-        end
-    end
-end
-cost = maxPenalty;
+% 垂直于前进方向的单位向量（指向左侧）
+perpLeft = [-goalDir(2), goalDir(1)];
 
-% ---- 右舷让行 + 路径偏离（仅碰撞风险时激活）----
-if minPredictedDist < safeDist * 2.0
-    % 路径偏离项：轨迹各点偏离 start→goal 直线的平均距离
-    startPos = traj(1, :);
+% 距离阈值（由显式参数控制）
+urgentDist = safeDist;                % 紧急碰撞距离
+criticalDist = safeDist * 1.0;        % 左侧车避让阈值
+sepDist    = safeDist * 0.5;          % 强制分离距离
+
+cost = 0;
+
+for r = 1:numOthers
+    otherPos = otherRobots{r}.pos;
+    otherVel = otherRobots{r}.vel;
+    rel = otherPos - startPos;
+    dRel = norm(rel);
+    if dRel < 1e-4, continue; end
+    relDir = rel / dRel;
+
+    % ===== 互验左右判定 =====
+    % cross_me < 0 → 它机在我右侧（我该让行）
+    cross_me = goalDir(1) * relDir(2) - goalDir(2) * relDir(1);
+
+    % cross_other < 0 → 我在它机右侧（它也该让行）
+    otherSpeed = norm(otherVel);
+    if otherSpeed > 0.01
+        otherDir = otherVel / otherSpeed;
+        % 从它机视角：rel_other = -relDir
+        % cross_other = otherDir × (-relDir) = otherDir(2)*relDir(1) - otherDir(1)*relDir(2)
+        cross_other = otherDir(2) * relDir(1) - otherDir(1) * relDir(2);
+    else
+        % 静止机器人 fallback：强制与 cross_me 反号，走经典非对称
+        cross_other = -cross_me;
+    end
+
+    % 四种情况分类：
+    %   cross_me<0 & cross_other>0  → 经典：我让行，它优先
+    %   cross_me>0 & cross_other<0  → 经典：我优先，它让行
+    %   cross_me<0 & cross_other<0  → 模糊 both-right（双方都判定让行）
+    %   cross_me>0 & cross_other>0  → 模糊 both-left （双方都判定优先）
+    isClassicYield    = (cross_me < -0.05) && (cross_other >  0.05);
+    isClassicPriority = (cross_me >  0.05) && (cross_other < -0.05);
+
+    % 模糊情况：位置哈希破缺 — 全局一致地决定谁让行
+    if ~isClassicYield && ~isClassicPriority
+        % 比较两车绝对位置之和（双方视角结果相反，保证唯一性）
+        % 只设 isClassicYield：true=让行，false=优先（由后续else分支处理）
+        isClassicYield = (startPos(1) + startPos(2)) < (otherPos(1) + otherPos(2));
+    end
+
+    % 计算与该它机预测轨迹的最小距离
+    minPredDist = inf;
+    for k = 1:predictSteps
+        d = norm(traj(k, :) - otherTrajs{r}(k, :));
+        if d < minPredDist, minPredDist = d; end
+    end
+
+    % 计算轨迹相对于前进方向的平均侧向偏移
+    %   avgLateral > 0: 偏左, avgLateral < 0: 偏右
     totalLateral = 0;
     for k = 1:predictSteps
-        p = traj(k, :);
-        vec = p - startPos;
-        projDist = dot(vec, goalDir);
-        if projDist > 0
-            lateral = norm(vec - goalDir * projDist);
-        else
-            lateral = norm(vec);
-        end
-        totalLateral = totalLateral + lateral;
+        totalLateral = totalLateral + dot(traj(k, :) - startPos, perpLeft);
     end
     avgLateral = totalLateral / predictSteps;
-    cost = cost + avgLateral * 2.0;  % 偏离代价：鼓励沿路径减速而非绕行
 
-    % 右舷让行规则
-    yieldPenalty = 0;
-    for r = 1:numOthers
-        rel = otherRobots{r}.pos - startPos;
-        dRel = norm(rel);
-        if dRel < 1e-4, continue; end
-        relDir = rel / dRel;
-        crossVal = goalDir(1) * relDir(2) - goalDir(2) * relDir(1);
-        if crossVal < -0.05  % 它机在右侧 → 自身让行
-            vMag = norm(traj(2, :) - traj(1, :)) / max(dt, 1e-6);
-            yieldPenalty = max(yieldPenalty, vMag * 1.0);  % 增至 1.0
+    % ===== 紧急分离（最后防线，不受左右分类约束）=====
+    %   当前距离低于 sepDist 时强制侧向远离，解决两车低速接近时无绕行动作的问题
+    if dRel < sepDist
+        pushDir = -relDir;                       % 远离它机的方向
+        lateralPush = dot(pushDir, perpLeft);    % 排斥方向的侧向分量
+        cost = cost + abs(lateralPush - avgLateral) * 3.0;  % 鼓励匹配排斥方向
+    end
+
+    if isClassicYield
+        % ============================================================
+        %  让行模式：减速优先 + 紧急绕行
+        % ============================================================
+
+        % ① 减速代价（主导）：距离越近减速越强
+        %     proximity: 0 at reactDist → 1 at safeDist*0.4
+        if dRel < reactDist
+            proximity = (reactDist - dRel) / (reactDist - safeDist * 0.4);
+            proximity = max(0, min(1, proximity));
+            cost = cost + vMag * proximity * 5.0;
+        end
+
+        % ② 紧急绕行（辅助）：仅预测碰撞迫近时激活
+        if minPredDist < urgentDist
+            cost = cost + (urgentDist / max(minPredDist, 0.05)) * 0.8;
+            if avgLateral > 0
+                cost = cost - avgLateral * 1.0;   % 偏左（远离右侧车）
+            else
+                cost = cost + abs(avgLateral) * 2.0; % 偏右（靠近右侧车）
+            end
+        end
+
+    else
+        % ============================================================
+        %  优先模式：保持速度 + 适度避让
+        % ============================================================
+
+        % ① 鼓励保持速度（我有优先权），距离越远越有信心快速通过
+        %    越近勇气越低：full at reactDist → 0 at safeDist*0.4
+        if dRel < reactDist && dRel > safeDist * 0.4
+            courage = (dRel - safeDist * 0.4) / (reactDist - safeDist * 0.4);
+            courage = max(0, min(1, courage));
+            cost = cost - vMag * 0.8 * courage;
+        end
+
+        % ② 连续侧向引导（基于当前距离渐变，无阈值悬崖）
+        %    用 dRel 连续渐变 — 越近引导越强，远距离引导趋零。
+        %    机器人无需偏航回避阈值，headingCost 自然拉回直行。
+        if dRel < reactDist
+            proximity = (reactDist - dRel) / reactDist;  % [0,1]，0 at reactDist
+            if avgLateral < 0
+                cost = cost + avgLateral * proximity * 1.5;   % 偏右（远离）奖励
+            elseif avgLateral > 0
+                cost = cost + avgLateral * proximity * 2.0;   % 偏左（靠近）惩罚
+            end
+        end
+
+        % ③ 紧急碰撞保护（仅极近时激活，配合连续引导）
+        if minPredDist < criticalDist
+            cost = cost + (criticalDist / max(minPredDist, 0.05)) * 0.4;
         end
     end
-    cost = cost + yieldPenalty;
 end
 end
 
@@ -436,6 +577,46 @@ end
 diffs = occCoords - point;              % N×2 差值矩阵
 dists = sqrt(diffs(:,1).^2 + diffs(:,2).^2);  % 向量化距离计算
 minD = min(dists);
+end
+
+function traj = predictDynObsTraj(obs, dt, steps)
+% 预测动态障碍物未来 steps 步的轨迹（不修改障碍物状态）
+%   模拟 DynamicObstacle.update() 的运动逻辑（线段往复）
+%   返回 steps×2 轨迹坐标
+startCont = [obs.startPos(2) - 0.5, obs.startPos(1) - 0.5];
+endCont   = [obs.endPos(2) - 0.5, obs.endPos(1) - 0.5];
+dirVec = endCont - startCont;
+segLen = norm(dirVec);
+if segLen < 1e-6
+    traj = repmat(obs.currentPos, steps, 1);
+    return;
+end
+unitDir = dirVec / segLen;
+
+curPos = obs.currentPos;
+curDir = obs.direction;
+stepDist = obs.speed * dt;
+traj = zeros(steps, 2);
+
+for k = 1:steps
+    remaining = stepDist;
+    while remaining > 0
+        if curDir > 0
+            distToEnd = dot(endCont - curPos, unitDir);
+        else
+            distToEnd = dot(curPos - startCont, unitDir);
+        end
+        if remaining <= distToEnd
+            curPos = curPos + unitDir * curDir * remaining;
+            remaining = 0;
+        else
+            curPos = curPos + unitDir * curDir * distToEnd;
+            remaining = remaining - distToEnd;
+            curDir = -curDir;  % 到达端点，反弹
+        end
+    end
+    traj(k, :) = curPos;
+end
 end
 
 function escapeDir = computeEscapeDir(robotPos, goalDir, occGrid, n, sensorRange)
