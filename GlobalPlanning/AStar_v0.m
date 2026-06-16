@@ -1,16 +1,15 @@
-function path = AStar_v1(map, startGrid, goalGrid, delay, callback)
-%ASTAR_V1 A* 全局路径规划 — 改进版 v1
-%   path = AStar_v1(map, startGrid, goalGrid, delay, callback)
+function path = AStar_v0(map, startGrid, goalGrid, delay, callback)
+%ASTAR_V0 A* 全局路径规划 — 改进版 v0（仅二叉堆优化）
+%   path = AStar_v0(map, startGrid, goalGrid, delay, callback)
 %   map: Map 对象
 %   startGrid, goalGrid: [row, col] 栅格索引
 %   delay: 可视化延迟（0=不绘制，仅 callback 为空时生效）
 %   callback: 可选回调函数 @(stateInfo) 返回 'continue'/'pause'/'stop'
 %   path: N×2 [row, col] 路径点数组
 %
-%   改进内容：
+%   改进内容（相对原始 AStar）：
 %     1. 二叉堆优先队列替代线性扫描 — O(log n) 取最小 f
-%     2. 自适应指数加权启发式 — 远距离加大权重加速搜索，近距离趋于标准 A*
-%     3. 改进的 tie-breaking — f 相同时优先选 h 更小的节点（更接近目标）
+%        （仅此一项改动，方便与原始 AStar 对比性能）
 
 if nargin < 4
     delay = 0;
@@ -33,52 +32,31 @@ dRow = [-1, -1, -1,  0,  0,  1,  1,  1];
 dCol = [-1,  0,  1, -1,  1, -1,  0,  1];
 moveCost = [sqrt(2), 1, sqrt(2), 1, 1, sqrt(2), 1, sqrt(2)];
 
-% 起终点欧氏距离（用于归一化）
-startDist = sqrt((startGrid(1) - goalGrid(1))^2 + (startGrid(2) - goalGrid(2))^2);
-if startDist == 0
-    startDist = 1;  % 起终点重合保护
-end
-
-% ---- 改进 2: 自适应指数加权启发式 ----
-%   w(d) = 1 + alpha * exp(-beta * (1 - d/d0))
-%   d    = 当前节点到目标的欧氏距离
-%   d0   = 起终点距离（归一化基准）
-%   远离目标 (d→d0): w → 1+alpha（贪心搜索加速）
-%   接近目标 (d→0) : w → 1        （恢复标准 A*，保证精度）
-%   alpha: 最大额外权重，beta: 衰减速率
-alpha = 0.3;   % 远处权重系数 ≈ 1 + 2.0 = 3.0
-beta  = 3.0;   % 衰减速率，越大则越快降到标准权重
+% 启发式：欧氏距离（与原始 AStar 完全一致）
 h = @(r, c) sqrt((r - goalGrid(1))^2 + (c - goalGrid(2))^2);
-hWeight = @(r, c) 1 + alpha * exp(-beta * (1 - h(r, c) / startDist));
-weightedH = @(r, c) hWeight(r, c) * h(r, c);
 
 % g 值矩阵
 gScore = inf(n, n);
 gScore(startGrid(1), startGrid(2)) = 0;
 
-% f = g + w*h
+% f = g + h
 fScore = inf(n, n);
-fScore(startGrid(1), startGrid(2)) = weightedH(startGrid(1), startGrid(2));
-
-% h 值矩阵（供 tie-breaking 使用）
-hScore = inf(n, n);
-hScore(startGrid(1), startGrid(2)) = h(startGrid(1), startGrid(2));
+fScore(startGrid(1), startGrid(2)) = h(startGrid(1), startGrid(2));
 
 % 父节点记录
 parent = zeros(n, n, 2);
 
-% ---- 改进 1: 二叉堆优先队列 ----
-%   堆元素: [f, h, row, col]
-%   按 f 排序，f 相同时按 h 排序（tie-breaking: 优先 h 小的）
-%   用索引矩阵 track 每个节点在堆中的位置（0 = 不在堆中）
+% ---- 二叉堆优先队列（替代原始 AStar 的逻辑矩阵 + 线性扫描）----
+%   堆元素: [f, row, col]
+%   按 f 排序（无 tie-breaking，与原始 AStar 行为一致）
+%   heapPos 矩阵记录每个节点在堆中的位置（0 = 不在堆中）
 heapSize = 0;
-heap = zeros(n * n, 4);  % 预分配最大可能大小
+heap = zeros(n * n, 3);  % 预分配最大可能大小
 heapPos = zeros(n, n);   % 节点在堆中的索引
 
 % 插入起点
 heapSize = heapSize + 1;
 heap(heapSize, :) = [fScore(startGrid(1), startGrid(2)), ...
-                     h(startGrid(1), startGrid(2)), ...
                      startGrid(1), startGrid(2)];
 heapPos(startGrid(1), startGrid(2)) = heapSize;
 bubbleUp(heapSize);
@@ -97,15 +75,15 @@ if delay > 0
 end
 
 while heapSize > 0
-    % 取堆顶（f 最小，tie-breaking 选 h 更小的）
-    topRow = heap(1, 3);
-    topCol = heap(1, 4);
+    % 取堆顶（f 最小）
+    topRow = heap(1, 2);
+    topCol = heap(1, 3);
     current = [topRow, topCol];
 
     % 从堆中移除
     heapPos(topRow, topCol) = 0;
     heap(1, :) = heap(heapSize, :);
-    heapPos(heap(heapSize, 3), heap(heapSize, 4)) = 1;
+    heapPos(heap(heapSize, 2), heap(heapSize, 3)) = 1;
     heapSize = heapSize - 1;
     if heapSize > 0
         bubbleDown(1);
@@ -117,7 +95,7 @@ while heapSize > 0
         % 从堆中提取 openSet（兼容 callback 接口）
         openSet = false(n, n);
         for i = 1:heapSize
-            openSet(heap(i, 3), heap(i, 4)) = true;
+            openSet(heap(i, 2), heap(i, 3)) = true;
         end
         stateInfo = struct('type', 'step', ...
             'current', current, ...
@@ -179,9 +157,7 @@ while heapSize > 0
         tentG = gScore(current(1), current(2)) + moveCost(d);
         if tentG < gScore(nr, nc)
             gScore(nr, nc) = tentG;
-            newH = h(nr, nc);
-            newF = tentG + weightedH(nr, nc);
-            hScore(nr, nc) = newH;
+            newF = tentG + h(nr, nc);
             fScore(nr, nc) = newF;
             parent(nr, nc, :) = current;
 
@@ -189,12 +165,12 @@ while heapSize > 0
             if pos == 0
                 % 新节点：插入堆
                 heapSize = heapSize + 1;
-                heap(heapSize, :) = [newF, newH, nr, nc];
+                heap(heapSize, :) = [newF, nr, nc];
                 heapPos(nr, nc) = heapSize;
                 bubbleUp(heapSize);
             else
                 % 已在堆中：更新 f 并上浮
-                heap(pos, :) = [newF, newH, nr, nc];
+                heap(pos, :) = [newF, nr, nc];
                 bubbleUp(pos);
             end
         end
@@ -245,13 +221,10 @@ path = [];
     end
 
     function cmp = compareHeap(i, j)
+        % 仅按 f 值比较（与原始 AStar 行为一致，无 tie-breaking）
         if heap(i, 1) < heap(j, 1)
             cmp = -1;
         elseif heap(i, 1) > heap(j, 1)
-            cmp = 1;
-        elseif heap(i, 2) < heap(j, 2)
-            cmp = -1;
-        elseif heap(i, 2) > heap(j, 2)
             cmp = 1;
         else
             cmp = 0;
@@ -259,8 +232,8 @@ path = [];
     end
 
     function swapHeap(i, j)
-        ri = heap(i, 3); ci = heap(i, 4);
-        rj = heap(j, 3); cj = heap(j, 4);
+        ri = heap(i, 2); ci = heap(i, 3);
+        rj = heap(j, 2); cj = heap(j, 3);
 
         tmp = heap(i, :);
         heap(i, :) = heap(j, :);
@@ -270,7 +243,7 @@ path = [];
         heapPos(rj, cj) = i;
     end
 
-end  % AStar_v1 主函数结束
+end  % AStar_v0 主函数结束
 
 % ======================== 路径重建 ========================
 

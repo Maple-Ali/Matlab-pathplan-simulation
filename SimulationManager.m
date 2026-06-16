@@ -125,7 +125,7 @@ for r = 1:numRobots
 
         simplePath = rawPath;
         if simParams.enableSimplify
-            simplePath = SimplifyPath(rawPath, occGrid, map.mapSize);
+            simplePath = SimplifyPath(rawPath, occGrid, map.mapSize, simParams.robotRadius + 0.2);
         end
         allSimple{end + 1} = simplePath;
         simpleLen = simpleLen + calcPathLen(simplePath);
@@ -542,6 +542,8 @@ function path = callPlanner(algoName, map, startGrid, goalGrid)
     switch algoName
         case 'AStar'
             path = AStar(map, startGrid, goalGrid, 0);
+        case 'AStar_v0'
+            path = AStar_v0(map, startGrid, goalGrid, 0);
         case 'AStar_v1'
             path = AStar_v1(map, startGrid, goalGrid, 0);
         case 'AStar_v2'

@@ -3,6 +3,7 @@
   "enabledPlugins": {
     "superpowers@claude-plugins-official": true,
     "andrej-karpathy-skills@karpathy-skills": true,
-    "code-simplifier@claude-plugins-official": true
+    "code-simplifier@claude-plugins-official": true,
+    "nature-skills@nature-skills": true
   }
 }

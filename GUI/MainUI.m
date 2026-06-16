@@ -36,12 +36,28 @@ mapSizeDropdown = uidropdown(mapSettingsPanel, ...
     'Items', {'20×20', '30×30', '40×40', '50×50'}, ...
     'Value', '30×30', 'Position', [55, 18, 100, 22]);
 
+% --- 自定义地图存储路径（必须在预设面板之前初始化）---
+presetDir = fullfile(fileparts(mfilename('fullpath')), '..', 'PresetMaps');
+if ~isfolder(presetDir)
+    mkdir(presetDir);
+end
+
 % --- 预设地图 ---
 presetPanel = uipanel(fig, 'Title', '预设地图', ...
-    'Position', [550, 340, 180, 70]);
+    'Position', [550, 310, 180, 100]);
+
+% 下拉框（动态刷新，包含内置 + 自定义地图）
 presetDropdown = uidropdown(presetPanel, ...
-    'Items', {'空白地图', '简单障碍', '迷宫地图', '走廊地图'}, ...
-    'Value', '简单障碍', 'Position', [10, 18, 160, 22]);
+    'Items', refreshPresetList(), ...
+    'Value', '简单障碍', 'Position', [10, 50, 160, 22]);
+
+% 保存 / 删除按钮
+savePresetBtn = uibutton(presetPanel, 'Text', '💾 保存', ...
+    'Position', [10, 22, 75, 22], ...
+    'ButtonPushedFcn', @(~,~) saveCurrentMap());
+deletePresetBtn = uibutton(presetPanel, 'Text', '🗑 删除', ...
+    'Position', [95, 22, 75, 22], ...
+    'ButtonPushedFcn', @(~,~) deleteCurrentPreset());
 
 % --- 右侧：控制面板 ---
 ctrlPanel = uipanel(fig, 'Title', '控制面板', ...
@@ -50,7 +66,7 @@ ctrlPanel = uipanel(fig, 'Title', '控制面板', ...
 % 全局规划算法
 uilabel(ctrlPanel, 'Text', '全局规划算法:', 'Position', [10, 400, 100, 20]);
 globalAlgoDD = uidropdown(ctrlPanel, ...
-    'Items', {'AStar', 'AStar_v1', 'AStar_v2', 'AStar_v3', 'Dijkstra', 'Dijkstra_v1', 'RRT'}, ...
+    'Items', {'AStar', 'AStar_v0', 'AStar_v1', 'AStar_v2', 'AStar_v3', 'Dijkstra', 'Dijkstra_v1', 'RRT'}, ...
     'Value', 'AStar', 'Position', [120, 398, 100, 22]);
 
 % 局部规划算法
@@ -383,6 +399,42 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
     end
 
     function loadPreset(name)
+        % 自定义地图：从 PresetMaps/ 加载 .mat 文件
+        customPrefix = '自定义: ';
+        if startsWith(name, customPrefix)
+            fileName = extractAfter(name, customPrefix);
+            presetFile = fullfile(presetDir, [fileName, '.mat']);
+            if isfile(presetFile)
+                data = load(presetFile);
+                data = data.mapData;  % 解包 save() 时存入的变量名
+                onReset();
+                state.mapSize = data.mapSize;
+                state.staticObstacles = data.staticObstacles;
+                state.dynamicObstacleDefs = data.dynamicObstacleDefs;
+                state.startPoint = data.startPoint;
+                state.targetPoints = data.targetPoints;
+                state.goalPoint = data.goalPoint;
+                state.startPoints = data.startPoints;
+                state.goalPoints = data.goalPoints;
+                state.startPointIdx = data.startPointIdx;
+                state.goalPointIdx = data.goalPointIdx;
+                state.dynObsCount = data.dynObsCount;
+                if isfield(data, 'robotCount')
+                    state.robotCount = data.robotCount;
+                    robotCountSpinner.Value = data.robotCount;
+                end
+                mapSizeDropdown.Value = sprintf('%d×%d', state.mapSize, state.mapSize);
+                refreshMapDisplay();
+                statusLabel.Text = sprintf('已加载自定义地图: %s', fileName);
+                return;
+            else
+                statusLabel.Text = sprintf('自定义地图文件不存在: %s', fileName);
+                presetDropdown.Value = '简单障碍';
+                loadPreset('简单障碍');
+                return;
+            end
+        end
+
         onReset();
         state.mapSize = 30;
         sz = 30;
@@ -429,6 +481,105 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
         mapSizeDropdown.Value = sprintf('%d×%d', state.mapSize, state.mapSize);
         refreshMapDisplay();
         statusLabel.Text = sprintf('已加载预设地图: %s', name);
+    end
+
+    % ====== 自定义预设地图管理 ======
+
+    function itemList = refreshPresetList()
+        % 内置预设 + PresetMaps/ 中的自定义地图
+        builtin = {'空白地图', '简单障碍', '迷宫地图', '走廊地图'};
+        custom = {};
+        if isfolder(presetDir)
+            files = dir(fullfile(presetDir, '*.mat'));
+            for i = 1:length(files)
+                [~, name] = fileparts(files(i).name);
+                custom{end + 1} = ['自定义: ', name];  %#ok<AGROW>
+            end
+        end
+        itemList = [builtin, custom];
+    end
+
+    function saveCurrentMap()
+        % 弹出模态对话框输入地图名称
+        dlg = uifigure('Name', '保存自定义地图', ...
+            'Position', [400, 300, 300, 120], ...
+            'Resize', 'off', 'WindowStyle', 'modal');
+        uilabel(dlg, 'Text', '地图名称:', ...
+            'Position', [20, 60, 70, 22]);
+        nameEdit = uieditfield(dlg, 'text', ...
+            'Value', sprintf('自定义地图_%s', char(datetime('now', 'Format', 'yyyyMMdd_HHmmss'))), ...
+            'Position', [90, 60, 190, 22]);
+        uibutton(dlg, 'Text', '确定保存', ...
+            'Position', [60, 20, 80, 25], ...
+            'ButtonPushedFcn', @(~,~) doSave());
+        uibutton(dlg, 'Text', '取消', ...
+            'Position', [160, 20, 80, 25], ...
+            'ButtonPushedFcn', @(~,~) delete(dlg));
+
+        function doSave()
+            mapName = strtrim(nameEdit.Value);
+            if isempty(mapName)
+                statusLabel.Text = '保存失败: 名称不能为空';
+                delete(dlg);
+                return;
+            end
+            % 剔除非法文件名字符
+            mapName = regexprep(mapName, '[<>:"/\\|?*]', '_');
+            saveFile = fullfile(presetDir, [mapName, '.mat']);
+            if isfile(saveFile)
+                statusLabel.Text = sprintf('保存失败: "%s" 已存在', mapName);
+                delete(dlg);
+                return;
+            end
+
+            % 序列化当前 state
+            mapData = struct();
+            mapData.mapSize = state.mapSize;
+            mapData.staticObstacles = state.staticObstacles;
+            mapData.dynamicObstacleDefs = state.dynamicObstacleDefs;
+            mapData.startPoint = state.startPoint;
+            mapData.targetPoints = state.targetPoints;
+            mapData.goalPoint = state.goalPoint;
+            mapData.startPoints = state.startPoints;
+            mapData.goalPoints = state.goalPoints;
+            mapData.startPointIdx = state.startPointIdx;
+            mapData.goalPointIdx = state.goalPointIdx;
+            mapData.dynObsCount = state.dynObsCount;
+            mapData.robotCount = state.robotCount;
+            save(saveFile, 'mapData');
+
+            % 刷新下拉列表
+            presetDropdown.Items = refreshPresetList();
+            presetDropdown.Value = ['自定义: ', mapName];
+            statusLabel.Text = sprintf('地图已保存: %s', mapName);
+            delete(dlg);
+        end
+    end
+
+    function deleteCurrentPreset()
+        val = presetDropdown.Value;
+        if ~startsWith(val, '自定义: ')
+            statusLabel.Text = '只能删除自定义地图';
+            return;
+        end
+        fileName = extractAfter(val, '自定义: ');
+        saveFile = fullfile(presetDir, [fileName, '.mat']);
+        if ~isfile(saveFile)
+            statusLabel.Text = sprintf('文件不存在: %s', fileName);
+            return;
+        end
+        % 确认对话框
+        choice = uiconfirm(fig, ...
+            sprintf('确定要删除自定义地图 "%s" 吗？此操作不可撤销。', fileName), ...
+            '确认删除', 'Options', {'确定删除', '取消'}, ...
+            'DefaultOption', 2, 'CancelOption', 2);
+        if strcmp(choice, '确定删除')
+            delete(saveFile);
+            presetDropdown.Items = refreshPresetList();
+            presetDropdown.Value = '简单障碍';
+            loadPreset('简单障碍');
+            statusLabel.Text = sprintf('已删除自定义地图: %s', fileName);
+        end
     end
 
     function onReset()
