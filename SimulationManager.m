@@ -149,26 +149,44 @@ for r = 1:numRobots
     totalSimpleLen = totalSimpleLen + simpleLen;
     totalSmoothLen = totalSmoothLen + smoothLen;
 
-    % 构建参考轨迹（连续坐标）
+    % 构建参考轨迹（连续坐标）及段边界索引
     if simParams.enableSmooth
         fullRef = [];
+        segBounds = zeros(length(allSmooth), 2);
+        idx = 1;
         for s = 1:length(allSmooth)
-            fullRef = [fullRef; allSmooth{s}];
+            nPts = size(allSmooth{s}, 1);
+            fullRef = [fullRef; allSmooth{s}];                          %#ok<AGROW>
+            segBounds(s, :) = [idx, idx + nPts - 1];
+            idx = idx + nPts;
         end
     elseif simParams.enableSimplify
         fullRef = [];
+        segBounds = zeros(length(allSimple), 2);
+        idx = 1;
         for s = 1:length(allSimple)
             p = allSimple{s};
-            fullRef = [fullRef; p(:, 2) - 0.5, p(:, 1) - 0.5];
+            pts = [p(:, 2) - 0.5, p(:, 1) - 0.5];
+            nPts = size(pts, 1);
+            fullRef = [fullRef; pts];                                   %#ok<AGROW>
+            segBounds(s, :) = [idx, idx + nPts - 1];
+            idx = idx + nPts;
         end
     else
         fullRef = [];
+        segBounds = zeros(length(allRaw), 2);
+        idx = 1;
         for s = 1:length(allRaw)
             p = allRaw{s};
-            fullRef = [fullRef; p(:, 2) - 0.5, p(:, 1) - 0.5];
+            pts = [p(:, 2) - 0.5, p(:, 1) - 0.5];
+            nPts = size(pts, 1);
+            fullRef = [fullRef; pts];                                   %#ok<AGROW>
+            segBounds(s, :) = [idx, idx + nPts - 1];
+            idx = idx + nPts;
         end
     end
     robotTasks(r).fullRef = fullRef;
+    robotTasks(r).segBounds = segBounds;
 
     % 访问序列（连续坐标）
     visitSeq = robotTasks(r).orderedPoints;
@@ -294,7 +312,8 @@ for r = 1:numRobots
     robotState(r).targetReached = false;
     robotState(r).pauseTimer = 0;
     robotState(r).done = false;
-    robotState(r).prevIdx = 1;           % findLookAhead 的持久索引
+    robotState(r).currentSegIdx = 1;     % 当前所在段索引（1-based，映射到 segBounds）
+    robotState(r).prevIdx = robotTasks(r).segBounds(1, 1);  % findLookAhead 持久索引（初始化为第一段起始）
     robotState(r).latestPredictTraj = []; % 缓存最新预测轨迹
 end
 
@@ -332,15 +351,30 @@ while any(active)
 
             if rs.pauseTimer >= pauseDuration
                 rs.currentTargetIdx = rs.currentTargetIdx + 1;
-                rs.targetReached = false;
+                if rs.currentTargetIdx > size(visitSeq, 1)
+                    % 已到达终点，立即停用
+                    active(r) = false;
+                    rs.done = true;
+                else
+                    % 段追踪：切换到下一段，重置段内索引
+                    rs.currentSegIdx = max(1, rs.currentTargetIdx - 1);
+                    rs.prevIdx = robotTasks(r).segBounds(rs.currentSegIdx, 1);
+                    rs.targetReached = false;
+                end
             end
         else
-            % 前瞻点
+            % 前瞻点（段约束：只在当前段内部搜索，防止路径自交叉时跳到其他段）
+            segBounds = robotTasks(r).segBounds;
+            searchEnd = segBounds(rs.currentSegIdx, 2);
+            fullRef = robotTasks(r).fullRef;
+
             if distToGoal < lookAheadDist + 0.5
+                % 接近目标：直接使用目标点作为前瞻，但仍更新 prevIdx
                 lookAheadPt = visitSeq(rs.currentTargetIdx, :);
+                [~, newIdx] = findLookAheadExt(fullRef, rob.pos, lookAheadDist, rs.prevIdx, searchEnd);
+                rs.prevIdx = newIdx;
             else
-                fullRef = robotTasks(r).fullRef;
-                [lookAheadPt, newIdx] = findLookAheadExt(fullRef, rob.pos, lookAheadDist, rs.prevIdx);
+                [lookAheadPt, newIdx] = findLookAheadExt(fullRef, rob.pos, lookAheadDist, rs.prevIdx, searchEnd);
                 rs.prevIdx = newIdx;
             end
 
@@ -494,18 +528,23 @@ function len = calcPathLenCont(path)
     end
 end
 
-function [pt, newIdx] = findLookAheadExt(refPath, robotPos, lookAheadDist, prevIdx)
-    % 前瞻点查找（无持久变量版本，支持多机器人）
+function [pt, newIdx] = findLookAheadExt(refPath, robotPos, lookAheadDist, prevIdx, searchEnd)
+    % 前瞻点查找（无持久变量版本，支持多机器人，支持段窗口约束）
+    %   searchEnd: 可选，搜索上限索引（默认 refPath 末尾）。
+    %              传入当前段的 endIdx，防止路径自交叉时跳到其他段。
+    if nargin < 5
+        searchEnd = size(refPath, 1);
+    end
     if size(refPath, 1) < 2
         pt = robotPos;
         newIdx = 1;
         return;
     end
 
-    startIdx = min(prevIdx, size(refPath, 1));
+    startIdx = min(prevIdx, searchEnd);
     minDist = inf;
     closestIdx = startIdx;
-    for i = startIdx:size(refPath, 1)
+    for i = startIdx:searchEnd
         d = norm(refPath(i, :) - robotPos);
         if d < minDist
             minDist = d;
@@ -513,14 +552,14 @@ function [pt, newIdx] = findLookAheadExt(refPath, robotPos, lookAheadDist, prevI
         end
     end
 
-    for i = closestIdx:size(refPath, 1)
+    for i = closestIdx:searchEnd
         if norm(refPath(i, :) - robotPos) >= lookAheadDist
             pt = refPath(i, :);
             newIdx = closestIdx;
             return;
         end
     end
-    pt = refPath(end, :);
+    pt = refPath(searchEnd, :);
     newIdx = closestIdx;
 end
 
