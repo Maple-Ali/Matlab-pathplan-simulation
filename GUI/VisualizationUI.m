@@ -3,7 +3,7 @@ function [fig, ax] = VisualizationUI()
 %   [fig, ax] = VisualizationUI() 创建并返回可视化窗口及其坐标轴
 
 fig = uifigure('Name', '仿真可视化', ...
-    'Position', [1250, 100, 600, 600], 'Resize', 'off');
+    'Position', [890, 100, 600, 600], 'Resize', 'off');
 
 ax = uiaxes(fig, 'Position', [30, 30, 540, 540]);
 title(ax, '实时仿真视图');

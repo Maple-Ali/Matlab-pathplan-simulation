@@ -49,7 +49,15 @@ if strcmp(clusterAlgo, 'NearestNeighbor')
 else
     % 调用指定的聚类算法
     clusterFunc = str2func(clusterAlgo);
-    if contains(clusterAlgo, '_v2')
+    if strcmp(clusterAlgo, 'DV_Cluster')
+        % DV 偏离量分配：需要 map + goalPoints + 规划器
+        [assignment, ~, ~] = DV_Cluster(targets, numRobots, [], startPoints, map, ...
+            goalPoints, algoName);
+    elseif strcmp(clusterAlgo, 'DV_Cluster_v1')
+        % DV + 相似度迁移优化：需要 map + goalPoints + 规划器 + TSP 算法
+        [assignment, ~, ~] = DV_Cluster_v1(targets, numRobots, [], startPoints, map, ...
+            goalPoints, algoName, tspAlgo);
+    elseif contains(clusterAlgo, '_v2')
         % v2 负载均衡版本：传入终点、规划器、TSP 算法
         [assignment, ~, ~] = clusterFunc(targets, numRobots, [], startPoints, map, ...
             goalPoints, algoName, tspAlgo);

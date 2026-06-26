@@ -820,5 +820,5 @@ end
 
 function tf = needsMap(algoName)
     % 判断聚类算法是否需要 Map 对象（路径距离版本）
-    tf = contains(algoName, '_v1') || contains(algoName, '_v2');
+    tf = contains(algoName, '_v1') || contains(algoName, '_v2') || strcmp(algoName, 'DV_Cluster');
 end
