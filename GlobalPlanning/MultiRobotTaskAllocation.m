@@ -57,6 +57,14 @@ else
         % DV + 相似度迁移优化：需要 map + goalPoints + 规划器 + TSP 算法
         [assignment, ~, ~] = DV_Cluster_v1(targets, numRobots, [], startPoints, map, ...
             goalPoints, algoName, tspAlgo);
+    elseif strcmp(clusterAlgo, 'DV_Cluster_Hungarian')
+        % DV + 匈牙利全局最优分配
+        [assignment, ~, ~] = DV_Cluster_Hungarian(targets, numRobots, [], startPoints, map, ...
+            goalPoints, algoName);
+    elseif strcmp(clusterAlgo, 'DV_Cluster_v1_Hungarian')
+        % DV + 匈牙利 + 相似度迁移优化
+        [assignment, ~, ~] = DV_Cluster_v1_Hungarian(targets, numRobots, [], startPoints, map, ...
+            goalPoints, algoName, tspAlgo);
     elseif contains(clusterAlgo, '_v2')
         % v2 负载均衡版本：传入终点、规划器、TSP 算法
         [assignment, ~, ~] = clusterFunc(targets, numRobots, [], startPoints, map, ...
