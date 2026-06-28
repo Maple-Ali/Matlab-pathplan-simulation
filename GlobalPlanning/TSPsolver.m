@@ -1,4 +1,4 @@
-function [orderedPoints, segPaths, totalCost] = TSPsolver(startPoint, targets, goalPoint, map, algoName, tspAlgo)
+function [orderedPoints, segPaths, totalCost] = TSPsolver(startPoint, targets, goalPoint, map, algoName, tspAlgo, enableSimplify, occGrid, safetyMargin)
 %TSPSOLVER TSP 多目标排序求解器
 %   [orderedPoints, segPaths, totalCost] = TSPsolver(startPoint, targets, goalPoint, map, algoName, tspAlgo)
 %   startPoint: [row, col] 起点栅格
@@ -7,6 +7,9 @@ function [orderedPoints, segPaths, totalCost] = TSPsolver(startPoint, targets, g
 %   map: Map 对象
 %   algoName: 'AStar' | 'Dijkstra' | 'RRT' 等全局规划器
 %   tspAlgo: 'TSP_GA' | 'TSP_Permutation' 等 TSP 求解算法（可选，默认 'TSP_GA'）
+%   enableSimplify: 是否对路径做拐角裁剪后计算代价（可选，默认 false）
+%   occGrid: 占用栅格矩阵（enableSimplify=true 时必传）
+%   safetyMargin: 安全裕度（可选，默认 0.4）
 %   输出:
 %   orderedPoints: 有序访问点（含起点终点）
 %   segPaths: 每段之间的全局路径 cell 数组
@@ -14,6 +17,12 @@ function [orderedPoints, segPaths, totalCost] = TSPsolver(startPoint, targets, g
 
 if nargin < 6 || isempty(tspAlgo)
     tspAlgo = 'TSP_GA';
+end
+if nargin < 7 || isempty(enableSimplify)
+    enableSimplify = false;
+end
+if nargin < 9 || isempty(safetyMargin)
+    safetyMargin = 0.4;
 end
 
 % 所有点：起点 + 目标点集 + 终点
@@ -33,8 +42,13 @@ for i = 1:nPts
         % 计算 i→j 的最短路径
         p = callPlanner(algoName, map, allPoints(i, :), allPoints(j, :));
         if ~isempty(p)
-            costMatrix(i, j) = pathLength(p);
-            pathCache{i, j} = p;
+            if enableSimplify
+                pSimple = SimplifyPath(p, occGrid, map.mapSize, safetyMargin);
+                costMatrix(i, j) = pathLengthEuclidean(pSimple);
+            else
+                costMatrix(i, j) = pathLength(p);
+            end
+            pathCache{i, j} = p;  % 始终保存原始路径用于输出
         end
     end
 end
@@ -112,5 +126,17 @@ function len = pathLength(path)
         else
             len = len + 1;
         end
+    end
+end
+
+function len = pathLengthEuclidean(path)
+%PATHTLENGTHEUCLIDEAN 欧氏距离路径长度（用于简化后路径）
+    if isempty(path)
+        len = inf;
+        return;
+    end
+    len = 0;
+    for i = 2:size(path, 1)
+        len = len + norm(path(i, :) - path(i - 1, :));
     end
 end

@@ -67,9 +67,19 @@ else
     goalPoints = repmat(goalGrid, numRobots, 1);
 end
 
+% 拐角裁剪参数（用于 TSP 成本矩阵计算）
+enableSimplify = isfield(simParams, 'enableSimplify') && simParams.enableSimplify;
+if enableSimplify
+    occGrid = map.getOccupancyGrid();
+    safetyMargin = simParams.robotRadius + 0.2;
+else
+    occGrid = [];
+    safetyMargin = 0.4;
+end
+
 if numRobots > 1 && size(targets, 1) >= 1
     % 多机器人：最近邻聚类 + 各机器人独立 TSP
-    robotTasks = MultiRobotTaskAllocation(startPoints, targets, goalPoints, map, simParams.globalAlgo, tspAlgo, clusterAlgo);
+    robotTasks = MultiRobotTaskAllocation(startPoints, targets, goalPoints, map, simParams.globalAlgo, tspAlgo, clusterAlgo, enableSimplify, occGrid, safetyMargin);
     tTSP = toc(tStart);
     % 汇总 TSP 成本
     tspCost = sum([robotTasks.tspCost]);
@@ -80,7 +90,7 @@ if numRobots > 1 && size(targets, 1) >= 1
 elseif size(targets, 1) >= 1
     % 单机器人：原有 TSP 流程
     [orderedPoints, segPaths, tspCost] = TSPsolver(...
-        startPoints(1, :), targets, goalPoints(1, :), map, simParams.globalAlgo, tspAlgo);
+        startPoints(1, :), targets, goalPoints(1, :), map, simParams.globalAlgo, tspAlgo, enableSimplify, occGrid, safetyMargin);
     tTSP = toc(tStart);
     robotTasks = struct('orderedPoints', orderedPoints, ...
         'segPaths', {segPaths}, 'tspCost', tspCost, ...
@@ -106,7 +116,9 @@ end
 
 % --- 4. 对各机器人路径做后处理 ---
 tPlanStart = tic;
-occGrid = map.getOccupancyGrid();
+if isempty(occGrid)
+    occGrid = map.getOccupancyGrid();
+end
 
 totalRawLen = 0;
 totalSimpleLen = 0;

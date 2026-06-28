@@ -1,4 +1,4 @@
-function robotTasks = MultiRobotTaskAllocation(startPoints, targets, goalPoints, map, algoName, tspAlgo, clusterAlgo)
+function robotTasks = MultiRobotTaskAllocation(startPoints, targets, goalPoints, map, algoName, tspAlgo, clusterAlgo, enableSimplify, occGrid, safetyMargin)
 %MULTIROBOTTASKALLOCATION 多机器人任务分配
 %   将目标点按聚类算法分配给各机器人，每台机器人独立求解 TSP
 %
@@ -11,6 +11,9 @@ function robotTasks = MultiRobotTaskAllocation(startPoints, targets, goalPoints,
 %     tspAlgo     - 'TSP_GA' | 'TSP_Permutation' 等 TSP 求解算法（可选）
 %     clusterAlgo - 聚类算法名称（可选，默认 'NearestNeighbor'）
 %                   'NearestNeighbor' | 'KMedoids_Cluster' | ...
+%     enableSimplify - 是否对路径做拐角裁剪后计算代价（可选，默认 false）
+%     occGrid     - 占用栅格矩阵（可选）
+%     safetyMargin - 安全裕度（可选，默认 0.4）
 %
 %   Output:
 %     robotTasks  - 1×N 结构体数组，字段:
@@ -24,6 +27,12 @@ if nargin < 6 || isempty(tspAlgo)
 end
 if nargin < 7 || isempty(clusterAlgo)
     clusterAlgo = 'NearestNeighbor';
+end
+if nargin < 8 || isempty(enableSimplify)
+    enableSimplify = false;
+end
+if nargin < 10 || isempty(safetyMargin)
+    safetyMargin = 0.4;
 end
 
 numRobots = size(startPoints, 1);
@@ -93,7 +102,7 @@ for r = 1:numRobots
         robotTasks(r).segPaths = {segPath};
         robotTasks(r).tspCost = 0;
     else
-        [ordered, segs, cost] = TSPsolver(startPoints(r, :), myTargets, myGoal, map, algoName, tspAlgo);
+        [ordered, segs, cost] = TSPsolver(startPoints(r, :), myTargets, myGoal, map, algoName, tspAlgo, enableSimplify, occGrid, safetyMargin);
         robotTasks(r).orderedPoints = ordered;
         robotTasks(r).segPaths = segs;
         robotTasks(r).tspCost = cost;
