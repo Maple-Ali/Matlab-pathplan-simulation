@@ -1,4 +1,4 @@
-function [orderedPoints, segPaths, totalCost] = TSPsolver(startPoint, targets, goalPoint, map, algoName, tspAlgo, enableSimplify, occGrid, safetyMargin)
+function [orderedPoints, segPaths, totalCost] = TSPsolver(startPoint, targets, goalPoint, map, algoName, tspAlgo, enableSimplify, occGrid, safetyMargin, extPathCache)
 %TSPSOLVER TSP 多目标排序求解器
 %   [orderedPoints, segPaths, totalCost] = TSPsolver(startPoint, targets, goalPoint, map, algoName, tspAlgo)
 %   startPoint: [row, col] 起点栅格
@@ -10,6 +10,7 @@ function [orderedPoints, segPaths, totalCost] = TSPsolver(startPoint, targets, g
 %   enableSimplify: 是否对路径做拐角裁剪后计算代价（可选，默认 false）
 %   occGrid: 占用栅格矩阵（enableSimplify=true 时必传）
 %   safetyMargin: 安全裕度（可选，默认 0.4）
+%   extPathCache: 外部路径缓存 containers.Map（可选，跨调用复用 A* 路径）
 %   输出:
 %   orderedPoints: 有序访问点（含起点终点）
 %   segPaths: 每段之间的全局路径 cell 数组
@@ -24,6 +25,9 @@ end
 if nargin < 9 || isempty(safetyMargin)
     safetyMargin = 0.4;
 end
+if nargin < 10
+    extPathCache = [];
+end
 
 % 所有点：起点 + 目标点集 + 终点
 allPoints = [startPoint; targets; goalPoint];
@@ -32,6 +36,7 @@ nPts = size(allPoints, 1);   % 第1个=起点, 最后1个=终点
 % --- 计算成本矩阵（所有点对之间的最短路径长度）---
 costMatrix = inf(nPts, nPts);
 pathCache = cell(nPts, nPts);
+useExtCache = ~isempty(extPathCache) && isa(extPathCache, 'containers.Map');
 
 for i = 1:nPts
     for j = 1:nPts
@@ -39,8 +44,23 @@ for i = 1:nPts
             costMatrix(i, j) = 0;
             continue;
         end
-        % 计算 i→j 的最短路径
-        p = callPlanner(algoName, map, allPoints(i, :), allPoints(j, :));
+        % 计算 i→j 的最短路径（优先查外部缓存）
+        p = [];
+        cacheHit = false;
+        if useExtCache
+            cacheKey = sprintf('%d,%d_%d,%d', allPoints(i,1), allPoints(i,2), allPoints(j,1), allPoints(j,2));
+            if extPathCache.isKey(cacheKey)
+                p = extPathCache(cacheKey);
+                cacheHit = true;
+            end
+        end
+        if isempty(p) && ~cacheHit
+            p = callPlanner(algoName, map, allPoints(i, :), allPoints(j, :));
+            % 存入外部缓存
+            if useExtCache && ~isempty(p)
+                extPathCache(cacheKey) = p;
+            end
+        end
         if ~isempty(p)
             if enableSimplify
                 pSimple = SimplifyPath(p, occGrid, map.mapSize, safetyMargin);

@@ -253,7 +253,6 @@ while improved
             if newCost < oldCost - 1e-10
                 % 执行 2-opt 交换：反转 tour(i+1 .. j)
                 tour((i + 1):j) = tour(j:-1:(i + 1));
-                cost = cost - oldCost + newCost;
                 improved = true;
 
                 % 更新 fullOrder
@@ -261,5 +260,11 @@ while improved
             end
         end
     end
+end
+
+% 从 costMatrix 重算真实代价（避免增量更新的浮点误差累积）
+cost = 0;
+for k = 1:(nPts - 1)
+    cost = cost + costMatrix(fullOrder(k), fullOrder(k + 1));
 end
 end

@@ -103,6 +103,11 @@ runCountSpinner = uispinner(algoPanel, ...
     'Limits', [1, 50], 'Value', 1, 'Step', 1, ...
     'Position', [305, 28, 60, 22]);
 
+simplifyCB = uicheckbox(algoPanel, ...
+    'Text', '拐角裁剪', ...
+    'Value', false, ...
+    'Position', [375, 28, 80, 22]);
+
 % --- 操作按钮区 ---
 btnPanel = uipanel(panel, 'Position', [6, 475, 458, 50], 'FontSize', 10);
 
@@ -480,7 +485,7 @@ end
         % 计算成本矩阵（所有算法共享）
         setStatus('正在计算成本矩阵...');
         drawnow;
-        [costMatrix, allPoints] = computeCostMatrix(m, plannerName);
+        [costMatrix, allPoints] = computeCostMatrix(m, plannerName, simplifyCB.Value, mapData.occGrid);
 
         % 检查可达性
         if any(isinf(costMatrix(1, 2:end-1)))
@@ -551,7 +556,7 @@ end
         setStatus(sprintf('测试完成: %d 个算法, 各 %d 次运行', nAlgos, nRuns));
     end
 
-    function [costMatrix, allPoints] = computeCostMatrix(map, algoName)
+    function [costMatrix, allPoints] = computeCostMatrix(map, algoName, doSimplify, occGrid)
         allPoints = [mapData.startGrid; mapData.targetGrids; mapData.goalGrid];
         nPts = size(allPoints, 1);
         costMatrix = inf(nPts, nPts);
@@ -564,7 +569,12 @@ end
                 end
                 p = callPlanner(algoName, map, allPoints(i, :), allPoints(j, :));
                 if ~isempty(p)
-                    costMatrix(i, j) = pathLength(p);
+                    if doSimplify
+                        pSimple = SimplifyPath(p, occGrid, mapData.mapSize, 0.4);
+                        costMatrix(i, j) = pathLengthEuclidean(pSimple);
+                    else
+                        costMatrix(i, j) = pathLength(p);
+                    end
                 end
             end
             setStatus(sprintf('计算成本矩阵: %d/%d 行', i, nPts));
@@ -844,6 +854,18 @@ function len = pathLength(path)
         else
             len = len + 1;
         end
+    end
+end
+
+function len = pathLengthEuclidean(path)
+%PATHTLENGTHEUCLIDEAN 欧氏距离路径长度（用于简化后路径）
+    if isempty(path)
+        len = inf;
+        return;
+    end
+    len = 0;
+    for i = 2:size(path, 1)
+        len = len + norm(path(i, :) - path(i - 1, :));
     end
 end
 
