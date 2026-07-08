@@ -51,7 +51,7 @@ robotRepulseRange = 2.5;   % 机器人间斥力作用范围（连续单位）
                             %   比障碍物斥力范围大，提前规避对向/侧向机器人
 % =========================================================================
 
-occGrid = map.getOccupancyGrid();
+occGrid = map.getLocalOccGrid(robot.pos, sensorRange);
 n = map.mapSize;
 
 % ---- 引力：指向局部目标 ----

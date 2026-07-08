@@ -108,7 +108,7 @@ end
 goalDir = goalVec / goalDist;
 
 % ===== 3. 预计算共享数据 =====
-occGrid = map.getOccupancyGrid();  % 含静态+动态（用于逃逸方向计算）
+occGrid = map.getLocalOccGrid(robot.pos, sensorRange);  % 含静态+检测范围内动态障碍物
 n = map.mapSize;
 
 % 预计算静态障碍物栅格连续坐标列表（仅静态，动态障碍物由独立轨迹预测处理）

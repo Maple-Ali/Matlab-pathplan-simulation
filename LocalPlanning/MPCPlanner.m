@@ -48,7 +48,7 @@ end
 desiredV = goalVec / goalDist * maxSpeed;
 
 % --- 障碍物软约束 ---
-occGrid = map.getOccupancyGrid();
+occGrid = map.getLocalOccGrid(robot.pos, sensorRange);
 n = map.mapSize;
 robotR = ceil(robot.pos(2));
 robotC = ceil(robot.pos(1));

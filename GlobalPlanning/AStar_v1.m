@@ -1,11 +1,14 @@
-function path = AStar_v1(map, startGrid, goalGrid, delay, callback)
+function [path, info] = AStar_v1(map, startGrid, goalGrid, delay, callback, alpha, beta)
 %ASTAR_V1 A* 全局路径规划 — 改进版 v1
-%   path = AStar_v1(map, startGrid, goalGrid, delay, callback)
+%   [path, info] = AStar_v1(map, startGrid, goalGrid, delay, callback, alpha, beta)
 %   map: Map 对象
 %   startGrid, goalGrid: [row, col] 栅格索引
 %   delay: 可视化延迟（0=不绘制，仅 callback 为空时生效）
 %   callback: 可选回调函数 @(stateInfo) 返回 'continue'/'pause'/'stop'
+%   alpha: 自适应启发式最大额外权重（默认 0.3）
+%   beta:  衰减速率（默认 3.0）
 %   path: N×2 [row, col] 路径点数组
+%   info: 结构体 — .expandedNodes, .pathLength, .pathCost, .openMaxSize
 %
 %   改进内容：
 %     1. 二叉堆优先队列替代线性扫描 — O(log n) 取最小 f
@@ -18,6 +21,12 @@ end
 if nargin < 5
     callback = [];
 end
+if nargin < 6 || isempty(alpha)
+    alpha = 0.5;
+end
+if nargin < 7 || isempty(beta)
+    beta = 1.0;
+end
 
 n = map.mapSize;
 occGrid = map.getOccupancyGrid();
@@ -25,6 +34,7 @@ occGrid = map.getOccupancyGrid();
 % 检查起终点合法性
 if occGrid(startGrid(1), startGrid(2)) || occGrid(goalGrid(1), goalGrid(2))
     path = [];
+    info = struct('expandedNodes',0,'pathLength',0,'pathCost',inf,'openMaxSize',0);
     return;
 end
 
@@ -46,8 +56,6 @@ end
 %   远离目标 (d→d0): w → 1+alpha（贪心搜索加速）
 %   接近目标 (d→0) : w → 1        （恢复标准 A*，保证精度）
 %   alpha: 最大额外权重，beta: 衰减速率
-alpha = 0.3;   % 远处权重系数 ≈ 1 + 2.0 = 3.0
-beta  = 3.0;   % 衰减速率，越大则越快降到标准权重
 h = @(r, c) sqrt((r - goalGrid(1))^2 + (c - goalGrid(2))^2);
 hWeight = @(r, c) 1 + alpha * exp(-beta * (1 - h(r, c) / startDist));
 weightedH = @(r, c) hWeight(r, c) * h(r, c);
@@ -82,12 +90,17 @@ heap(heapSize, :) = [fScore(startGrid(1), startGrid(2)), ...
                      startGrid(1), startGrid(2)];
 heapPos(startGrid(1), startGrid(2)) = heapSize;
 bubbleUp(heapSize);
+openMaxSize = 1;
 
 % 已展开节点
 closedSet = false(n, n);
 
 % 迭代计数（供 callback 使用）
 iter = 0;
+
+% 指标统计
+expandedCount = 0;
+openMaxSize = 0;
 
 % 可视化准备
 if delay > 0
@@ -125,13 +138,20 @@ while heapSize > 0
             'gScore', gScore, 'fScore', fScore, 'iteration', iter);
         action = callback(stateInfo);
         if strcmp(action, 'stop')
-            path = []; return;
+            path = [];
+            info = struct('expandedNodes',expandedCount,'pathLength',0,'pathCost',inf,'openMaxSize',openMaxSize);
+            return;
         end
     end
 
     % 到达目标
     if current(1) == goalGrid(1) && current(2) == goalGrid(2)
         path = reconstructPath(parent, startGrid, goalGrid);
+        expandedCount = expandedCount + 1;
+        info = struct('expandedNodes', expandedCount, ...
+                      'pathLength', size(path, 1), ...
+                      'pathCost', gScore(goalGrid(1), goalGrid(2)), ...
+                      'openMaxSize', openMaxSize);
         if ~isempty(callback)
             callback(struct('type', 'finish', 'path', path, ...
                 'iteration', iter, 'success', true));
@@ -140,6 +160,7 @@ while heapSize > 0
     end
 
     closedSet(current(1), current(2)) = true;
+    expandedCount = expandedCount + 1;
 
     % 可视化探索
     if delay > 0
@@ -192,6 +213,9 @@ while heapSize > 0
                 heap(heapSize, :) = [newF, newH, nr, nc];
                 heapPos(nr, nc) = heapSize;
                 bubbleUp(heapSize);
+                if heapSize > openMaxSize
+                    openMaxSize = heapSize;
+                end
             else
                 % 已在堆中：更新 f 并上浮
                 heap(pos, :) = [newF, newH, nr, nc];
@@ -202,6 +226,7 @@ while heapSize > 0
 end
 
 % 无路径
+info = struct('expandedNodes',expandedCount,'pathLength',0,'pathCost',inf,'openMaxSize',openMaxSize);
 if ~isempty(callback)
     callback(struct('type', 'finish', 'path', [], ...
         'iteration', iter, 'success', false));

@@ -51,14 +51,27 @@ classdef Map < handle
         end
 
         function occGrid = getOccupancyGrid(obj)
+            %GETOCCUPANCYGRID 返回仅含静态障碍物的占用栅格
+            %   全局规划器（A*等）使用此方法，动态障碍物不影响全局路径
+            occGrid = double(obj.grid == 1);
+        end
+
+        function occGrid = getLocalOccGrid(obj, robotPos, detectRange)
+            %GETLOCALOCCGRID 返回含检测范围内动态障碍物的占用栅格
+            %   robotPos: [x, y] 机器人连续坐标
+            %   detectRange: 检测范围（栅格单位）
+            %   局部规划器（DWA等）使用此方法感知动态障碍物
             occGrid = double(obj.grid == 1);
             for i = 1:length(obj.dynamicObstacles)
-                occ = obj.dynamicObstacles(i).getOccupiedGrids();
-                for g = 1:size(occ, 1)
-                    r = occ(g, 1);
-                    c = occ(g, 2);
-                    if obj.inBounds(r, c)
-                        occGrid(r, c) = 1;
+                obs = obj.dynamicObstacles(i);
+                if obs.isDetected(robotPos, detectRange)
+                    occ = obs.getOccupiedGrids();
+                    for g = 1:size(occ, 1)
+                        r = occ(g, 1);
+                        c = occ(g, 2);
+                        if obj.inBounds(r, c)
+                            occGrid(r, c) = 1;
+                        end
                     end
                 end
             end

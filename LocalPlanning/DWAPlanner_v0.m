@@ -27,7 +27,7 @@ maxAccel = 2.0;      % 最大加速度，限制每步速度变化量
 if isfield(params, 'maxAccel'), maxAccel = params.maxAccel; end
 % =========================================================================
 
-occGrid = map.getOccupancyGrid();
+occGrid = map.getLocalOccGrid(robot.pos, sensorRange);
 n = map.mapSize;
 
 % ---- 引力：指向局部目标 ----

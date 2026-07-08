@@ -28,7 +28,7 @@ else
 end
 
 % --- 斥力：远离障碍物 ---
-occGrid = map.getOccupancyGrid();
+occGrid = map.getLocalOccGrid(robot.pos, sensorRange);
 n = map.mapSize;
 repForce = [0, 0];
 

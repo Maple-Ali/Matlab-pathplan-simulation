@@ -404,6 +404,8 @@ while any(active)
                     [vx, vy, predictTraj] = DWAPlanner_v1(rob, lookAheadPt, map, [], dt, plannerParams);
                 case 'DWA_v2'
                     [vx, vy, predictTraj] = DWAPlanner_v2(rob, lookAheadPt, map, [], dt, plannerParams);
+                case 'DWA_v3'
+                    [vx, vy, predictTraj] = DWAPlanner_v3(rob, lookAheadPt, map, [], dt, plannerParams);
                 case 'TEB'
                     [vx, vy, predictTraj] = TEBPlanner(rob, lookAheadPt, map, [], dt, plannerParams);
                 case 'MPC'
