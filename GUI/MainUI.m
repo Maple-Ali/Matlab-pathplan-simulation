@@ -19,12 +19,12 @@ ylabel(mapAxes, 'Y (行)');
 modeGroup = uibuttongroup(fig, 'Title', '编辑模式', ...
     'Position', [550, 500, 180, 140]);
 
-modes = {'设置起点', '添加目标点', '设置终点', '添加静态障碍', '添加动态障碍', '删除对象'};
-modeTags = {'start', 'target', 'goal', 'static', 'dynamic', 'delete'};
-modeBtns = gobjects(6, 1);
-for i = 1:6
+modes = {'设置起点', '添加目标点', '设置终点', '添加静态障碍', '添加动态障碍', '添加临时障碍', '删除对象'};
+modeTags = {'start', 'target', 'goal', 'static', 'dynamic', 'temp', 'delete'};
+modeBtns = gobjects(7, 1);
+for i = 1:7
     modeBtns(i) = uiradiobutton(modeGroup, 'Text', modes{i}, ...
-        'Position', [10, 120 - i * 20, 160, 18]);
+        'Position', [10, 140 - i * 20, 160, 18]);
 end
 modeBtns(4).Value = true;  % 默认选择添加静态障碍
 
@@ -163,6 +163,7 @@ state = struct();
 state.mapSize = 30;
 state.staticObstacles = [];
 state.dynamicObstacleDefs = [];  % [r1, c1, r2, c2, speed]
+state.tempObstacleDefs = [];     % [r, c, detectionRange]
 state.startPoint = [];
 state.targetPoints = [];
 state.goalPoint = [];
@@ -268,6 +269,9 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
                     statusLabel.Text = sprintf('动态障碍 %d 已添加', state.dynObsCount);
                     state.dynStart = [];
                 end
+            case '添加临时障碍'
+                state.tempObstacleDefs(end + 1, :) = [c, r, 5.0];  % 默认检测范围 5.0
+                statusLabel.Text = sprintf('临时障碍已添加: (%d, %d)', c, r);
             case '删除对象'
                 % 简化：清除最近的障碍物或目标点
                 removeNearest(r, c);
@@ -296,6 +300,15 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
                 state.dynamicObstacleDefs(match, :) = [];
                 state.dynObsCount = state.dynObsCount - sum(match);
                 statusLabel.Text = '动态障碍已删除';
+                return;
+            end
+        end
+        % 检查临时障碍物
+        if ~isempty(state.tempObstacleDefs)
+            match = state.tempObstacleDefs(:, 1) == x & state.tempObstacleDefs(:, 2) == y;
+            if any(match)
+                state.tempObstacleDefs(match, :) = [];
+                statusLabel.Text = '临时障碍已删除';
                 return;
             end
         end
@@ -394,6 +407,14 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
             plot(mapAxes, def(3)-0.5, def(4)-0.5, 'm^', 'MarkerSize', 6);
         end
 
+        % 绘制临时静态障碍物标记 (def = [c, r, detectionRange]) — 蓝色栅格
+        for ti = 1:size(state.tempObstacleDefs, 1)
+            def = state.tempObstacleDefs(ti, :);
+            rectangle('Position', [def(1)-1, def(2)-1, 1, 1], ...
+                'FaceColor', [0.3, 0.5, 1.0], 'EdgeColor', [0.2, 0.3, 0.8], ...
+                'Parent', mapAxes);
+        end
+
         % 使所有子图元不拦截点击，确保ButtonDownFcn能正确获取点击坐标
         set(mapAxes.Children, 'PickableParts', 'none');
     end
@@ -411,6 +432,9 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
                 state.mapSize = data.mapSize;
                 state.staticObstacles = data.staticObstacles;
                 state.dynamicObstacleDefs = data.dynamicObstacleDefs;
+                if isfield(data, 'tempObstacleDefs')
+                    state.tempObstacleDefs = data.tempObstacleDefs;
+                end
                 state.startPoint = data.startPoint;
                 state.targetPoints = data.targetPoints;
                 state.goalPoint = data.goalPoint;
@@ -537,6 +561,7 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
             mapData.mapSize = state.mapSize;
             mapData.staticObstacles = state.staticObstacles;
             mapData.dynamicObstacleDefs = state.dynamicObstacleDefs;
+            mapData.tempObstacleDefs = state.tempObstacleDefs;
             mapData.startPoint = state.startPoint;
             mapData.targetPoints = state.targetPoints;
             mapData.goalPoint = state.goalPoint;
@@ -601,6 +626,7 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
 
         state.staticObstacles = [];
         state.dynamicObstacleDefs = [];
+        state.tempObstacleDefs = [];
         state.startPoint = [];
         state.startPoints = [];
         state.startPointIdx = 1;
@@ -663,6 +689,11 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
                 state.dynamicObstacleDefs(:,4), state.dynamicObstacleDefs(:,3), state.dynamicObstacleDefs(:,5)];
         else
             simParams.dynamicObstacleDefs = [];
+        end
+        if ~isempty(state.tempObstacleDefs)
+            simParams.tempObstacleDefs = state.tempObstacleDefs;  % [r, c, detectionRange]
+        else
+            simParams.tempObstacleDefs = [];
         end
         if state.robotCount > 1
             simParams.startPoints = [state.startPoints(:,2), state.startPoints(:,1)];

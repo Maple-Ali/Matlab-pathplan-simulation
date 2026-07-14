@@ -234,11 +234,4 @@ title('不同 \alpha 下 \beta 的影响');
 legend('Location', 'best');
 grid on;
 
-sgtitle(sprintf('AStar_v1 参数敏感性分析 — %s地图', mapName), 'FontSize', 14);
-
-% 保存图片
-figDir = fullfile(fileparts(mfilename('fullpath')), 'figures');
-if ~exist(figDir, 'dir'), mkdir(figDir); end
-figFile = fullfile(figDir, ['alpha_beta_sensitivity_' mapName '_' ts '.png']);
-saveas(figH, figFile);
-fprintf('图片已保存: %s\n', figFile);
+sgtitle(sprintf('AStar_v1 Parameter Sensitivity — %s', mapName), 'FontSize', 14);

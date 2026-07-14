@@ -44,4 +44,14 @@ for i = 1:length(map.dynamicObstacles)
         return;
     end
 end
+
+% --- 3. 临时静态障碍物：直接检查距离（不受检测范围限制）---
+for i = 1:length(map.tempObstacles)
+    obs = map.tempObstacles(i);
+    dist = norm(robotPos - obs.position);
+    if dist < robotRadius + obs.radius
+        collision = true;
+        return;
+    end
+end
 end

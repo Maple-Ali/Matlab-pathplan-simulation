@@ -21,25 +21,25 @@ function [vx, vy, predictTraj] = DWAPlanner_v3(robot, localGoal, map, ~, dt, par
 % ===== 可调参数 ============================================================
 
 % --- 采样参数 ---
-numSamples   = 7;
-predictSteps = 20;
+numSamples   = 11;  % 增加采样分辨率，避免平衡点卡死
+predictSteps = 25;   % 前向模拟步数（dt=0.1时覆盖2.5秒）
 
 % --- 代价权重 ---
-wHeading    = 2.0;
-wObstacle   = 2.0;
+wHeading    = 5.0;   % 路径跟踪力（必须主导穿越走廊）
+wObstacle   = 1.5;   % 障碍物权重（低权重+陡惩罚曲线）
 wBoundary   = 1.0;
-wRobot      = 0.8;
+wRobot      = 1.0;
 wSpeed      = 1.0;
 wSmoothness = 0.0;
-wDynThreat  = 2.0;   % 动态威胁（TTC）权重
+wDynThreat  = 1.5;   % 动态威胁权重
 
 % --- 静态障碍物避碰参数 ---
-staticSafeDist    = 0.4;
-staticRepulseRange = 1.2;
+staticSafeDist    = 1.1;   % 安全距离（margin=1.3，碰撞阈值0.7留余量）
+staticRepulseRange = 2.0;  % 斥力范围
 
 % --- 动态障碍物避碰参数 ---
-dynSafeDist    = 1.0;
-dynRepulseRange = 1.8;
+dynSafeDist    = 0.8;      % 缩小动态斥力起效范围，通过后更快脱离
+dynRepulseRange = 1.5;     % 缩小斥力影响半径
 
 % --- 自适应参数 ---
 inflationK = 0.3;    % 膨胀半径系数：inflationRadius = baseRadius + k * obsSpeed
@@ -49,7 +49,8 @@ speedLimitK = 0.3;   % 速度限制缩放：speedScale = max(ttc/ttcWarning, spe
 % --- 边界 / 机器人间距离 ---
 boundarySafeDist = 0.5;
 robotSafeDist    = 0.8;
-robotReactDist   = 3.6;
+robotReactDist   = 8.0;   % 让行检测范围（早检测早减速）
+robotRepulseRange = 4.0;  % 机器人间斥力范围（通过后快速脱离）
 
 % --- 传感器参数 ---
 sensorRange  = 5;    % 动态障碍物检测范围（栅格数）
@@ -173,8 +174,9 @@ if minTTC < ttcWarning
     end
 end
 
-% 收集其他机器人
+% 收集其他机器人 + 检测让行身份
 otherRobots = cell(0, 1);
+yieldSpeedScale = 1.0;  % 默认不限速
 if isfield(params, 'allRobots') && ~isempty(params.allRobots) ...
         && isfield(params, 'robotIdx') && robotIdx > 0
     allRobots = params.allRobots;
@@ -183,9 +185,41 @@ if isfield(params, 'allRobots') && ~isempty(params.allRobots) ...
             otherRobots{end+1} = allRobots{j}; %#ok<AGROW>
         end
     end
+    % 检测是否需要让行（位置哈希：pos1+pos2 较小的让行）
+    if ~isempty(otherRobots)
+        otherPos = otherRobots{1}.pos;
+        % 让行判定：与 robotCost 中相同的逻辑
+        relVec = otherPos - robot.pos;
+        dRel = norm(relVec);
+        if dRel < robotReactDist && dRel > 0.1
+            relDir = relVec / dRel;
+            cross_me = goalDir(1) * relDir(2) - goalDir(2) * relDir(1);
+            otherVel = otherRobots{1}.vel;
+            otherSpd = norm(otherVel);
+            if otherSpd > 0.01
+                otherDir = otherVel / otherSpd;
+                cross_other = otherDir(2) * relDir(1) - otherDir(1) * relDir(2);
+            else
+                cross_other = -cross_me;
+            end
+            isYield = false;
+            if (cross_me < -0.05) && (cross_other > 0.05)
+                isYield = true;
+            elseif (cross_me > 0.05) && (cross_other < -0.05)
+                isYield = false;
+            else
+                isYield = (robot.pos(1) + robot.pos(2)) < (otherPos(1) + otherPos(2));
+            end
+            % 让行时：根据距离渐进限制速度（停车等待优先车通过）
+            if isYield
+                yieldSpeedScale = max(dRel / robotReactDist, 0.03);
+                effectiveMaxSpeed = min(effectiveMaxSpeed, maxSpeed * yieldSpeedScale);
+            end
+        end
+    end
 end
 
-% ===== 4. 卡住检测 =====
+% ===== 4. 卡住/震荡检测 =====
 st.posHistory(st.posHistIdx, :) = robot.pos;
 st.posHistIdx = st.posHistIdx + 1;
 if st.posHistIdx > stuckWindow
@@ -194,8 +228,15 @@ if st.posHistIdx > stuckWindow
 end
 
 if st.posHistFilled && ~st.escapeActive
-    totalDisp = computeRingBufferDisp(st.posHistory);
+    [totalDisp, netDisp] = computeRingBufferDisp(st.posHistory);
+    % 卡住：总位移很小
     if totalDisp < stuckThresh
+        st.escapeActive = true;
+        st.escapeSteps  = 0;
+        st.stuckPos     = robot.pos;
+        st.escapeDir    = computeEscapeDir(robot.pos, goalDir, occGrid, n, sensorRange);
+    % 震荡：移动量大但几乎没前进（原地来回）
+    elseif totalDisp > 5.0 && netDisp < 0.1
         st.escapeActive = true;
         st.escapeSteps  = 0;
         st.stuckPos     = robot.pos;
@@ -259,7 +300,7 @@ for ix = 1:numSamples
 
         % 机器人间代价
         cost = cost + wRobot * robotCost(traj, otherRobots, dt, ...
-            robotSafeDist, robotReactDist, goalDir);
+            robotSafeDist, robotRepulseRange, goalDir);
 
         % 速度代价（有动态威胁时降低权重，允许自由减速+转向）
         effectiveWSpeed = wSpeed;
@@ -281,6 +322,16 @@ for ix = 1:numSamples
         if minTTC < ttcWarning && vMag < effectiveMaxSpeed * 0.5
             stagnationPenalty = (1 - vMag / (effectiveMaxSpeed * 0.5)) * 3.0;
             cost = cost + stagnationPenalty;
+        end
+
+        % 路径偏离惩罚：用轨迹终点偏离距离，引导机器人回到路径
+        if isfield(params, 'fullRef') && ~isempty(params.fullRef)
+            refPath = params.fullRef;
+            endPt = traj(end, :);
+            distsToPath = sqrt((refPath(:,1)-endPt(1)).^2 + (refPath(:,2)-endPt(2)).^2);
+            [minPathDist, ~] = min(distsToPath);
+            pathDevPenalty = minPathDist^2 * 5.0;
+            cost = cost + pathDevPenalty;
         end
 
         % 逃逸代价
@@ -326,13 +377,15 @@ st = struct(...
     'stuckPos',       [0, 0]);
 end
 
-function totalDisp = computeRingBufferDisp(posHistory)
+function [totalDisp, netDisp] = computeRingBufferDisp(posHistory)
 stuckWindow = size(posHistory, 1);
 totalDisp = 0;
 for k = 1:(stuckWindow - 1)
     totalDisp = totalDisp + norm(posHistory(k+1, :) - posHistory(k, :));
 end
 totalDisp = totalDisp + norm(posHistory(1, :) - posHistory(stuckWindow, :));
+% 净位移：首尾距离
+netDisp = norm(posHistory(1, :) - posHistory(stuckWindow, :));
 end
 
 function traj = forwardSimulate(startPos, vel, dt, steps)
@@ -389,7 +442,7 @@ if d < margin
     penalty = (margin / max(d, 0.01))^2;
 elseif d < repulseRange
     alpha = (repulseRange - d) / (repulseRange - margin);
-    penalty = alpha;
+    penalty = alpha ^ 0.4;
 else
     penalty = 0;
 end
@@ -429,7 +482,7 @@ for k = 1:nSteps
                 relApproach = approachComponent - dot(obsVel, obsToRobotDir);
                 if relApproach > 0.01
                     ttc = d / relApproach;
-                    if ttc < 3.0
+                    if ttc < 3.5  % 配合 predictSteps=25（2.5秒预测窗口）
                         % 威胁 = (1/TTC) × (接近速度比例) × (距离因子)
                         % 接近速度比例：approachComponent/vMag ∈ (0,1]
                         %   横向运动 → 接近0，直冲障碍物 → 接近1
@@ -536,7 +589,7 @@ for r = 1:numOthers
         if dRel < reactDist
             proximity = (reactDist - dRel) / (reactDist - safeDist * 0.4);
             proximity = max(0, min(1, proximity));
-            cost = cost + vMag * proximity * 5.0;
+            cost = cost + vMag * proximity * 3.5;  % 让行车快速减速至停止
         end
         if minPredDist < urgentDist
             cost = cost + (urgentDist / max(minPredDist, 0.05)) * 0.8;

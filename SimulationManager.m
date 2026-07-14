@@ -25,6 +25,18 @@ if isfield(simParams, 'dynamicObstacleDefs') && ~isempty(simParams.dynamicObstac
     end
 end
 
+% --- 1c. 临时静态障碍物（转为零速度动态障碍物处理，复用 DWA 动态避障逻辑）---
+% tempObstacleDefs: M×3 矩阵，每行 [col, row, detectionRange]（GUI 存储格式）
+if isfield(simParams, 'tempObstacleDefs') && ~isempty(simParams.tempObstacleDefs)
+    for i = 1:size(simParams.tempObstacleDefs, 1)
+        def = simParams.tempObstacleDefs(i, :);
+        gridPos = [def(2), def(1)];  % GUI [c,r] → 算法 [row,col]
+        % 起点=终点 + 速度0 = 静态不动的"动态障碍物"
+        obs = DynamicObstacle(gridPos, gridPos, 0);
+        map.setDynamicObstacle(obs);
+    end
+end
+
 % --- 2. 初始化机器人 ---
 % 兼容单/多机器人：startPoints 优先，否则 fallback 到 startPoint
 if isfield(simParams, 'startPoints') && ~isempty(simParams.startPoints)
@@ -282,13 +294,18 @@ if hasViz
         end
     end
 
-    % 动态障碍物
+    % 动态障碍物（速度=0 的为临时障碍物，显示蓝色）
     dynH = gobjects(length(map.dynamicObstacles), 1);
     for i = 1:length(map.dynamicObstacles)
         obs = map.dynamicObstacles(i);
+        if obs.speed == 0
+            faceColor = [0.3, 0.5, 1.0];  % 蓝色：临时障碍物
+        else
+            faceColor = plotTools('getColor', 'dynamicObs');
+        end
         dynH(i) = rectangle(ax, 'Position', ...
             [obs.currentPos(1) - 0.5, obs.currentPos(2) - 0.5, 1, 1], ...
-            'FaceColor', plotTools('getColor', 'dynamicObs'), 'EdgeColor', 'none');
+            'FaceColor', faceColor, 'EdgeColor', 'none');
     end
 
     % 机器人标记、轨迹、预测线
@@ -314,7 +331,7 @@ totalTime = 0;
 collision = false;
 arrivalThreshold = 0.3;
 pauseDuration = 1.0;
-lookAheadDist = 1.0;
+lookAheadDist = 1.0;  % 原始前瞻距离
 localParams = struct('maxSpeed', simParams.robotMaxSpeed);
 
 % 每机器人状态
@@ -380,13 +397,22 @@ while any(active)
             searchEnd = segBounds(rs.currentSegIdx, 2);
             fullRef = robotTasks(r).fullRef;
 
-            if distToGoal < lookAheadDist + 0.5
+            % 自适应前瞻距离：附近有临时障碍物时缩短
+            effectiveLAD = lookAheadDist;
+            for ti = 1:length(map.tempObstacles)
+                if map.tempObstacles(ti).isDetected(rob.pos, lookAheadDist + 1)
+                    effectiveLAD = max(lookAheadDist * 0.4, 0.8);
+                    break;
+                end
+            end
+
+            if distToGoal < effectiveLAD + 0.5
                 % 接近目标：直接使用目标点作为前瞻，但仍更新 prevIdx
                 lookAheadPt = visitSeq(rs.currentTargetIdx, :);
-                [~, newIdx] = findLookAheadExt(fullRef, rob.pos, lookAheadDist, rs.prevIdx, searchEnd);
+                [~, newIdx] = findLookAheadExt(fullRef, rob.pos, effectiveLAD, rs.prevIdx, searchEnd);
                 rs.prevIdx = newIdx;
             else
-                [lookAheadPt, newIdx] = findLookAheadExt(fullRef, rob.pos, lookAheadDist, rs.prevIdx, searchEnd);
+                [lookAheadPt, newIdx] = findLookAheadExt(fullRef, rob.pos, effectiveLAD, rs.prevIdx, searchEnd);
                 rs.prevIdx = newIdx;
             end
 
@@ -394,6 +420,7 @@ while any(active)
             plannerParams = localParams;
             plannerParams.allRobots = robots;
             plannerParams.robotIdx = r;
+            plannerParams.fullRef = fullRef;  % 传递完整路径用于偏离惩罚
 
             switch simParams.localAlgo
                 case 'DWA'
