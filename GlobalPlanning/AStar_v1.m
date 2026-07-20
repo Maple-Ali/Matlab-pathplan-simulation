@@ -22,10 +22,10 @@ if nargin < 5
     callback = [];
 end
 if nargin < 6 || isempty(alpha)
-    alpha = 0.5;
+    alpha = 0.3;
 end
 if nargin < 7 || isempty(beta)
-    beta = 1.0;
+    beta = 3.0;
 end
 
 n = map.mapSize;

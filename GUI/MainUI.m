@@ -740,6 +740,7 @@ presetDropdown.ValueChangedFcn = @(~,~) loadPreset(presetDropdown.Value);
             results = SimulationManager(simParams);
             statusLabel.Text = '仿真完成';
             DataViewerUI(results, simParams);
+            VelocityViewerUI(results);
         catch ME
             statusLabel.Text = sprintf('仿真错误: %s', ME.message);
             rethrow(ME);

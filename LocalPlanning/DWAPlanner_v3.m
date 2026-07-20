@@ -21,21 +21,21 @@ function [vx, vy, predictTraj] = DWAPlanner_v3(robot, localGoal, map, ~, dt, par
 % ===== 可调参数 ============================================================
 
 % --- 采样参数 ---
-numSamples   = 11;  % 增加采样分辨率，避免平衡点卡死
+numSamples   = 7;
 predictSteps = 25;   % 前向模拟步数（dt=0.1时覆盖2.5秒）
 
 % --- 代价权重 ---
-wHeading    = 5.0;   % 路径跟踪力（必须主导穿越走廊）
-wObstacle   = 1.5;   % 障碍物权重（低权重+陡惩罚曲线）
+wHeading    = 3.5;   % 增大路径跟踪力，通过交叉口后快速回正
+wObstacle   = 2.0;   % 障碍物权重
 wBoundary   = 1.0;
 wRobot      = 1.0;
 wSpeed      = 1.0;
 wSmoothness = 0.0;
-wDynThreat  = 1.5;   % 动态威胁权重
+wDynThreat  = 1.5;   % 动态威胁权重，适当降低避免通过后持续偏离
 
 % --- 静态障碍物避碰参数 ---
-staticSafeDist    = 1.1;   % 安全距离（margin=1.3，碰撞阈值0.7留余量）
-staticRepulseRange = 2.0;  % 斥力范围
+staticSafeDist    = 0.4;   % 安全距离
+staticRepulseRange = 1.2;  % 斥力范围
 
 % --- 动态障碍物避碰参数 ---
 dynSafeDist    = 0.8;      % 缩小动态斥力起效范围，通过后更快脱离
@@ -219,7 +219,7 @@ if isfield(params, 'allRobots') && ~isempty(params.allRobots) ...
     end
 end
 
-% ===== 4. 卡住/震荡检测 =====
+% ===== 4. 卡住检测 =====
 st.posHistory(st.posHistIdx, :) = robot.pos;
 st.posHistIdx = st.posHistIdx + 1;
 if st.posHistIdx > stuckWindow
@@ -228,15 +228,8 @@ if st.posHistIdx > stuckWindow
 end
 
 if st.posHistFilled && ~st.escapeActive
-    [totalDisp, netDisp] = computeRingBufferDisp(st.posHistory);
-    % 卡住：总位移很小
+    totalDisp = computeRingBufferDisp(st.posHistory);
     if totalDisp < stuckThresh
-        st.escapeActive = true;
-        st.escapeSteps  = 0;
-        st.stuckPos     = robot.pos;
-        st.escapeDir    = computeEscapeDir(robot.pos, goalDir, occGrid, n, sensorRange);
-    % 震荡：移动量大但几乎没前进（原地来回）
-    elseif totalDisp > 5.0 && netDisp < 0.1
         st.escapeActive = true;
         st.escapeSteps  = 0;
         st.stuckPos     = robot.pos;
@@ -324,16 +317,6 @@ for ix = 1:numSamples
             cost = cost + stagnationPenalty;
         end
 
-        % 路径偏离惩罚：用轨迹终点偏离距离，引导机器人回到路径
-        if isfield(params, 'fullRef') && ~isempty(params.fullRef)
-            refPath = params.fullRef;
-            endPt = traj(end, :);
-            distsToPath = sqrt((refPath(:,1)-endPt(1)).^2 + (refPath(:,2)-endPt(2)).^2);
-            [minPathDist, ~] = min(distsToPath);
-            pathDevPenalty = minPathDist^2 * 5.0;
-            cost = cost + pathDevPenalty;
-        end
-
         % 逃逸代价
         if st.escapeActive
             cost = cost + wEscape * escapeCost(vCand, st.escapeDir);
@@ -377,15 +360,13 @@ st = struct(...
     'stuckPos',       [0, 0]);
 end
 
-function [totalDisp, netDisp] = computeRingBufferDisp(posHistory)
+function totalDisp = computeRingBufferDisp(posHistory)
 stuckWindow = size(posHistory, 1);
 totalDisp = 0;
 for k = 1:(stuckWindow - 1)
     totalDisp = totalDisp + norm(posHistory(k+1, :) - posHistory(k, :));
 end
 totalDisp = totalDisp + norm(posHistory(1, :) - posHistory(stuckWindow, :));
-% 净位移：首尾距离
-netDisp = norm(posHistory(1, :) - posHistory(stuckWindow, :));
 end
 
 function traj = forwardSimulate(startPos, vel, dt, steps)
@@ -442,7 +423,7 @@ if d < margin
     penalty = (margin / max(d, 0.01))^2;
 elseif d < repulseRange
     alpha = (repulseRange - d) / (repulseRange - margin);
-    penalty = alpha ^ 0.4;
+    penalty = alpha ^ 0.4;  % 更陡峭的衰减曲线（原为线性 alpha^1）
 else
     penalty = 0;
 end

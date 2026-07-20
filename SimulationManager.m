@@ -331,7 +331,7 @@ totalTime = 0;
 collision = false;
 arrivalThreshold = 0.3;
 pauseDuration = 1.0;
-lookAheadDist = 1.0;  % 原始前瞻距离
+lookAheadDist = 1.0;
 localParams = struct('maxSpeed', simParams.robotMaxSpeed);
 
 % 每机器人状态
@@ -345,6 +345,16 @@ for r = 1:numRobots
     robotState(r).prevIdx = robotTasks(r).segBounds(1, 1);  % findLookAhead 持久索引（初始化为第一段起始）
     robotState(r).latestPredictTraj = []; % 缓存最新预测轨迹
 end
+
+% 速度历史记录（预分配）
+maxSteps = ceil(300 / dt);
+speedHistory = cell(1, numRobots);
+timeHistory = cell(1, numRobots);
+for r = 1:numRobots
+    speedHistory{r} = zeros(1, maxSteps);
+    timeHistory{r} = zeros(1, maxSteps);
+end
+stepCount = 0;
 
 active = true(1, numRobots);
 
@@ -397,12 +407,14 @@ while any(active)
             searchEnd = segBounds(rs.currentSegIdx, 2);
             fullRef = robotTasks(r).fullRef;
 
-            % 自适应前瞻距离：附近有临时障碍物时缩短
+            % 自适应前瞻距离：检测到临时障碍物时缩短
             effectiveLAD = lookAheadDist;
-            for ti = 1:length(map.tempObstacles)
-                if map.tempObstacles(ti).isDetected(rob.pos, lookAheadDist + 1)
-                    effectiveLAD = max(lookAheadDist * 0.4, 0.8);
-                    break;
+            if ~isempty(map.tempObstacles)
+                for ti = 1:length(map.tempObstacles)
+                    if map.tempObstacles(ti).isDetected(rob.pos, lookAheadDist + 1)
+                        effectiveLAD = max(lookAheadDist * 0.4, 0.8);
+                        break;
+                    end
                 end
             end
 
@@ -472,6 +484,13 @@ while any(active)
 
     totalTime = totalTime + dt;
 
+    % 记录速度历史
+    stepCount = stepCount + 1;
+    for r = 1:numRobots
+        speedHistory{r}(stepCount) = norm(robots{r}.vel);
+        timeHistory{r}(stepCount) = totalTime;
+    end
+
     % ---- 可视化更新 ----
     if hasViz
         for r = 1:numRobots
@@ -523,6 +542,8 @@ for r = 1:numRobots
     robotDetails(r).rawLen = robotTasks(r).rawLen;
     robotDetails(r).simpleLen = robotTasks(r).simpleLen;
     robotDetails(r).smoothLen = robotTasks(r).smoothLen;
+    robotDetails(r).speedHistory = speedHistory{r}(1:stepCount);
+    robotDetails(r).timeHistory = timeHistory{r}(1:stepCount);
 end
 
 % 汇总全部路径用于向后兼容的字段
