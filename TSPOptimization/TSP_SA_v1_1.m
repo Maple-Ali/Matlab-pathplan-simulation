@@ -1,18 +1,23 @@
-function [bestOrder, bestCost, history] = TSP_SA_v1(costMatrix, nPts)
-%TSP_SA_V1 改进模拟退火算法求解 TSP（多点NN初始解 + 增量代价 + 2-opt）
-%   相对 TSP_SA 的改进:
-%     A. 多点最近邻初始解：从每个中间点出发构建贪心解，取最优
+function [bestOrder, bestCost, history] = TSP_SA_v1_1(costMatrix, nPts)
+%TSP_SA_V1_1 改进模拟退火算法求解 TSP
+%   相对 TSP_SA_v1 的改进:
+%     F. 自适应冷却速率：根据接受率动态调节 alpha，保持 ~50% 接受率
+%     G. 自适应内循环：高温多迭代充分探索，低温少迭代精细搜索
+%     （移除 v1 的重升温功能，表现不稳定）
+%
+%   保留 v1 的改进:
+%     A. 多点最近邻初始解
 %     B. 初始解 + 最终解 2-opt 局部搜索精炼
-%     C. 增量代价计算 delta O(1)：swap/insert/2-opt 邻域评价常数时间
-%     D. 自适应算子权重：根据各算子接受率动态调整选择概率
-%     E. 自适应重升温 + 停止检测
+%     C. 增量代价计算 delta O(1)
+%     D. 自适应算子权重
+%     E. 基于温度的停滞检测
 %
 %   Inputs:
 %     costMatrix - nPts×nPts 对称成本矩阵
 %     nPts       - 总点数（含固定起点和终点）
 %
 %   Outputs:
-%     bestOrder  - 1×nPts 最优访问顺序（索引向量）
+%     bestOrder  - 1×nPts 最优访问顺序
 %     bestCost   - 最优路径总成本
 %     history    - （可选）收敛历史结构体
 
@@ -23,30 +28,35 @@ midIdx = 2:(nPts - 1);
 % --- 初始解 ---
 nNNRestarts = 0;            % 多点NN数量（0=尝试全部nMid个起点）
 
-% --- 模拟退火冷却 ---
-T0_factor = 1.0;            % 初始温度因子（>0 时 T0 = factor * 最大边长, ≤0 时自动）
-T_min     = 1e-3;           % 终止温度
-alpha     = 0.995;          % 降温系数（每轮 T = T * alpha）
-nInnerMult = 10;            % 内循环倍数（nInner = max(nMid * nInnerMult, 50)）
+% --- 自适应冷却速率（方案F） ---
+alpha_base   = 0.995;       % 基础冷却系数（固定模式时的值）
+adaptAlpha   = 1;           % 1=自适应冷却, 0=固定 alpha=alpha_base
+alpha_min    = 0.990;       % 冷却系数下限（快冷却，防浮点误差累积）
+alpha_max    = 0.998;       % 冷却系数上限（慢冷却，接受率偏低时减速）
+alpha_beta   = 0.005;       % 自适应强度（alpha += beta*(targetAcpt-acptRate)）
+targetAcpt   = 0.50;        % 目标接受率（SA经典值0.5，平衡探索与开发）
+
+% --- 内循环自适应（方案G） ---
+adaptInner   = 1;           % 1=内循环随温度自适应, 0=固定
+nInnerMult   = 10;          % 内循环基数（高温时 nInner = max(nMid*nInnerMult, 50)）
+nInnerMin    = 30;          % 内循环最小长度（低温保底，太少无法采样）
+nInnerPower  = 0.5;         % 温度权重指数（0.5=平方根，1=线性；越小低温衰减越缓）
+
+% --- 温度 ---
+T0_factor    = 1.0;         % 初始温度因子（>0 时 T0 = factor*最大边长, ≤0 自动）
+T_min        = 1e-3;        % 终止温度
 
 % --- 邻域算子权重 ---
-opWeights  = [1.0, 1.0, 1.0];  % [swap, insert, 2-opt] 初始权重
-opLearnRate = 0.15;            % 权重学习率（越大对新数据越敏感）
-opDecay     = 0.95;            % 每轮权重衰减（保留探索，<1 防止权重归零）
+opWeights    = [1.0, 1.0, 1.0];  % [swap, insert, 2-opt] 初始权重
+opLearnRate  = 0.15;             % 权重学习率
+opDecay      = 0.95;             % 每轮权重衰减
 
-% --- 自适应重升温 ---
-enableReheat   = 0;            % 1=开启重升温（原版SA无此功能，默认关闭避免温度振荡）
-reheatFactor   = 0.3;          % 升温幅度（T += reheatFactor * (T0 - T)）
-reheatAcptThr  = 0.02;         % 接受率低于此阈值触发重升温
-reheatMaxT     = 0.1;          % 仅当 T/T0 < reheatMaxT 时才允许重升温
-maxReheats     = 3;            % 最大重升温次数（防死循环）
-
-% --- 自适应停止 ---
-enableAdaptiveStop = 1;        % 1=开启自适应停止
-T_cold_factor = 0.02;          % 仅当 T/T0 < factor 时才计停滞（高温探索期不计数）
-stagnationLim = 250;           % 低温阶段连续停滞上限（外循环轮数）
-minOuter      = 80;            % 自适应停止最少外循环轮数（安全底线）
-maxOuterIter  = 3000;          % 外循环硬上限（安全网，正常不应触发）
+% --- 自适应停止（方案E） ---
+enableAdaptiveStop = 1;     % 1=开启自适应停止
+T_cold_factor = 0.02;       % 仅当 T/T0 < factor 时才计停滞（高温探索期不计数）
+stagnationLim = 250;        % 低温阶段连续停滞上限（外循环轮数）
+minOuter      = 80;         % 自适应停止最少外循环轮数
+maxOuterIter  = 3000;       % 外循环硬上限（安全网）
 % ========================================================================
 
 % 是否记录收敛历史
@@ -81,17 +91,13 @@ for sIdx = 1:nStarts
     tour = zeros(1, nMid);
     tour(1) = midIdx(s);
     cur = midIdx(s);
-    cost = costMatrix(1, cur);  % start → 第一个中间点
+    cost = costMatrix(1, cur);
     for step = 2:nMid
-        bestD = inf;
-        bestJ = -1;
+        bestD = inf; bestJ = -1;
         for j = 1:nMid
             if ~visited(j)
                 d = costMatrix(cur, midIdx(j));
-                if d < bestD
-                    bestD = d;
-                    bestJ = j;
-                end
+                if d < bestD, bestD = d; bestJ = j; end
             end
         end
         cost = cost + bestD;
@@ -99,7 +105,7 @@ for sIdx = 1:nStarts
         tour(step) = midIdx(bestJ);
         cur = midIdx(bestJ);
     end
-    cost = cost + costMatrix(cur, nPts);  % 最后一个中间点 → goal
+    cost = cost + costMatrix(cur, nPts);
     nnCosts(sIdx) = cost;
     nnTours{sIdx} = tour;
 end
@@ -120,25 +126,27 @@ else
 end
 if isempty(T0) || T0 == 0, T0 = 100; end
 T = T0;
-nInner = max(nMid * nInnerMult, 50);
 
-% 预估最大外循环数（用于预分配）
-maxOuter = ceil(log(T_min / T0) / log(alpha)) + 200;  % +200 留重升温余量
+% 内循环基数（高温时使用）
+nInnerBase = max(nMid * nInnerMult, 50);
+
+% 预估最大外循环数（用于预分配 history）
+nEstOuter = ceil(log(T_min / T0) / log(alpha_min)) + 200;
 if trackHistory
-    bestCostHistory = zeros(maxOuter, 1);
-    avgCostHistory = zeros(maxOuter, 1);
-    timeHistory = zeros(maxOuter, 1);
+    bestCostHistory = zeros(nEstOuter, 1);
+    avgCostHistory = zeros(nEstOuter, 1);
+    timeHistory = zeros(nEstOuter, 1);
 end
 
 % --- 方案 D：自适应算子权重 ---
-opW = opWeights(:);        % 当前权重
-opSuccess = zeros(3, 1);   % 本轮成功次数
-opAttempts = zeros(3, 1);  % 本轮尝试次数
+opW = opWeights(:);
+opSuccess = zeros(3, 1);
+opAttempts = zeros(3, 1);
 
 % --- 方案 E：自适应停止 ---
 stagnationCount = 0;
 stopReason = '';
-prevBestCost = bestCost;   % 上一外循环的最优代价（不依赖 trackHistory）
+prevBestCost = bestCost;
 
 nOuter = 0;
 
@@ -150,7 +158,13 @@ while T > T_min && nOuter < maxOuterIter
     opSuccess(:) = 0;
     opAttempts(:) = 0;
 
-    % 复制 midOrder 副本用于本内循环（接受时更新）
+    % --- 方案 G：内循环长度随温度自适应 ---
+    if adaptInner
+        nInner = max(nInnerMin, round(nInnerBase * (T / T0)^nInnerPower));
+    else
+        nInner = nInnerBase;
+    end
+
     curMid = midOrder;
 
     for i = 1:nInner
@@ -160,13 +174,11 @@ while T > T_min && nOuter < maxOuterIter
         op = find(cumW >= rOp, 1, 'first');
 
         switch op
-            case 1  % Swap：随机交换两个位置
+            case 1  % Swap
                 pair = randperm(nMid, 2);
                 i1 = min(pair); i2 = max(pair);
                 [newCost, delta] = deltaSwap(curMid, i1, i2, curCost, costMatrix, nMid, nPts);
-
                 if delta < 0 || rand < exp(-delta / T)
-                    % 执行交换
                     curMid([i1, i2]) = curMid([i2, i1]);
                     curCost = newCost;
                     nAccepted = nAccepted + 1;
@@ -174,14 +186,11 @@ while T > T_min && nOuter < maxOuterIter
                 end
                 opAttempts(1) = opAttempts(1) + 1;
 
-            case 2  % Insert：取出一点插入到另一位置
+            case 2  % Insert
                 pos = randperm(nMid, 2);
-                fromPos = min(pos);
-                toPos = max(pos);
+                fromPos = min(pos); toPos = max(pos);
                 [newCost, delta] = deltaInsert(curMid, fromPos, toPos, curCost, costMatrix, nMid, nPts);
-
                 if delta < 0 || rand < exp(-delta / T)
-                    % 执行插入
                     val = curMid(fromPos);
                     curMid(fromPos:toPos-1) = curMid(fromPos+1:toPos);
                     curMid(toPos) = val;
@@ -191,14 +200,12 @@ while T > T_min && nOuter < maxOuterIter
                 end
                 opAttempts(2) = opAttempts(2) + 1;
 
-            case 3  % 2-opt：反转一段子序列
+            case 3  % 2-opt (reverse)
                 pair = sort(randi(nMid, [1, 2]));
                 i1 = pair(1); i2 = pair(2);
                 if i1 < i2
                     [newCost, delta] = delta2opt(curMid, i1, i2, curCost, costMatrix, nMid, nPts);
-
                     if delta < 0 || rand < exp(-delta / T)
-                        % 执行反转
                         curMid(i1:i2) = curMid(i2:-1:i1);
                         curCost = newCost;
                         nAccepted = nAccepted + 1;
@@ -210,14 +217,12 @@ while T > T_min && nOuter < maxOuterIter
 
         sumCost = sumCost + curCost;
 
-        % 更新全局最优
         if curCost < bestCost
             bestCost = curCost;
             bestMid = curMid;
         end
     end
 
-    % 内循环结束后，同步回主 midOrder（取当前 curMid）
     midOrder = curMid;
 
     % 记录收敛历史
@@ -232,7 +237,6 @@ while T > T_min && nOuter < maxOuterIter
         if bestCost < prevBestCost - 1e-10
             stagnationCount = 0;
         elseif T <= T_cold_factor * T0
-            % 仅低温阶段（T/T0 <= coldFactor）计数停滞
             stagnationCount = stagnationCount + 1;
             if stagnationCount >= stagnationLim
                 stopReason = sprintf('低温停滞(T/T0=%.3g,%d轮)', T/T0, stagnationCount);
@@ -247,16 +251,20 @@ while T > T_min && nOuter < maxOuterIter
         if opAttempts(o) > 0
             succRate = opSuccess(o) / opAttempts(o);
             opW(o) = opW(o) * opDecay + succRate * opLearnRate;
-            opW(o) = max(opW(o), 0.01);  % 保底，防止权重归零
+            opW(o) = max(opW(o), 0.01);
         end
     end
 
-    % --- 方案 E：自适应重升温（仅低温时允许，防止高温无限重升） ---
-    if enableReheat && T <= reheatMaxT * T0
+    % --- 方案 F：自适应冷却速率 ---
+    if adaptAlpha
         acptRate = nAccepted / nInner;
-        if acptRate < reheatAcptThr
-            T = T + reheatFactor * (T0 - T);
-        end
+        % alpha = alpha_base - beta*(acptRate - targetAcpt)
+        % 接受率高于目标 → 降温更快（alpha↓）
+        % 接受率低于目标 → 降温更慢（alpha↑）
+        alpha = alpha_base - alpha_beta * (acptRate - targetAcpt);
+        alpha = max(alpha_min, min(alpha_max, alpha));
+    else
+        alpha = alpha_base;
     end
 
     % 降温
@@ -284,7 +292,7 @@ if trackHistory
         end
     end
     history.stopReason = stopReason;
-    history.nInner = nInner;
+    history.nInner = nInner;   % 末轮内循环长度
     history.finalT = T;
 end
 end
@@ -294,64 +302,47 @@ end
 % =========================================================================
 
 function [newCost, delta] = deltaSwap(midOrder, i, j, curCost, costMatrix, nMid, nPts)
-%DELTASWAP 计算交换 midOrder(i) 和 midOrder(j) 的代价变化，O(1)
-%   i, j 是 midOrder 中的位置索引（1-based），保证 i < j
-
 Li = getLeft(midOrder, i);
 Ri = getRight(midOrder, i, nMid, nPts);
 Lj = getLeft(midOrder, j);
 Rj = getRight(midOrder, j, nMid, nPts);
-
 Ai = midOrder(i);
 Aj = midOrder(j);
 
 if j == i + 1
-    % 相邻：3条边变化
     oldEdges = costMatrix(Li, Ai) + costMatrix(Ai, Aj) + costMatrix(Aj, Rj);
     newEdges = costMatrix(Li, Aj) + costMatrix(Aj, Ai) + costMatrix(Ai, Rj);
 else
-    % 不相邻：4条边变化
     oldEdges = costMatrix(Li, Ai) + costMatrix(Ai, Ri) ...
              + costMatrix(Lj, Aj) + costMatrix(Aj, Rj);
     newEdges = costMatrix(Li, Aj) + costMatrix(Aj, Ri) ...
              + costMatrix(Lj, Ai) + costMatrix(Ai, Rj);
 end
-
 delta = newEdges - oldEdges;
 newCost = curCost + delta;
 end
 
 function [newCost, delta] = deltaInsert(midOrder, from, to, curCost, costMatrix, nMid, nPts)
-%DELTAINSERT 计算将 midOrder(from) 移到位置 to 的代价变化，O(1)
-%   from < to
-
-X = midOrder(from);        % 被移动的元素
+X = midOrder(from);
 L = getLeft(midOrder, from);
-B = midOrder(from + 1);    % from 后面的元素（移位后成为新的 from 位置元素）
-D = midOrder(to);          % 目标位置的元素
+B = midOrder(from + 1);
+D = midOrder(to);
 R = getRight(midOrder, to, nMid, nPts);
 
-% 三条旧边：L→X, X→B, D→R
 oldEdges = costMatrix(L, X) + costMatrix(X, B) + costMatrix(D, R);
-% 三条新边：L→B, D→X, X→R
 newEdges = costMatrix(L, B) + costMatrix(D, X) + costMatrix(X, R);
-
 delta = newEdges - oldEdges;
 newCost = curCost + delta;
 end
 
 function [newCost, delta] = delta2opt(midOrder, i, j, curCost, costMatrix, nMid, nPts)
-%DELTA2OPT 计算反转 midOrder(i:j) 的代价变化，O(1)
-%   内部边仅方向反转，因矩阵对称故成本不变；仅两条边界边变化
-
 L = getLeft(midOrder, i);
-A = midOrder(i);           % 反转前在 i，反转后移到 j
-B = midOrder(j);           % 反转前在 j，反转后移到 i
+A = midOrder(i);
+B = midOrder(j);
 R = getRight(midOrder, j, nMid, nPts);
 
 oldEdges = costMatrix(L, A) + costMatrix(B, R);
 newEdges = costMatrix(L, B) + costMatrix(A, R);
-
 delta = newEdges - oldEdges;
 newCost = curCost + delta;
 end
@@ -361,35 +352,20 @@ end
 % =========================================================================
 
 function L = getLeft(order, pos)
-%GETLEFT 获取 order(pos) 在完整路径中的左邻居（起点=1）
-if pos == 1
-    L = 1;
-else
-    L = order(pos - 1);
-end
+if pos == 1, L = 1; else, L = order(pos - 1); end
 end
 
 function R = getRight(order, pos, nMid, nPts)
-%GETRIGHT 获取 order(pos) 在完整路径中的右邻居（终点=nPts）
-if pos == nMid
-    R = nPts;
-else
-    R = order(pos + 1);
-end
+if pos == nMid, R = nPts; else, R = order(pos + 1); end
 end
 
 % =========================================================================
 %  2-opt 局部搜索（方案 B）
 % =========================================================================
 function [order, cost] = twoOpt(order, costMatrix, nPts)
-%TWOOPT 对中间点排列做 2-opt 边交换优化
-%   反复检查所有边对，若交换后总成本下降则执行，直到无改进
-%   内部也使用增量计算 delta 加速
-
 nMid = length(order);
 fullOrder = [1, order, nPts];
 
-% 初始完整代价
 cost = 0;
 for k = 1:(nPts - 1)
     cost = cost + costMatrix(fullOrder(k), fullOrder(k + 1));
@@ -400,19 +376,14 @@ while improved
     improved = false;
     for i = 1:(nMid - 1)
         for j = (i + 1):nMid
-            % fullOrder 中的对应索引：fi = i+1, fj = j+1
-            fi = i + 1;
-            fj = j + 1;
-
-            oldCost = costMatrix(fullOrder(fi), fullOrder(fi + 1)) + ...
-                      costMatrix(fullOrder(fj), fullOrder(fj + 1));
-            newCost = costMatrix(fullOrder(fi), fullOrder(fj)) + ...
-                      costMatrix(fullOrder(fi + 1), fullOrder(fj + 1));
-
-            if newCost < oldCost - 1e-10
-                % 执行反转
+            fi = i + 1; fj = j + 1;
+            old = costMatrix(fullOrder(fi), fullOrder(fi + 1)) + ...
+                  costMatrix(fullOrder(fj), fullOrder(fj + 1));
+            new = costMatrix(fullOrder(fi), fullOrder(fj)) + ...
+                  costMatrix(fullOrder(fi + 1), fullOrder(fj + 1));
+            if new < old - 1e-10
                 order((i + 1):j) = order(j:-1:(i + 1));
-                cost = cost - oldCost + newCost;
+                cost = cost - old + new;
                 improved = true;
                 fullOrder = [1, order, nPts];
             end

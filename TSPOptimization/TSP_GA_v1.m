@@ -21,7 +21,7 @@ function [bestOrder, bestCost, history] = TSP_GA_v1(costMatrix, nPts)
 nMid = nPts - 2;
 midIdx = 2:(nPts - 1);
 popSize = 50;
-nGen = 1000;
+nGen = 500;
 mutationRate = 0.1;
 
 % 是否记录收敛历史

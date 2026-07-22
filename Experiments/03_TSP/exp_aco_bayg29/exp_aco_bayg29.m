@@ -9,9 +9,9 @@ rootDir = fileparts(fileparts(fileparts(fileparts(mfilename('fullpath')))));
 addpath(genpath(rootDir));
 
 % ===== TSP算法选择器（在此处切换以测试不同求解器） =====
-tspSolver = @(costMatrix, nPts) TSP_ACO_v2(costMatrix, nPts);
-% tspSolver = @(costMatrix, nPts) TSP_GA_v2(costMatrix, nPts);
-% tspSolver = @(costMatrix, nPts) TSP_SA_v1(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_ACO_v2(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_GA(costMatrix, nPts);
+tspSolver = @(costMatrix, nPts) TSP_SA_v1_1(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_ACO_v1(costMatrix, nPts);
 
 % ===== Experiment Config =====
@@ -28,7 +28,7 @@ fprintf('Algorithm: %s\n', func2str(tspSolver));
 fprintf('Cities: %d | Runs: %d\n', nCities, nRuns);
 fprintf('Start/Goal: City 1 (%.0f, %.0f)\n\n', cityCoords(1,1), cityCoords(1,2));
 
-%% ===== Build 30x30 cost matrix (start=city1, goal=city1) =====
+%% ===== 构建30×30成本矩阵（起点=城市1，终点=城市1） =====
 % Layout: idx 1=city1(start), idx 2..29=city2..city28, idx 30=city1(goal)
 costMatrix30 = zeros(30);
 costMatrix30(1, 2:29)   = fullDist29(1, 2:29);      % start → cities 2..29
@@ -52,8 +52,13 @@ for run = 1:nRuns
     allOrders(run, :) = bestOrder;
     allCosts(run)     = bestCost;
     allHistories{run} = history;
+    if isfield(history, 'stopReason')
+        stopInfo = history.stopReason;
+    else
+        stopInfo = 'N/A';
+    end
     fprintf('  Run %2d: cost=%.2f | iter=%d | time=%.2fs | %s\n', ...
-        run, bestCost, history.iterCount, history.elapsedTime, history.stopReason);
+        run, bestCost, history.iterCount, history.elapsedTime, stopInfo);
 end
 
 totalWallTime = toc(ticTotal);
@@ -152,7 +157,7 @@ legend('95% CI', 'Median', 'Location', 'northeast'); grid on;
 hold off;
 
 %% ===== Figure 3: Convergence Curves (Time) =====
-figure('Position', [820, 580, 700, 500], 'Color', 'w');
+figure('Position', [820, 200, 700, 500], 'Color', 'w');
 
 % Interpolate to common time grid
 nTimePts = 500;
@@ -164,6 +169,9 @@ for run = 1:nRuns
     h = allHistories{run};
     tRaw = h.timeHistory(1:h.iterCount);
     cRaw = h.bestCostHistory(1:h.iterCount);
+    % Prepend t=0 with initial cost so interp range covers full time
+    tRaw = [0; tRaw(:)];
+    cRaw = [cRaw(1); cRaw(:)];
     % Remove duplicate time points for interp1
     [tUnique, ia] = unique(tRaw);
     cUnique = cRaw(ia);
@@ -188,7 +196,7 @@ legend('95% CI', 'Median', 'Location', 'northeast'); grid on;
 hold off;
 
 %% ===== Figure 4: Cost Distribution =====
-figure('Position', [50, 760, 750, 520], 'Color', 'w');
+figure('Position', [50, 50, 750, 520], 'Color', 'w');
 
 subplot(2,1,1);
 histogram(allCosts, 12, 'FaceColor', [0.2, 0.5, 0.9], 'EdgeColor', 'k', 'LineWidth', 0.5);

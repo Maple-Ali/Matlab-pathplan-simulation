@@ -17,7 +17,7 @@ midIdx = 2:(nPts - 1);
 
 % 算法参数
 nAnts   = 50;       % 蚂蚁数量
-nIter   = 1000;      % 最大迭代次数
+nIter   = 500;      % 最大迭代次数
 alpha   = 1.0;      % 信息素权重
 beta    = 2.0;      % 启发式信息权重
 rho     = 0.5;      % 信息素蒸发率
@@ -25,9 +25,9 @@ Q       = 100;      % 信息素沉积常数
 nRank   = 6;        % 排名沉积的蚂蚁数量
 
 % ===== 自适应停止参数（方案C：种群多样性 + 停滞检测） =====
-enableAdaptiveStop = 1;     % 1=开启自适应停止, 0=关闭（使用固定 nIter）
+enableAdaptiveStop = 0;     % 1=开启自适应停止, 0=关闭（使用固定 nIter）
 cvThreshold   = 0.005;      % 种群代价变异系数阈值（CV < cvThreshold → 同质收敛）
-stagnationLim = 50;         % 最优解连续停滞上限（代）
+stagnationLim = 100;         % 最优解连续停滞上限（代）
 minIter       = 50;         % 自适应停止最少迭代次数
 
 % 是否记录收敛历史
@@ -167,9 +167,11 @@ for iter = 1:nIter
     [iterBestCost, bestAntIdx] = min(antCosts);
     iterBestTour = antTours{bestAntIdx};
 
+    improved = false;
     if iterBestCost < globalBestCost
         globalBestCost = iterBestCost;
         globalBestTour = iterBestTour;
+        improved = true;
     end
 
     % 记录历史
@@ -190,7 +192,7 @@ for iter = 1:nIter
         end
 
         % 通道2（常规）：最优解停滞
-        if iterBestCost < globalBestCost - 1e-10
+        if improved
             stagnationCount = 0;
         else
             stagnationCount = stagnationCount + 1;

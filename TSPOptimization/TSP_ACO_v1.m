@@ -18,13 +18,19 @@ nMid = nPts - 2;
 midIdx = 2:(nPts - 1);
 
 % 算法参数
-nAnts   = 50;       % 蚂蚁数量
+nAnts   = 100;       % 蚂蚁数量
 nIter   = 1000;      % 最大迭代次数
-alpha   = 1.0;      % 信息素权重
-beta    = 2.0;      % 启发式信息权重
-rho     = 0.5;      % 信息素蒸发率
-Q       = 100;      % 信息素沉积常数
+alpha   = 2.0;      % 信息素权重
+beta    = 4.0;      % 启发式信息权重
+rho     = 0.4;      % 信息素蒸发率
+Q       = 150;      % 信息素沉积常数
 nRank   = 6;        % 排名沉积的蚂蚁数量（方案 B）
+
+% ===== 自适应停止参数（方案C：种群多样性 + 停滞检测） =====
+enableAdaptiveStop = 0;     % 1=开启自适应停止, 0=关闭（使用固定 nIter）
+cvThreshold   = 0.005;      % 种群代价变异系数阈值（CV < cvThreshold → 同质收敛）
+stagnationLim = 100;         % 最优解连续停滞上限（代）
+minIter       = 50;         % 自适应停止最少迭代次数
 
 % 是否记录收敛历史
 trackHistory = (nargout >= 3);
@@ -110,6 +116,10 @@ tau = max(tau, tauMin);
 globalBestCost = nnBestCost;
 globalBestTour = nnBestTour;
 
+% 自适应停止状态
+stagnationCount = 0;        % 连续无改善代数
+stopReason = '';            % 停止原因记录
+
 for iter = 1:nIter
     % --- 蚂蚁构造解 ---
     antTours = cell(nAnts, 1);
@@ -162,9 +172,11 @@ for iter = 1:nIter
     [iterBestCost, bestAntIdx] = min(antCosts);
     iterBestTour = antTours{bestAntIdx};
 
+    improved = false;
     if iterBestCost < globalBestCost
         globalBestCost = iterBestCost;
         globalBestTour = iterBestTour;
+        improved = true;
     end
 
     % 记录历史
@@ -172,6 +184,28 @@ for iter = 1:nIter
         bestCostHistory(iter) = globalBestCost;
         avgCostHistory(iter) = mean(antCosts);
         timeHistory(iter) = toc(tStart);
+    end
+
+    % --- 自适应停止检测（方案C：种群多样性 + 停滞） ---
+    if enableAdaptiveStop && iter >= minIter
+        cv = std(antCosts) / mean(antCosts);
+
+        % 通道1（快速）：种群同质收敛
+        if cv < cvThreshold
+            stopReason = sprintf('种群同质(CV=%.4f<%g)', cv, cvThreshold);
+            break;
+        end
+
+        % 通道2（常规）：最优解停滞
+        if improved
+            stagnationCount = 0;
+        else
+            stagnationCount = stagnationCount + 1;
+            if stagnationCount >= stagnationLim
+                stopReason = sprintf('最优停滞(%d代未改善)', stagnationCount);
+                break;
+            end
+        end
     end
 
     % --- 信息素蒸发 ---
@@ -210,13 +244,18 @@ end
 % 输出结果
 bestCost = globalBestCost;
 bestOrder = [1, midIdx(globalBestTour), nPts];
+actualIter = iter;
 
 if trackHistory
     history = struct();
-    history.bestCostHistory = bestCostHistory;
-    history.avgCostHistory = avgCostHistory;
-    history.timeHistory = timeHistory;
-    history.iterCount = nIter;
+    history.bestCostHistory = bestCostHistory(1:actualIter);
+    history.avgCostHistory = avgCostHistory(1:actualIter);
+    history.timeHistory = timeHistory(1:actualIter);
+    history.iterCount = actualIter;
     history.elapsedTime = toc(tStart);
+    if isempty(stopReason)
+        stopReason = 'maxIter';
+    end
+    history.stopReason = stopReason;
 end
 end

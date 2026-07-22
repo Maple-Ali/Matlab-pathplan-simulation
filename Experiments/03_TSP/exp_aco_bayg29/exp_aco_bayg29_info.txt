@@ -1,0 +1,57 @@
+exp_aco_bayg29 — TSP算法bayg29性能测试
+=============================================
+
+【用途】
+对TSP求解算法在标准基准数据集bayg29（29城市巴伐利亚距离）上进行30次独立
+重复运行，评估算法求解质量和收敛性能。支持轻松切换不同TSP算法对比测试。
+
+【脚本结构】
+  1. 配置区（第11-20行）        — TSP算法选择器、运行次数、文件路径
+  2. 数据解析 parseBayg29()    — 解析.tsp文件的显式距离矩阵(上三角)和城市坐标
+  3. 成本矩阵构建（第31-40行）  — 构建30×30矩阵（起点=终点=城市1）
+  4. 30次独立运行循环（第50-57行）— 调用TSP求解器，收集结果和history
+  5. 统计与导出（第61-79行）    — 最佳/最差/均值/标准差，保存.mat文件
+  6. 绘图（第81-213行）         — 4张图（不自动保存）
+  7. 局部函数 parseBayg29()    — 数据集解析器
+
+【TSP算法切换方式】
+  修改第12行 tspSolver 函数句柄即可，所有TSP算法接口统一为：
+    [bestOrder, bestCost, history] = algo(costMatrix, nPts)
+  可选算法：TSP_ACO_v2 / TSP_ACO_v1 / TSP_GA_v2 / TSP_GA_v1 / TSP_SA_v1 / ...
+
+【导出数据】results/exp_aco_bayg29_results.mat
+  ┌─────────────────┬──────────┬──────────────────────────────────────┐
+  │ 字段             │ 维度      │ 说明                                  │
+  ├─────────────────┼──────────┼──────────────────────────────────────┤
+  │ allOrders       │ 30×30    │ 每次运行的城市访问顺序（索引1~30）       │
+  │ allCosts        │ 30×1     │ 每次运行的最优成本                      │
+  │ allHistories    │ 1×30 cell│ 每次运行的完整收敛历史                  │
+  │  ├─ .bestCostHistory │ N×1 │ 每代全局最优成本                       │
+  │  ├─ .avgCostHistory  │ N×1 │ 每代蚂蚁平均成本                       │
+  │  ├─ .timeHistory     │ N×1 │ 每代累计耗时(s)                        │
+  │  ├─ .iterCount       │ 标量 │ 实际迭代次数                          │
+  │  ├─ .elapsedTime     │ 标量 │ 总耗时(s)                             │
+  │  └─ .stopReason      │ 字符串│ 停止原因                              │
+  │ bestRunIdx      │ 标量      │ 最优那次运行的编号(1-based)            │
+  │ stats           │ struct    │ .bestCost/.worstCost/.avgCost/.stdCost │
+  │                 │           │ /.medianCost                          │
+  │ fullDist29      │ 29×29    │ bayg29原始距离矩阵                     │
+  │ cityCoords      │ 29×2     │ 29城市显示坐标 [x, y]                  │
+  └─────────────────┴──────────┴──────────────────────────────────────┘
+
+【实验图与数据对应】
+  图1 — 最优路径图
+    数据: cityCoords + allOrders(bestRunIdx,:) + stats.bestCost
+    内容: 城市散点(1~29标注) + 最优TSP回路连线 + Start标记
+
+  图2 — 收敛曲线（迭代维度，中位数+95%置信带）
+    数据: allHistories{run}.bestCostHistory + .iterCount
+    内容: X=迭代步数, Y=全局最优成本
+
+  图3 — 收敛曲线（时间维度，中位数+95%置信带）
+    数据: allHistories{run}.bestCostHistory + .timeHistory
+    内容: X=时间(s), Y=全局最优成本
+
+  图4 — 成本分布
+    数据: allCosts + stats
+    内容: 上=直方图(标注最优/中位数), 下=箱线图
