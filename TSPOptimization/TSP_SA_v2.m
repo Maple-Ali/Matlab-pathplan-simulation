@@ -1,25 +1,19 @@
-function [bestOrder, bestCost, history] = TSP_SA_v1_1(costMatrix, nPts)
-%TSP_SA_V1_1 改进模拟退火算法求解 TSP
-%   相对 TSP_SA_v1 的改进:
-%     F. 自适应冷却速率：根据接受率动态调节 alpha，保持 ~50% 接受率
-%     G. 自适应内循环：高温多迭代充分探索，低温少迭代精细搜索
-%     （移除 v1 的重升温功能，表现不稳定）
+function [bestOrder, bestCost, history] = TSP_SA_v2(costMatrix, nPts)
+%TSP_SA_V2 改进模拟退火算法求解 TSP（增强局部搜索）
+%   相对 TSP_SA_v1_1 的新增:
+%     F. 增强 2-opt 嵌入: 发现更好解时立即精炼 + 低温阶段周期性触发
+%     G. Or-opt 算子: 移动 2~3 点连续片段，O(1) 增量评价
 %
-%   保留 v1 的改进:
-%     A. 多点最近邻初始解
-%     B. 初始解 + 最终解 2-opt 局部搜索精炼
-%     C. 增量代价计算 delta O(1)
-%     D. 自适应算子权重
-%     E. 基于温度的停滞检测
+%   保留:
+%     A. 多点最近邻初始解 + 2-opt
+%     B. 初始解 + 最终解 2-opt 精炼
+%     C. 增量代价计算 delta O(1)（swap/insert/2-opt-reverse/or-opt）
+%     D. 自适应算子权重（4 算子）
+%     E. 自适应冷却 + 自适应内循环 + 基于温度的停滞检测
 %
 %   Inputs:
 %     costMatrix - nPts×nPts 对称成本矩阵
 %     nPts       - 总点数（含固定起点和终点）
-%
-%   Outputs:
-%     bestOrder  - 1×nPts 最优访问顺序
-%     bestCost   - 最优路径总成本
-%     history    - （可选）收敛历史结构体
 
 nMid = nPts - 2;
 midIdx = 2:(nPts - 1);
@@ -28,42 +22,49 @@ midIdx = 2:(nPts - 1);
 % --- 初始解 ---
 nNNRestarts = 0;            % 多点NN数量（0=尝试全部nMid个起点）
 
-% --- 自适应冷却速率（方案F） ---
-alpha_base   = 0.995;       % 基础冷却系数（固定模式时的值）
+% --- 自适应冷却速率 ---
+alpha_base   = 0.995;       % 基础冷却系数
 adaptAlpha   = 1;           % 1=自适应冷却, 0=固定 alpha=alpha_base
-alpha_min    = 0.990;       % 冷却系数下限（快冷却，防浮点误差累积）
-alpha_max    = 0.998;       % 冷却系数上限（慢冷却，接受率偏低时减速）
-alpha_beta   = 0.007;       % 自适应强度（alpha += beta*(targetAcpt-acptRate)）
-targetAcpt   = 0.34;        % 目标接受率（SA经典值0.5，平衡探索与开发）
+alpha_min    = 0.990;       % 冷却系数下限
+alpha_max    = 0.998;       % 冷却系数上限
+alpha_beta   = 0.005;       % 自适应强度
+targetAcpt   = 0.50;        % 目标接受率
 
-% --- 内循环自适应（方案G） ---
+% --- 内循环自适应 ---
 adaptInner   = 1;           % 1=内循环随温度自适应, 0=固定
-nInnerMult   = 13;          % 内循环基数（高温时 nInner = max(nMid*nInnerMult, 50)）
-nInnerMin    = 35;          % 内循环最小长度（低温保底，太少无法采样）
-nInnerPower  = 0.2;         % 温度权重指数（0.5=平方根，1=线性；越小低温衰减越缓）
+nInnerMult   = 10;          % 内循环基数
+nInnerMin    = 30;          % 内循环最小长度
+nInnerPower  = 0.5;         % 温度权重指数
 
 % --- 温度 ---
-T0_factor    = 1.0;         % 初始温度因子（>0 时 T0 = factor*最大边长, ≤0 自动）
-T_min        = 1e-3;        % 终止温度
+T0_factor    = 1.0;
+T_min        = 1e-3;
 
-% --- 邻域算子权重 ---
-opWeights    = [1.0, 1.0, 1.0];  % [swap, insert, 2-opt] 初始权重
-opLearnRate  = 0.15;             % 权重学习率
-opDecay      = 0.95;             % 每轮权重衰减
+% --- 邻域算子权重（新增 Or-opt 为第4算子） ---
+opWeights    = [1.0, 1.0, 1.0, 0.8];  % [swap, insert, 2optRev, oropt]
+opLearnRate  = 0.15;
+opDecay      = 0.95;
 
-% --- 自适应停止（方案E） ---
-enableAdaptiveStop = 1;     % 1=开启自适应停止
-T_cold_factor = 0.02;       % 仅当 T/T0 < factor 时才计停滞（高温探索期不计数）
-stagnationLim = 250;        % 低温阶段连续停滞上限（外循环轮数）
-minOuter      = 80;         % 自适应停止最少外循环轮数
-maxOuterIter  = 3000;       % 外循环硬上限（安全网）
+% --- 方案 F：增强 2-opt 嵌入 ---
+enableOptOnImprove = 1;     % 1=发现全局更优时立即 2-opt 精炼
+enableOptPeriodic  = 1;     % 1=低温阶段周期性 2-opt
+optInterval  = 40;          % 周期性 2-opt 间隔（外循环轮数）
+
+% --- 方案 G：Or-opt 算子 ---
+enableOropt  = 1;           % 1=启用 Or-opt 算子
+oroptLen     = [2, 3];      % 片段长度随机取 2 或 3
+
+% --- 自适应停止 ---
+enableAdaptiveStop = 1;
+T_cold_factor = 0.02;
+stagnationLim = 250;
+minOuter      = 80;
+maxOuterIter  = 3000;
 % ========================================================================
 
-% 是否记录收敛历史
 trackHistory = (nargout >= 3);
 if trackHistory, tStart = tic; end
 
-% 边界情况：无中间目标点
 if nMid == 0
     bestOrder = [1, nPts];
     bestCost = costMatrix(1, nPts);
@@ -77,19 +78,15 @@ end
 
 % ---- 方案 A：多点最近邻初始解 ----
 nStarts = nMid;
-if nNNRestarts > 0
-    nStarts = min(nNNRestarts, nMid);
-end
+if nNNRestarts > 0, nStarts = min(nNNRestarts, nMid); end
 startSeeds = randperm(nMid, nStarts);
 
 nnCosts = zeros(nStarts, 1);
 nnTours = cell(nStarts, 1);
 for sIdx = 1:nStarts
     s = startSeeds(sIdx);
-    visited = false(1, nMid);
-    visited(s) = true;
-    tour = zeros(1, nMid);
-    tour(1) = midIdx(s);
+    visited = false(1, nMid); visited(s) = true;
+    tour = zeros(1, nMid); tour(1) = midIdx(s);
     cur = midIdx(s);
     cost = costMatrix(1, cur);
     for step = 2:nMid
@@ -100,20 +97,17 @@ for sIdx = 1:nStarts
                 if d < bestD, bestD = d; bestJ = j; end
             end
         end
-        cost = cost + bestD;
-        visited(bestJ) = true;
-        tour(step) = midIdx(bestJ);
-        cur = midIdx(bestJ);
+        cost = cost + bestD; visited(bestJ) = true;
+        tour(step) = midIdx(bestJ); cur = midIdx(bestJ);
     end
     cost = cost + costMatrix(cur, nPts);
-    nnCosts(sIdx) = cost;
-    nnTours{sIdx} = tour;
+    nnCosts(sIdx) = cost; nnTours{sIdx} = tour;
 end
 [~, nnBestIdx] = min(nnCosts);
 midOrder = nnTours{nnBestIdx};
 
 % ---- 方案 B：初始解 2-opt 优化 ----
-[midOrder, curCost] = twoOpt(midOrder, costMatrix, nPts);
+[midOrder, curCost] = twoOptLocal(midOrder, costMatrix, nPts);
 
 bestMid = midOrder;
 bestCost = curCost;
@@ -126,11 +120,9 @@ else
 end
 if isempty(T0) || T0 == 0, T0 = 100; end
 T = T0;
-
-% 内循环基数（高温时使用）
 nInnerBase = max(nMid * nInnerMult, 50);
+numOps = 4;  % swap, insert, 2opt-reverse, or-opt
 
-% 预估最大外循环数（用于预分配 history）
 nEstOuter = ceil(log(T_min / T0) / log(alpha_min)) + 200;
 if trackHistory
     bestCostHistory = zeros(nEstOuter, 1);
@@ -140,8 +132,8 @@ end
 
 % --- 方案 D：自适应算子权重 ---
 opW = opWeights(:);
-opSuccess = zeros(3, 1);
-opAttempts = zeros(3, 1);
+opSuccess = zeros(numOps, 1);
+opAttempts = zeros(numOps, 1);
 
 % --- 方案 E：自适应停止 ---
 stagnationCount = 0;
@@ -158,7 +150,7 @@ while T > T_min && nOuter < maxOuterIter
     opSuccess(:) = 0;
     opAttempts(:) = 0;
 
-    % --- 方案 G：内循环长度随温度自适应 ---
+    % --- 自适应内循环长度 ---
     if adaptInner
         nInner = max(nInnerMin, round(nInnerBase * (T / T0)^nInnerPower));
     else
@@ -168,7 +160,7 @@ while T > T_min && nOuter < maxOuterIter
     curMid = midOrder;
 
     for i = 1:nInner
-        % --- 方案 D：依权重选择算子 ---
+        % --- 依权重选择算子 ---
         rOp = rand() * sum(opW);
         cumW = cumsum(opW);
         op = find(cumW >= rOp, 1, 'first');
@@ -180,8 +172,7 @@ while T > T_min && nOuter < maxOuterIter
                 [newCost, delta] = deltaSwap(curMid, i1, i2, curCost, costMatrix, nMid, nPts);
                 if delta < 0 || rand < exp(-delta / T)
                     curMid([i1, i2]) = curMid([i2, i1]);
-                    curCost = newCost;
-                    nAccepted = nAccepted + 1;
+                    curCost = newCost; nAccepted = nAccepted + 1;
                     opSuccess(1) = opSuccess(1) + 1;
                 end
                 opAttempts(1) = opAttempts(1) + 1;
@@ -194,32 +185,61 @@ while T > T_min && nOuter < maxOuterIter
                     val = curMid(fromPos);
                     curMid(fromPos:toPos-1) = curMid(fromPos+1:toPos);
                     curMid(toPos) = val;
-                    curCost = newCost;
-                    nAccepted = nAccepted + 1;
+                    curCost = newCost; nAccepted = nAccepted + 1;
                     opSuccess(2) = opSuccess(2) + 1;
                 end
                 opAttempts(2) = opAttempts(2) + 1;
 
-            case 3  % 2-opt (reverse)
+            case 3  % 2-opt reverse
                 pair = sort(randi(nMid, [1, 2]));
                 i1 = pair(1); i2 = pair(2);
                 if i1 < i2
                     [newCost, delta] = delta2opt(curMid, i1, i2, curCost, costMatrix, nMid, nPts);
                     if delta < 0 || rand < exp(-delta / T)
                         curMid(i1:i2) = curMid(i2:-1:i1);
-                        curCost = newCost;
-                        nAccepted = nAccepted + 1;
+                        curCost = newCost; nAccepted = nAccepted + 1;
                         opSuccess(3) = opSuccess(3) + 1;
                     end
                     opAttempts(3) = opAttempts(3) + 1;
+                end
+
+            case 4  % Or-opt（方案 G）
+                if enableOropt && nMid >= 4
+                    k = oroptLen(randi(length(oroptLen)));  % 随机取 2 或 3
+                    maxFrom = nMid - k + 1;
+                    from = randi(maxFrom);
+                    % 随机选插入位置，排除 [from-1, from+k] 避免邻接
+                    validTo = [];
+                    for t = 1:nMid
+                        if t < from-1 || t >= from+k+1
+                            validTo(end+1) = t; %#ok<AGROW>
+                        end
+                    end
+                    if ~isempty(validTo)
+                        to = validTo(randi(length(validTo)));
+                        [newCost, delta] = deltaOropt(curMid, from, k, to, curCost, costMatrix, nMid, nPts);
+                        if delta < 0 || rand < exp(-delta / T)
+                            curMid = applyOropt(curMid, from, k, to);
+                            curCost = newCost; nAccepted = nAccepted + 1;
+                            opSuccess(4) = opSuccess(4) + 1;
+                        end
+                        opAttempts(4) = opAttempts(4) + 1;
+                    end
                 end
         end
 
         sumCost = sumCost + curCost;
 
+        % --- 方案 F：发现全局更优时立即 2-opt 精炼 ---
         if curCost < bestCost
-            bestCost = curCost;
             bestMid = curMid;
+            if enableOptOnImprove
+                [bestMid, bestCost] = twoOptLocal(bestMid, costMatrix, nPts);
+                curMid = bestMid;
+                curCost = bestCost;
+            else
+                bestCost = curCost;
+            end
         end
     end
 
@@ -232,7 +252,14 @@ while T > T_min && nOuter < maxOuterIter
         timeHistory(nOuter) = toc(tStart);
     end
 
-    % --- 方案 E：自适应停止检测（仅低温阶段计数） ---
+    % --- 方案 F：低温阶段周期性 2-opt ---
+    if enableOptPeriodic && T <= T_cold_factor * T0 && mod(nOuter, optInterval) == 0
+        [bestMid, bestCost] = twoOptLocal(bestMid, costMatrix, nPts);
+        midOrder = bestMid;
+        curCost = bestCost;
+    end
+
+    % --- 方案 E：自适应停止检测 ---
     if enableAdaptiveStop && nOuter >= minOuter
         if bestCost < prevBestCost - 1e-10
             stagnationCount = 0;
@@ -247,7 +274,7 @@ while T > T_min && nOuter < maxOuterIter
     end
 
     % --- 方案 D：更新算子权重 ---
-    for o = 1:3
+    for o = 1:numOps
         if opAttempts(o) > 0
             succRate = opSuccess(o) / opAttempts(o);
             opW(o) = opW(o) * opDecay + succRate * opLearnRate;
@@ -255,26 +282,21 @@ while T > T_min && nOuter < maxOuterIter
         end
     end
 
-    % --- 方案 F：自适应冷却速率 ---
+    % --- 自适应冷却 ---
     if adaptAlpha
         acptRate = nAccepted / nInner;
-        % alpha = alpha_base - beta*(acptRate - targetAcpt)
-        % 接受率高于目标 → 降温更快（alpha↓）
-        % 接受率低于目标 → 降温更慢（alpha↑）
         alpha = alpha_base - alpha_beta * (acptRate - targetAcpt);
         alpha = max(alpha_min, min(alpha_max, alpha));
     else
         alpha = alpha_base;
     end
 
-    % 降温
     T = T * alpha;
 end
 
 % ---- 方案 B：全局最优 2-opt 精炼 ----
-[bestMid, bestCost] = twoOpt(bestMid, costMatrix, nPts);
+[bestMid, bestCost] = twoOptLocal(bestMid, costMatrix, nPts);
 
-% ---- 组装输出 ----
 bestOrder = [1, bestMid, nPts];
 
 if trackHistory
@@ -292,7 +314,7 @@ if trackHistory
         end
     end
     history.stopReason = stopReason;
-    history.nInner = nInner;   % 末轮内循环长度
+    history.nInner = nInner;
     history.finalT = T;
 end
 end
@@ -306,9 +328,7 @@ Li = getLeft(midOrder, i);
 Ri = getRight(midOrder, i, nMid, nPts);
 Lj = getLeft(midOrder, j);
 Rj = getRight(midOrder, j, nMid, nPts);
-Ai = midOrder(i);
-Aj = midOrder(j);
-
+Ai = midOrder(i); Aj = midOrder(j);
 if j == i + 1
     oldEdges = costMatrix(Li, Ai) + costMatrix(Ai, Aj) + costMatrix(Aj, Rj);
     newEdges = costMatrix(Li, Aj) + costMatrix(Aj, Ai) + costMatrix(Ai, Rj);
@@ -328,7 +348,6 @@ L = getLeft(midOrder, from);
 B = midOrder(from + 1);
 D = midOrder(to);
 R = getRight(midOrder, to, nMid, nPts);
-
 oldEdges = costMatrix(L, X) + costMatrix(X, B) + costMatrix(D, R);
 newEdges = costMatrix(L, B) + costMatrix(D, X) + costMatrix(X, R);
 delta = newEdges - oldEdges;
@@ -340,11 +359,50 @@ L = getLeft(midOrder, i);
 A = midOrder(i);
 B = midOrder(j);
 R = getRight(midOrder, j, nMid, nPts);
-
 oldEdges = costMatrix(L, A) + costMatrix(B, R);
 newEdges = costMatrix(L, B) + costMatrix(A, R);
 delta = newEdges - oldEdges;
 newCost = curCost + delta;
+end
+
+function [newCost, delta] = deltaOropt(midOrder, from, k, to, curCost, costMatrix, nMid, nPts)
+%DELTAOROPT Or-opt 增量代价 O(1)
+%   移动片段 midOrder(from:from+k-1) 到位置 to 之后
+%   前置条件：to < from-1 或 to >= from+k+1（不重叠不邻接）
+%
+%   变化仅涉及 3 对边：片段两端 + 插入点两端
+
+% 片段边界
+if from == 1, Lf = 1; else, Lf = midOrder(from - 1); end
+S1 = midOrder(from);
+Sk = midOrder(from + k - 1);
+if from + k - 1 == nMid, Rf = nPts; else, Rf = midOrder(from + k); end
+
+% 插入点边界
+Lt = midOrder(to);
+if to == nMid, Rt = nPts; else, Rt = midOrder(to + 1); end
+
+% 移除旧边 (Lf→S1, Sk→Rf, Lt→Rt) + 加入新边 (Lf→Rf, Lt→S1, Sk→Rt)
+oldEdges = costMatrix(Lf, S1) + costMatrix(Sk, Rf) + costMatrix(Lt, Rt);
+newEdges = costMatrix(Lf, Rf) + costMatrix(Lt, S1) + costMatrix(Sk, Rt);
+
+delta = newEdges - oldEdges;
+newCost = curCost + delta;
+end
+
+function newMid = applyOropt(midOrder, from, k, to)
+%APPLYOROPT 执行 Or-opt 片段移动
+seg = midOrder(from : from + k - 1);
+% 移除片段
+newMid = [midOrder(1:from-1), midOrder(from+k:end)];
+% 确定插入位置（to > from 时需补偿偏移）
+if to > from
+    toNew = to - k;
+else
+    toNew = to;
+end
+% 插入片段
+newMid = [newMid(1:toNew), seg, newMid(toNew+1:end)];
 end
 
 % =========================================================================
@@ -360,9 +418,9 @@ if pos == nMid, R = nPts; else, R = order(pos + 1); end
 end
 
 % =========================================================================
-%  2-opt 局部搜索（方案 B）
+%  2-opt 局部搜索
 % =========================================================================
-function [order, cost] = twoOpt(order, costMatrix, nPts)
+function [order, cost] = twoOptLocal(order, costMatrix, nPts)
 nMid = length(order);
 fullOrder = [1, order, nPts];
 

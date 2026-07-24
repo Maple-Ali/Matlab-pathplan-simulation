@@ -9,9 +9,10 @@ rootDir = fileparts(fileparts(fileparts(fileparts(mfilename('fullpath')))));
 addpath(genpath(rootDir));
 
 % ===== TSP算法选择器（在此处切换以测试不同求解器） =====
-% tspSolver = @(costMatrix, nPts) TSP_ACO_v2(costMatrix, nPts);
-% tspSolver = @(costMatrix, nPts) TSP_GA(costMatrix, nPts);
-tspSolver = @(costMatrix, nPts) TSP_SA_v1_1(costMatrix, nPts);
+tspSolver = @(costMatrix, nPts) TSP_ACO_v1_1(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_GA_v1(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_SA_v1_1(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_SA_v2(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_ACO_v1(costMatrix, nPts);
 
 % ===== Experiment Config =====
