@@ -1,28 +1,35 @@
-function [bestOrder, bestCost, history] = TSP_GA(costMatrix, nPts)
-%TSP_GA 遗传算法求解 TSP
-%   适用于目标点数 > 5 的中大规模问题，采用 OX 交叉 + 锦标赛选择
+function [bestOrder, bestCost, history] = TSP_GA_v1_1(costMatrix, nPts)
+%TSP_GA_V1_1 遗传算法求解 TSP（精英保留 + 自适应变异）
+%   基于传统 GA，仅保留两项改进:
+%     A. 精英保留策略: 每代最优 2 个个体直接进入下一代
+%     B. 自适应变异: 连续无改进时提高变异率，跳出局部最优
+%
+%   移除 v2 的:
+%     - 2-opt 局部搜索（每代精英 + 最终精炼）
+%     - 最近邻启发式初始化
 %
 %   Inputs:
 %     costMatrix - nPts×nPts 对称成本矩阵
 %     nPts       - 总点数（含固定起点和终点）
 %
 %   Outputs:
-%     bestOrder  - 1×nPts 最优访问顺序（索引向量）
+%     bestOrder  - 1×nPts 最优访问顺序
 %     bestCost   - 最优路径总成本
-%     history    - （可选）收敛历史结构体:
-%       .bestCostHistory  - 每代最优成本
-%       .avgCostHistory   - 每代平均成本
-%       .timeHistory      - 每代累计耗时（秒）
-%       .iterCount        - 总迭代代数
-%       .elapsedTime      - 纯计算耗时（秒）
+%     history    - （可选）收敛历史结构体
 
 nMid = nPts - 2;
 midIdx = 2:(nPts - 1);
-popSize = 150;%种群大小
-nGen = 2000;
-mutationRate = 0.05;
 
-% 是否记录收敛历史
+% ===== 可调参数 =====
+popSize        = 300;     % 种群大小
+nGen           = 2000;   % 最大进化代数
+crossoverRate  = 0.80;    % 交叉概率
+baseMutationRate = 0.20;  % 基础变异率
+maxMutationRate  = 0.5;  % 最大变异率（自适应上限）
+nElite         = 25;      % 精英保留个数
+noImproveThr   = 60;      % 连续无改善阈值（触发自适应变异）
+mutationBoost  = 2;    % 变异率放大因子
+
 trackHistory = (nargout >= 3);
 if trackHistory
     tStart = tic;
@@ -31,19 +38,36 @@ if trackHistory
     timeHistory = zeros(nGen, 1);
 end
 
-% 初始化种群
+if nMid == 0
+    bestOrder = [1, nPts];
+    bestCost = costMatrix(1, nPts);
+    if trackHistory
+        history = struct('bestCostHistory', bestCost, ...
+            'avgCostHistory', bestCost, 'timeHistory', 0, ...
+            'iterCount', 1, 'elapsedTime', 0);
+    end
+    return;
+end
+
+% ---- 随机初始化种群 ----
 pop = zeros(popSize, nMid);
 for i = 1:popSize
     pop(i, :) = midIdx(randperm(nMid));
 end
 
+% 适应度函数（成本越低越优）
     function c = fitness(order)
         fullOrder = [1, order, nPts];
         c = 0;
-        for k = 1:(length(fullOrder) - 1)
+        for k = 1:(nPts - 1)
             c = c + costMatrix(fullOrder(k), fullOrder(k + 1));
         end
     end
+
+globalBestCost = inf;
+globalBestMid = [];
+noImproveCount = 0;
+mutationRate = baseMutationRate;
 
 for gen = 1:nGen
     % 评估适应度
@@ -52,14 +76,31 @@ for gen = 1:nGen
         fit(i) = fitness(pop(i, :));
     end
 
+    [genBestCost, genBestIdx] = min(fit);
+
+    % 更新全局最优
+    if genBestCost < globalBestCost - 1e-10
+        globalBestCost = genBestCost;
+        globalBestMid = pop(genBestIdx, :);
+        noImproveCount = 0;
+        mutationRate = baseMutationRate;  % 恢复基础变异率
+    else
+        noImproveCount = noImproveCount + 1;
+    end
+
+    % ---- 方案 B：自适应变异 ----
+    if noImproveCount >= noImproveThr
+        mutationRate = min(mutationRate * mutationBoost, maxMutationRate);
+    end
+
     % 记录收敛历史
     if trackHistory
-        bestCostHistory(gen) = min(fit);
+        bestCostHistory(gen) = globalBestCost;
         avgCostHistory(gen) = mean(fit);
         timeHistory(gen) = toc(tStart);
     end
 
-    % 选择（锦标赛）
+    % ---- 选择（锦标赛） ----
     newPop = zeros(popSize, nMid);
     for i = 1:popSize
         candidates = randi(popSize, [2, 1]);
@@ -67,13 +108,12 @@ for gen = 1:nGen
         newPop(i, :) = pop(candidates(winner), :);
     end
 
-    % 交叉（OX 交叉）
+    % ---- 交叉（OX 交叉） ----
     for i = 1:2:popSize
-        if rand < 0.9 && i + 1 <= popSize
+        if rand < crossoverRate && i + 1 <= popSize
             p1 = newPop(i, :);
             p2 = newPop(i + 1, :);
             cp = sort(randi(nMid, [1, 2]));
-            % 子代1
             child1 = zeros(1, nMid);
             child1(cp(1):cp(2)) = p1(cp(1):cp(2));
             remain = setdiff(p2, child1(cp(1):cp(2)), 'stable');
@@ -84,7 +124,6 @@ for gen = 1:nGen
                     idx = idx + 1;
                 end
             end
-            % 子代2
             child2 = zeros(1, nMid);
             child2(cp(1):cp(2)) = p2(cp(1):cp(2));
             remain = setdiff(p1, child2(cp(1):cp(2)), 'stable');
@@ -100,7 +139,7 @@ for gen = 1:nGen
         end
     end
 
-    % 变异
+    % ---- 变异（交换变异） ----
     for i = 1:popSize
         if rand < mutationRate
             swap = randperm(nMid, 2);
@@ -108,17 +147,18 @@ for gen = 1:nGen
         end
     end
 
+    % ---- 方案 A：精英保留 ----
+    [~, sortIdx] = sort(fit);
+    for e = 1:nElite
+        newPop(e, :) = pop(sortIdx(e), :);
+    end
+
     pop = newPop;
 end
 
-fit = zeros(popSize, 1);
-for i = 1:popSize
-    fit(i) = fitness(pop(i, :));
-end
-[bestCost, bestIdx] = min(fit);
-bestOrder = [1, pop(bestIdx, :), nPts];
+bestCost = globalBestCost;
+bestOrder = [1, globalBestMid, nPts];
 
-% 输出收敛历史
 if trackHistory
     history = struct();
     history.bestCostHistory = bestCostHistory;

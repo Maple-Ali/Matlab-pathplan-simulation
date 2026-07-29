@@ -10,7 +10,7 @@ addpath(genpath(rootDir));
 
 % ===== TSP Algorithm Selector (change here to test different solvers) =====
 % tspSolver = @(costMatrix, nPts) TSP_ACO_v2(costMatrix, nPts);
-tspSolver = @(costMatrix, nPts) TSP_ACO_v1_5(costMatrix, nPts);
+tspSolver = @(costMatrix, nPts) TSP_ACO_v1_7(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_SA_v1_1(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_GA_v2(costMatrix, nPts);
 

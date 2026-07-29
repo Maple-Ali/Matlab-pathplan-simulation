@@ -9,13 +9,18 @@ rootDir = fileparts(fileparts(fileparts(fileparts(mfilename('fullpath')))));
 addpath(genpath(rootDir));
 
 % ===== TSP Algorithm Selector (change here to test different solvers) =====
-% tspSolver = @(costMatrix, nPts) TSP_ACO_v2(costMatrix, nPts);
-tspSolver = @(costMatrix, nPts) TSP_ACO_v1_3(costMatrix, nPts);
-% tspSolver = @(costMatrix, nPts) TSP_SA_v1_1(costMatrix, nPts);
-% tspSolver = @(costMatrix, nPts) TSP_GA_v2(costMatrix, nPts);
+tspSolver = @(costMatrix, nPts) TSP_ACO(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_ACO_v0(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_ACO_v1_7(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_SA_v0(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_SA_v0_1(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_GA_v1_1(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_GA(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_ACO_v1_7_1(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_ACO_v1_8(costMatrix, nPts);
 
 % ===== Experiment Config =====
-nRuns = 10;
+nRuns = 1;
 tspFile  = fullfile(fileparts(mfilename('fullpath')), '..', 'kroA100.tsp');
 distFile = fullfile(fileparts(mfilename('fullpath')), '..', 'kroA100_distance_matrix.txt');
 resultsDir = fullfile(fileparts(mfilename('fullpath')), 'results');
@@ -118,7 +123,7 @@ axis equal tight;
 grid on; set(gca, 'GridAlpha', 0.1);
 hold off;
 
-%% ===== Figure 2: Convergence (Iteration) =====
+%% ===== Figure 2: 收敛（迭代） =====
 figure('Position', [820, 50, 700, 500], 'Color', 'w');
 
 maxIter = max(cellfun(@(h) h.iterCount, allHistories));
@@ -145,7 +150,7 @@ legend('95% CI', 'Median', 'Optimal (21282)', 'Location', 'northeast'); grid on;
 hold off;
 
 %% ===== Figure 3: Convergence (Time) =====
-figure('Position', [820, 580, 700, 500], 'Color', 'w');
+figure('Position', [820, 400, 700, 500], 'Color', 'w');
 
 nTimePts = 500;
 maxTime = max(cellfun(@(h) h.elapsedTime, allHistories));
@@ -180,7 +185,7 @@ legend('95% CI', 'Median', 'Optimal (21282)', 'Location', 'northeast'); grid on;
 hold off;
 
 %% ===== Figure 4: Cost Distribution =====
-figure('Position', [50, 760, 750, 520], 'Color', 'w');
+figure('Position', [50, 200, 750, 520], 'Color', 'w');
 
 subplot(2,1,1);
 histogram(allCosts, 12, 'FaceColor', [0.2, 0.5, 0.9], 'EdgeColor', 'k', 'LineWidth', 0.5);

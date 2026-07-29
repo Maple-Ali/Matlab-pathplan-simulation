@@ -18,16 +18,16 @@ nMid = nPts - 2;
 midIdx = 2:(nPts - 1);
 
 % 算法参数
-nAnts   = 100;       % 蚂蚁数量
-nIter   = 1000;      % 最大迭代次数
-alpha   = 2.0;      % 信息素权重
-beta    = 4.0;      % 启发式信息权重
-rho     = 0.4;      % 信息素蒸发率
-Q       = 150;      % 信息素沉积常数
+nAnts   = 60;       % 蚂蚁数量
+nIter   = 2000;      % 最大迭代次数
+alpha   = 1.0;      % 信息素权重
+beta    = 2.0;      % 启发式信息权重
+rho     = 0.55;      % 信息素蒸发率
+Q       = 100;      % 信息素沉积常数
 nRank   = 6;        % 排名沉积的蚂蚁数量（方案 B）
 
 % ===== 自适应停止参数（方案C：种群多样性 + 停滞检测） =====
-enableAdaptiveStop = 1;     % 1=开启自适应停止, 0=关闭（使用固定 nIter）
+enableAdaptiveStop = 0;     % 1=开启自适应停止, 0=关闭（使用固定 nIter）
 cvThreshold   = 0.005;      % 种群代价变异系数阈值（CV < cvThreshold → 同质收敛）
 stagnationLim = 100;         % 最优解连续停滞上限（代）
 minIter       = 50;         % 自适应停止最少迭代次数
