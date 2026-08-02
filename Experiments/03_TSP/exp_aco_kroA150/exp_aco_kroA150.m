@@ -9,19 +9,25 @@ rootDir = fileparts(fileparts(fileparts(fileparts(mfilename('fullpath')))));
 addpath(genpath(rootDir));
 
 % ===== TSP Algorithm Selector (change here to test different solvers) =====
-% tspSolver = @(costMatrix, nPts) TSP_ACO_v2(costMatrix, nPts);
-tspSolver = @(costMatrix, nPts) TSP_ACO_v1_7(costMatrix, nPts);
-% tspSolver = @(costMatrix, nPts) TSP_SA_v1_1(costMatrix, nPts);
-% tspSolver = @(costMatrix, nPts) TSP_GA_v2(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_ACO(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_ACO_v0(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_ACO_v2_1(costMatrix, nPts);
+tspSolver = @(costMatrix, nPts) TSP_ACO_v2_2(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_SA_v0(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_SA_v0_1(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_GA(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_GA_v1_1(costMatrix, nPts);
 
 % ===== Experiment Config =====
 nRuns = 10;
-tspFile  = fullfile(fileparts(mfilename('fullpath')), '..', 'kroA150.tsp');
-distFile = fullfile(fileparts(mfilename('fullpath')), '..', 'kroA150_distance_matrix.txt');
+coordFile = fullfile(fileparts(mfilename('fullpath')), 'kroA150_coords.mat');
+distFile  = fullfile(fileparts(mfilename('fullpath')), '..', 'kroA150_distance_matrix.txt');
 resultsDir = fullfile(fileparts(mfilename('fullpath')), 'results');
 
-%% ===== Parse kroA150 dataset =====
-[fullDist150, cityCoords] = parseKroA150(distFile, tspFile);
+%% ===== Load kroA150 dataset =====
+tmp = load(coordFile);  % → c150 (150×2)
+cityCoords = tmp.c150;
+fullDist150 = parseKroA150Dist(distFile);
 nCities = 150;
 
 fprintf('======== TSP Experiment: kroA150 ========\n');
@@ -213,10 +219,9 @@ fprintf('\nAll figures ready. (Not auto-saved)\n');
 
 %% ===== Local Functions =====
 
-function [distMatrix, coords] = parseKroA150(distFile, tspFile)
-%PARSEKROA150 Parse kroA150 distance matrix and coordinates
+function distMatrix = parseKroA150Dist(distFile)
+%PARSEKROA150DIST Parse kroA150 distance matrix
 %   distMatrix - 150x150 symmetric distance matrix
-%   coords     - 150x2 [x, y] coordinates
 
     nCities = 150;
 
@@ -240,29 +245,6 @@ function [distMatrix, coords] = parseKroA150(distFile, tspFile)
             j = nCities - p + 1;
             distMatrix(i, j) = vals(p);
             distMatrix(j, i) = vals(p);
-        end
-    end
-
-    % --- Parse coordinates from kroA150.tsp ---
-    coords = zeros(nCities, 2);
-    fid2 = fopen(tspFile, 'r');
-    if fid2 < 0, error('Cannot open: %s', tspFile); end
-    cleanup2 = onCleanup(@() fclose(fid2));
-
-    inCoordSection = false;
-    while ~feof(fid2)
-        line = strtrim(fgetl(fid2));
-        if startsWith(line, 'NODE_COORD_SECTION')
-            inCoordSection = true; continue;
-        elseif strcmp(line, 'EOF'), break; end
-        if inCoordSection && ~isempty(line)
-            parts = sscanf(line, '%f');
-            if length(parts) >= 3
-                cityIdx = parts(1);
-                if cityIdx >= 1 && cityIdx <= nCities
-                    coords(cityIdx, :) = [parts(2), parts(3)];
-                end
-            end
         end
     end
 end

@@ -10,8 +10,8 @@ nMid = nPts - 2;
 midIdx = 2:(nPts - 1);
 
 % ===== 可调参数 =====
-T0_factor = 1.0;           % 初始温度因子
-alpha     = 0.995;         % 降温系数 (固定)
+T0_factor = 3.0;           % 初始温度因子
+alpha     = 0.996;         % 降温系数 (固定)
 T_min     = 1e-3;          % 终止温度
 nInnerMult = 10;           % 内循环倍数
 % ====================
@@ -29,22 +29,24 @@ if nMid == 0
     return;
 end
 
-% ---- 贪心初始解 (单次 NN) ----
-cur = 1;  % start point index in costMatrix
-visited = false(1, nMid);
-midOrder = zeros(1, nMid);
-for s = 1:nMid
-    bestDist = inf; bestJ = 0;
-    for j = 1:nMid
-        if ~visited(j)
-            d = costMatrix(cur, midIdx(j));
-            if d < bestDist, bestDist = d; bestJ = j; end
-        end
-    end
-    visited(bestJ) = true;
-    midOrder(s) = midIdx(bestJ);
-    cur = midIdx(bestJ);
-end
+% ---- 随机初始解 ----
+% % ---- 贪心初始解 (单次 NN, 已注释) ----
+% cur = 1;  % start point index in costMatrix
+% visited = false(1, nMid);
+% midOrder = zeros(1, nMid);
+% for s = 1:nMid
+%     bestDist = inf; bestJ = 0;
+%     for j = 1:nMid
+%         if ~visited(j)
+%             d = costMatrix(cur, midIdx(j));
+%             if d < bestDist, bestDist = d; bestJ = j; end
+%         end
+%     end
+%     visited(bestJ) = true;
+%     midOrder(s) = midIdx(bestJ);
+%     cur = midIdx(bestJ);
+% end
+midOrder = midIdx(randperm(nMid));
 
 curCost = calcCost(midOrder, costMatrix, nPts);
 bestMid = midOrder; bestCost = curCost;

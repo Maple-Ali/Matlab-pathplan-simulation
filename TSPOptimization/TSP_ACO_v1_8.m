@@ -32,19 +32,22 @@ optRatio_start = 0.1;
 optRatio_end   = 0.45;
 optMidIter     = 150;
 
+% ===== 方案 P：GRASP 初始解 =====
+enableGRASP = 0;         % 1=GRASP 初始解, 0=均匀 tau0（仅靠 ACO 自身）
+
 % ===== 方案 M：Double-bridge 突变 =====
-enableDoubleBridge = 1;
+enableDoubleBridge = 0;
 dbRatio = 0.25;
 
 % ===== 方案 J：分层信息素重置 =====
-enableSmoothing = 1;     % 1=停滞时触发分层重置
-resetStagThr = 10;       % 连续停滞此代数时触发一次重置
+enableSmoothing = 0;     % 1=停滞时触发分层重置
+resetStagThr = 7;       % 连续停滞此代数时触发一次重置
 smoothGamma  = 0.40;     % 平滑强度（平滑阶段用）
 maxSmoothing = 2;        % 平滑次数上限（超过后触发完全重置）
-maxFullResets = 3;       % 完全重置次数上限
+maxFullResets = 0;       % 完全重置次数上限
 
 % ===== 方案 T：混合精英扰动 =====
-enableElitePerturb = 1;
+enableElitePerturb = 0;
 eliteStagThr = 5;       % 停滞此代数时触发一次扰动
 eliteTriesMax = 20;      % 每次扰动最大尝试次数
 
@@ -83,50 +86,65 @@ for i = 1:nMid
     end
 end
 
-% ---- 方案 P：GRASP 初始解 ----
-nStarts = min(25, nMid);
-startSeeds = randperm(nMid, nStarts);
-graspCosts = zeros(nStarts, 1);
-graspTours = cell(nStarts, 1);
-for sIdx = 1:nStarts
-    s = startSeeds(sIdx);
-    visited = false(1, nMid); visited(s) = true;
-    tour = zeros(1, nMid); tour(1) = s; cur = s;
-    cost = costMatrix(1, midIdx(s));
-    for step = 2:nMid
-        unvisited = find(~visited);
-        nUnv = length(unvisited);
-        kCand = min(3, nUnv);
-        dists = zeros(1, nUnv);
-        for j = 1:nUnv
-            dists(j) = costMatrix(midIdx(cur), midIdx(unvisited(j)));
+% ---- 方案 P：GRASP 初始解 (仅 enableGRASP=1) ----
+if enableGRASP
+    nStarts = min(25, nMid);
+    startSeeds = randperm(nMid, nStarts);
+    graspCosts = zeros(nStarts, 1);
+    graspTours = cell(nStarts, 1);
+    for sIdx = 1:nStarts
+        s = startSeeds(sIdx);
+        visited = false(1, nMid); visited(s) = true;
+        tour = zeros(1, nMid); tour(1) = s; cur = s;
+        cost = costMatrix(1, midIdx(s));
+        for step = 2:nMid
+            unvisited = find(~visited);
+            nUnv = length(unvisited);
+            kCand = min(3, nUnv);
+            dists = zeros(1, nUnv);
+            for j = 1:nUnv
+                dists(j) = costMatrix(midIdx(cur), midIdx(unvisited(j)));
+            end
+            [~, distOrder] = sort(dists);
+            pick = distOrder(randi(kCand));
+            nextJ = unvisited(pick);
+            cost = cost + costMatrix(midIdx(cur), midIdx(nextJ));
+            visited(nextJ) = true;
+            tour(step) = nextJ; cur = nextJ;
         end
-        [~, distOrder] = sort(dists);
-        pick = distOrder(randi(kCand));
-        nextJ = unvisited(pick);
-        cost = cost + costMatrix(midIdx(cur), midIdx(nextJ));
-        visited(nextJ) = true;
-        tour(step) = nextJ; cur = nextJ;
+        cost = cost + costMatrix(midIdx(cur), nPts);
+        graspCosts(sIdx) = cost; graspTours{sIdx} = tour;
     end
-    cost = cost + costMatrix(midIdx(cur), nPts);
-    graspCosts(sIdx) = cost; graspTours{sIdx} = tour;
+    [~, bestIdx] = min(graspCosts);
+    nnBestTour = graspTours{bestIdx};
+    [nnBestTour, nnBestCost] = twoOpt(nnBestTour, midIdx, costMatrix, nPts);
+
+    tau0 = Q / nnBestCost;
+    tau = ones(nMid, nMid) * tau0;
+
+    % ---- 方案 A：MMAS 信息素限幅 ----
+    tauMax = 1 / (rho * nnBestCost);
+    tauMin = tauMax / (nMid);
+    tauMin = max(tauMin, 1e-6);
+    tau = min(tau, tauMax);
+    tau = max(tau, tauMin);
+
+    globalBestCost = nnBestCost;
+    globalBestTour = nnBestTour;
+else
+    % 纯 ACO：均匀初始信息素，无外部启发式引导
+    tau0 = 0.1;
+    tau = ones(nMid, nMid) * tau0;
+
+    tauMax = 1 / (rho * tau0 * nMid);  % 保守上界
+    tauMin = tauMax / (5 * nMid);
+    tauMin = max(tauMin, 1e-6);
+    tau = min(tau, tauMax);
+    tau = max(tau, tauMin);
+
+    globalBestCost = inf;
+    globalBestTour = midIdx;
 end
-[~, bestIdx] = min(graspCosts);
-nnBestTour = graspTours{bestIdx};
-[nnBestTour, nnBestCost] = twoOpt(nnBestTour, midIdx, costMatrix, nPts);
-
-tau0 = Q / nnBestCost;
-tau = ones(nMid, nMid) * tau0;
-
-% ---- 方案 A：MMAS 信息素限幅 ----
-tauMax = 1 / (rho * nnBestCost);
-tauMin = tauMax / (nMid);
-tauMin = max(tauMin, 1e-6);
-tau = min(tau, tauMax);
-tau = max(tau, tauMin);
-
-globalBestCost = nnBestCost;
-globalBestTour = nnBestTour;
 stagnationCount = 0;
 
 % ---- 方案 J：分层重置计数器 ----
@@ -252,8 +270,8 @@ for iter = 1:nIter
             end
         end
 
-        % ---- 方案 J：分层信息素重置 ----
-        if enableSmoothing && stagnationCount == resetStagThr
+        % ---- 方案 J：分层信息素重置 (每 resetStagThr 代触发) ----
+        if enableSmoothing && stagnationCount > 0 && mod(stagnationCount, resetStagThr) == 0
             if nSmoothing < maxSmoothing
                 % 平滑重置（保留部分记忆）
                 tau = (1 - smoothGamma) * tau + smoothGamma * tau0;
@@ -261,7 +279,6 @@ for iter = 1:nIter
             elseif nFullResets < maxFullResets
                 % 完全重置：信息素回到初始均匀 + 全局最优引导
                 tau = ones(nMid, nMid) * tau0;
-                nSmoothing = 0;
                 nFullResets = nFullResets + 1;
                 % 将全局最优沉积到初始信息素上，加速重新收敛
                 eDep = Q / globalBestCost;

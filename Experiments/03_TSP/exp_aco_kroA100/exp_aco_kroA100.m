@@ -9,7 +9,7 @@ rootDir = fileparts(fileparts(fileparts(fileparts(mfilename('fullpath')))));
 addpath(genpath(rootDir));
 
 % ===== TSP Algorithm Selector (change here to test different solvers) =====
-tspSolver = @(costMatrix, nPts) TSP_ACO(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_ACO(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_ACO_v0(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_ACO_v1_7(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_SA_v0(costMatrix, nPts);
@@ -17,16 +17,19 @@ tspSolver = @(costMatrix, nPts) TSP_ACO(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_GA_v1_1(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_GA(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_ACO_v1_7_1(costMatrix, nPts);
-% tspSolver = @(costMatrix, nPts) TSP_ACO_v1_8(costMatrix, nPts);
+tspSolver = @(costMatrix, nPts) TSP_ACO_v2_2(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_ACO_v2_1(costMatrix, nPts);
 
 % ===== Experiment Config =====
-nRuns = 1;
-tspFile  = fullfile(fileparts(mfilename('fullpath')), '..', 'kroA100.tsp');
-distFile = fullfile(fileparts(mfilename('fullpath')), '..', 'kroA100_distance_matrix.txt');
+nRuns = 30;
+coordFile = fullfile(fileparts(mfilename('fullpath')), 'kroA100_coords.mat');
+distFile  = fullfile(fileparts(mfilename('fullpath')), '..', 'kroA100_distance_matrix.txt');
 resultsDir = fullfile(fileparts(mfilename('fullpath')), 'results');
 
-%% ===== Parse kroA100 dataset =====
-[fullDist100, cityCoords] = parseKroA100(distFile, tspFile);
+%% ===== Load kroA100 dataset =====
+tmp = load(coordFile);  % → c100 (100×2)
+cityCoords = tmp.c100;
+fullDist100 = parseKroA100Dist(distFile);
 nCities = 100;
 
 fprintf('======== TSP Experiment: kroA100 ========\n');
@@ -210,7 +213,7 @@ fprintf('\nAll figures ready. (Not auto-saved)\n');
 
 %% ===== Local Functions =====
 
-function [distMatrix, coords] = parseKroA100(distFile, tspFile)
+function distMatrix = parseKroA100Dist(distFile)
     nCities = 100;
     distMatrix = zeros(nCities);
     fid = fopen(distFile, 'r');
@@ -225,25 +228,6 @@ function [distMatrix, coords] = parseKroA100(distFile, tspFile)
         for p = 1:length(vals)
             j = nCities - p + 1;
             distMatrix(i, j) = vals(p); distMatrix(j, i) = vals(p);
-        end
-    end
-    coords = zeros(nCities, 2);
-    fid2 = fopen(tspFile, 'r');
-    if fid2 < 0, error('Cannot open: %s', tspFile); end
-    cleanup2 = onCleanup(@() fclose(fid2));
-    inCoordSection = false;
-    while ~feof(fid2)
-        line = strtrim(fgetl(fid2));
-        if startsWith(line, 'NODE_COORD_SECTION'), inCoordSection = true; continue;
-        elseif strcmp(line, 'EOF'), break; end
-        if inCoordSection && ~isempty(line)
-            parts = sscanf(line, '%f');
-            if length(parts) >= 3
-                cityIdx = parts(1);
-                if cityIdx >= 1 && cityIdx <= nCities
-                    coords(cityIdx, :) = [parts(2), parts(3)];
-                end
-            end
         end
     end
 end

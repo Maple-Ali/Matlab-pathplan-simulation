@@ -20,7 +20,7 @@ nMid = nPts - 2;
 midIdx = 2:(nPts - 1);
 popSize = 150;%种群大小
 nGen = 2000;
-mutationRate = 0.05;
+mutationRate = 0.02;
 
 % 是否记录收敛历史
 trackHistory = (nargout >= 3);
