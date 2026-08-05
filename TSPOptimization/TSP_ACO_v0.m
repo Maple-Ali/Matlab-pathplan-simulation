@@ -3,6 +3,7 @@ function [bestOrder, bestCost, history] = TSP_ACO_v0(costMatrix, nPts)
 %   基于原始 TSP_ACO，仅加入两项经典改进:
 %     A. MMAS 信息素限幅 — 防止信息素垄断，避免过早收敛
 %     B. ASRank 排名沉积 — top nRank 蚂蚁按排名加权，保留次优路径信息
+%        (可通过 enableASRank 开关启用/禁用，禁用时回退为迭代最优沉积)
 %
 %   无 2-opt、无 NN 初始化、无自适应停止 — 便于与原版对比改进效果。
 %
@@ -13,16 +14,17 @@ nMid = nPts - 2;
 midIdx = 2:(nPts - 1);
 
 % ===== 算法参数 =====
-nAnts = 100;
+nAnts = 40;
 nIter = 1500;
 alpha = 1.0;
 beta  = 2.0;
-rho   = 0.55;
-Q     = 100;
+rho   = 0.25;
+Q     = 225;
 tau0  = 0.1;
 
 % ===== 方案 B：ASRank 排名沉积 =====
-nRank = 6;               % 参与沉积的蚂蚁数
+enableASRank = 0;          % 1=启用排名沉积, 0=仅迭代最优沉积
+nRank = 6;                 % 参与沉积的蚂蚁数（仅 enableASRank=1 时生效）
 
 trackHistory = (nargout >= 3);
 if trackHistory
@@ -123,12 +125,24 @@ for iter = 1:nIter
     % --- 信息素蒸发 ---
     tau = tau * (1 - rho);
 
-    % ---- 方案 B：ASRank 排名沉积 ----
-    [sortedCosts, sortIdx] = sort(antCosts);
-    for rank = 1:min(nRank, nAnts)
-        weight = (nRank - rank + 1) / nRank;  % 排名1→权重1, 排名nRank→权重1/nRank
-        deposit = (Q / sortedCosts(rank)) * weight;
-        rTour = antTours{sortIdx(rank)};
+    % ---- 方案 B：ASRank 排名沉积 (可开关) ----
+    if enableASRank
+        % 排名沉积: top nRank 按排名加权
+        [sortedCosts, sortIdx] = sort(antCosts);
+        for rank = 1:min(nRank, nAnts)
+            weight = (nRank - rank + 1) / nRank;  % 排名1→权重1, 排名nRank→权重1/nRank
+            deposit = (Q / sortedCosts(rank)) * weight;
+            rTour = antTours{sortIdx(rank)};
+            for k = 1:(length(rTour) - 1)
+                i = rTour(k); j = rTour(k + 1);
+                tau(i, j) = tau(i, j) + deposit;
+                tau(j, i) = tau(j, i) + deposit;
+            end
+        end
+    else
+        % 回退: 仅迭代最优沉积 (标准 AS)
+        deposit = Q / iterBestCost;
+        rTour = antTours{bestAntIdx};
         for k = 1:(length(rTour) - 1)
             i = rTour(k); j = rTour(k + 1);
             tau(i, j) = tau(i, j) + deposit;

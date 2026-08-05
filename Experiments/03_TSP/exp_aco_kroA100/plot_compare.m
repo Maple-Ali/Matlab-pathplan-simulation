@@ -6,8 +6,8 @@ rootDir = fileparts(fileparts(fileparts(fileparts(mfilename('fullpath')))));
 addpath(genpath(rootDir));
 
 resultsDir = fullfile(fileparts(mfilename('fullpath')), 'results');
-algoNames = {'ACO', 'ACO_v0', 'ACO_v1_8', 'GA', 'GA_v1_1', 'SA', 'SA_v0_1'};
-displayNames = {'ACO', 'ACO\_v0', 'ACO\_v1\_8', 'GA', 'GA\_v1\_1', 'SA', 'SA\_v0_1'};
+algoNames = {'ACO', 'ACO_v0', 'ACO_v2_2', 'GA', 'GA_v1_1', 'SA_v0', 'SA_v0_1'};
+displayNames = {'ACO', 'ACO_v0', 'ACO_v2_2', 'GA', 'GA_v1_1', 'SA_v0', 'SA_v0_1'};
 colors = lines(length(algoNames));
 knownOpt = 21282;
 

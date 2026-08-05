@@ -1,10 +1,13 @@
-function [bestOrder, bestCost, history] = TSP_ACO_v2_2(costMatrix, nPts)
-%TSP_ACO_V2_2 蚁群 + VND 局部搜索 求解 TSP
-%   基于 TSP_ACO_v2_1，核心改进:
-%     S+. 局部搜索拆分: 精英(前optEliteRatio) + 随机探索(剩余,上限optRandomCap)
-%     B. 自适应停止: 最优成本连续 stagnationLim 代未改进则停止
+function [bestOrder, bestCost, history] = TSP_ACO_v2_3(costMatrix, nPts)
+%TSP_ACO_V2_3 蚁群 + 候选列表加速 VND 求解 TSP
+%   基于 TSP_ACO_v2_2，核心升级:
+%     C. 候选列表加速: 为每个城市预计算 k 个最近邻居, 限制 VND 邻域检查
+%        2-opt:    仅当新边涉及候选边对时才评估
+%        重定位:   仅当插入城市是新邻居的候选邻居时才评估
+%        交换:     仅当两个被交换城市互为候选邻居时才评估
+%        复杂度:   O(n^2) → O(n*k), k ≈ 10~15
 %
-%   保留 v2_1 全部机制: VND / K / S / A
+%   保留 v2_2 全部机制: VND / K / S / A / B
 
 nMid = nPts - 2;
 midIdx = 2:(nPts - 1);
@@ -19,7 +22,7 @@ Q     = 225;             % 信息素沉积常数
 
 % ===== 方案 K：伪随机比例规则 (ACS 风格) =====
 enablePseudoRandom = 1;  % 1=开启
-q0 = 0.35;               % 贪心选择概率
+q0 = 0.45;               % 贪心选择概率
 
 % ===== 方案 S：渐进式局部搜索 (S 曲线) =====
 optRatio_start = 0.00;       % 初期局部搜索比例 (y_min)
@@ -28,6 +31,9 @@ optTransInterval = [0, 100]; % 过渡区间 [x_L, x_R]
 optCurveA      = 2.0;        % S 曲线陡峭度
 optEliteRatio  = 0.66;       % 局部搜索预算中精英蚂蚁占比
 optRandomCap   = 0.10;       % 随机抽取比例上限
+
+% ===== 方案 C：候选列表加速 VND =====
+kCand = 30;               % 每个城市的候选邻居数 (10~15)
 
 % ===== 方案 B：自适应停止 =====
 enableAdaptiveStop = 1;  % 1=开启
@@ -50,6 +56,16 @@ if nMid == 0
             'iterCount', 1, 'elapsedTime', 0, 'stopReason', 'trivial');
     end
     return;
+end
+
+% ---- 方案 C：预计算候选列表 ----
+% isCand(i,j) = true 若 j 是 i 的 k 个最近邻居之一
+isCand = false(nPts, nPts);
+for i = 1:nPts
+    dists = costMatrix(i, :);
+    dists(i) = inf;                    % 排除自身
+    [~, idx] = sort(dists);
+    isCand(i, idx(1:min(kCand, nPts-1))) = true;
 end
 
 % 启发式信息矩阵
@@ -142,10 +158,10 @@ for iter = 1:nIter
     randPool = nElite + randperm(nAnts - nElite, nRandom);
     lsAnts = [sortIdx(1:nElite); sortIdx(randPool)];   % 全部局部搜索蚂蚁
 
-    % VND 搜索 (所有 lsAnts)
+    % VND 搜索 (所有 lsAnts, 候选列表加速)
     for idx = 1:length(lsAnts)
         a = lsAnts(idx);
-        [antTours{a}, antCosts(a)] = vndSearchLocal(antTours{a}, midIdx, costMatrix, nPts);
+        [antTours{a}, antCosts(a)] = vndSearchLocal(antTours{a}, midIdx, costMatrix, nPts, isCand);
     end
 
     [iterBestCost, bestAntIdx] = min(antCosts);
@@ -224,18 +240,18 @@ end
 end
 
 % =========================================================================
-%  VND 局部搜索: 2-opt → 重定位 → 交换 → 循环
+%  VND 局部搜索: 2-opt → 重定位 → 交换 → 循环 (候选列表加速)
 % =========================================================================
-function [tour, cost] = vndSearchLocal(tour, midIdx, costMatrix, nPts)
+function [tour, cost] = vndSearchLocal(tour, midIdx, costMatrix, nPts, isCand)
 cost = tourCostLocal(tour, midIdx, costMatrix, nPts);
 improved = true;
 while improved
     improved = false;
-    [tour, cost, ok] = twoOptFI(tour, midIdx, costMatrix, nPts, cost);
+    [tour, cost, ok] = twoOptFI(tour, midIdx, costMatrix, nPts, cost, isCand);
     improved = improved || ok;
-    [tour, cost, ok] = relocateFI(tour, midIdx, costMatrix, nPts, cost);
+    [tour, cost, ok] = relocateFI(tour, midIdx, costMatrix, nPts, cost, isCand);
     improved = improved || ok;
-    [tour, cost, ok] = swapFI(tour, midIdx, costMatrix, nPts, cost);
+    [tour, cost, ok] = swapFI(tour, midIdx, costMatrix, nPts, cost, isCand);
     improved = improved || ok;
 end
 end
@@ -245,18 +261,22 @@ fo = [1, midIdx(tour), nPts]; c = 0;
 for k = 1:(nPts - 1), c = c + costMatrix(fo(k), fo(k + 1)); end
 end
 
-% ---- 2-opt (first-improvement, 单遍扫描) ----
-function [tour, cost, improved] = twoOptFI(tour, midIdx, costMatrix, nPts, cost)
+% ---- 2-opt (候选加速: 仅当新边涉及候选边对时评估) ----
+function [tour, cost, improved] = twoOptFI(tour, midIdx, costMatrix, nPts, cost, isCand)
 nMid = length(tour);
 fullOrder = [1, midIdx(tour), nPts];
 improved = false;
 for i = 1:(nMid - 1)
     for j = (i + 1):nMid
         fi = i + 1; fj = j + 1;
-        old = costMatrix(fullOrder(fi), fullOrder(fi + 1)) + ...
-              costMatrix(fullOrder(fj), fullOrder(fj + 1));
-        nw  = costMatrix(fullOrder(fi), fullOrder(fj)) + ...
-              costMatrix(fullOrder(fi + 1), fullOrder(fj + 1));
+        u = fullOrder(fi); v = fullOrder(fj);
+        up1 = fullOrder(fi + 1); vp1 = fullOrder(fj + 1);
+        % 仅当新边 (u,v) 或 (up1,vp1) 至少一对是候选边时才评估
+        if ~isCand(u, v) && ~isCand(up1, vp1)
+            continue;
+        end
+        old = costMatrix(u, up1) + costMatrix(v, vp1);
+        nw  = costMatrix(u, v) + costMatrix(up1, vp1);
         if nw < old - 1e-10
             tour((i + 1):j) = tour(j:-1:(i + 1));
             cost = cost - old + nw; improved = true;
@@ -266,8 +286,8 @@ for i = 1:(nMid - 1)
 end
 end
 
-% ---- 节点重定位 (first-improvement) ----
-function [tour, cost, improved] = relocateFI(tour, midIdx, costMatrix, nPts, cost)
+% ---- 节点重定位 (候选加速: 仅当插入城市是新邻居的候选邻居时评估) ----
+function [tour, cost, improved] = relocateFI(tour, midIdx, costMatrix, nPts, cost, isCand)
 nMid = length(tour); improved = false;
 for v = 1:nMid
     Cv = midIdx(tour(v));
@@ -278,6 +298,10 @@ for v = 1:nMid
         if p == 0, Lp = 1; Rp = midIdx(tour(1));
         elseif p == nMid, Lp = midIdx(tour(nMid)); Rp = nPts;
         else, Lp = midIdx(tour(p)); Rp = midIdx(tour(p + 1));
+        end
+        % 仅当 Cv 是 Lp 或 Rp 的候选邻居时才评估
+        if ~isCand(Lp, Cv) && ~isCand(Rp, Cv)
+            continue;
         end
         oldCost = costMatrix(Lv, Cv) + costMatrix(Cv, Rv) + costMatrix(Lp, Rp);
         newCost = costMatrix(Lv, Rv) + costMatrix(Lp, Cv) + costMatrix(Cv, Rp);
@@ -294,15 +318,20 @@ for v = 1:nMid
 end
 end
 
-% ---- 节点交换 (first-improvement) ----
-function [tour, cost, improved] = swapFI(tour, midIdx, costMatrix, nPts, cost)
+% ---- 节点交换 (候选加速: 仅当两个城市互为候选邻居时评估) ----
+function [tour, cost, improved] = swapFI(tour, midIdx, costMatrix, nPts, cost, isCand)
 nMid = length(tour);
 fullOrder = [1, midIdx(tour), nPts]; improved = false;
 for i = 1:(nMid - 1)
     for j = (i + 1):nMid
         fi = i + 1; fj = j + 1;
-        Li = fullOrder(fi - 1); Ai = fullOrder(fi); Ri = fullOrder(fi + 1);
-        Lj = fullOrder(fj - 1); Aj = fullOrder(fj); Rj = fullOrder(fj + 1);
+        Ai = fullOrder(fi); Aj = fullOrder(fj);
+        % 仅当两个被交换城市互为候选邻居时才评估
+        if ~isCand(Ai, Aj)
+            continue;
+        end
+        Li = fullOrder(fi - 1); Ri = fullOrder(fi + 1);
+        Lj = fullOrder(fj - 1); Rj = fullOrder(fj + 1);
         if j == i + 1
             oldCost = costMatrix(Li, Ai) + costMatrix(Ai, Aj) + costMatrix(Aj, Rj);
             newCost = costMatrix(Li, Aj) + costMatrix(Aj, Ai) + costMatrix(Ai, Rj);

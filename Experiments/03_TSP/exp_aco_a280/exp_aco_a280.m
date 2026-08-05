@@ -10,12 +10,12 @@ addpath(genpath(rootDir));
 
 % ===== TSP Algorithm Selector (change here to test different solvers) =====
 % tspSolver = @(costMatrix, nPts) TSP_ACO_v2(costMatrix, nPts);
-tspSolver = @(costMatrix, nPts) TSP_ACO_v1_3(costMatrix, nPts);
+tspSolver = @(costMatrix, nPts) TSP_ACO_v2_3(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_SA_v1_1(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_GA_v2(costMatrix, nPts);
 
 % ===== Experiment Config =====
-nRuns = 10;
+nRuns = 1;
 tspFile  = fullfile(fileparts(mfilename('fullpath')), '..', 'a280.tsp');
 distFile = fullfile(fileparts(mfilename('fullpath')), '..', 'a280_distance_matrix.txt');
 resultsDir = fullfile(fileparts(mfilename('fullpath')), 'results');
@@ -91,11 +91,10 @@ hold on;
 scatter(cityCoords(:,1), cityCoords(:,2), 20, [0.2, 0.5, 0.9], 'filled', ...
     'MarkerEdgeColor', 'none');
 
-% Label only every 20th city to avoid clutter
-labelStep = 20;
-for i = 1:labelStep:nCities
-    text(cityCoords(i,1) + 4, cityCoords(i,2) + 4, num2str(i), ...
-        'FontSize', 6, 'Color', [0.2, 0.2, 0.2]);
+% Label all cities
+for i = 1:nCities
+    text(cityCoords(i,1) + 2, cityCoords(i,2) + 2, num2str(i), ...
+        'FontSize', 3.5, 'Color', [0.2, 0.2, 0.2], 'HorizontalAlignment', 'center');
 end
 
 % Best tour path

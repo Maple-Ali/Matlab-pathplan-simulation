@@ -1,7 +1,7 @@
-%% exp_aco_kroA150 — TSP算法在kroA150数据集上的性能测试
-%  数据集: kroA150 (150城市, EUC_2D坐标, 预计算距离矩阵)
+%% exp_aco_bier127 — TSP算法在bier127数据集上的性能测试
+%  数据集: bier127 (127城市, EUC_2D坐标, 预计算距离矩阵)
 %  起点/终点: 城市1 (同一点)
-%  运行次数: 30次独立运行
+%  运行次数: 10次独立运行
 %  导出: 城市顺序、收敛曲线、最优/最差成本等
 
 clear variables; close all;
@@ -20,33 +20,33 @@ tspSolver = @(costMatrix, nPts) TSP_ACO_v2_2(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_GA_v1_1(costMatrix, nPts);
 
 % ===== Experiment Config =====
-nRuns = 20;
-coordFile = fullfile(fileparts(mfilename('fullpath')), 'kroA150_coords.mat');
-distFile  = fullfile(fileparts(mfilename('fullpath')), '..', 'kroA150_distance_matrix.txt');
+nRuns = 10;
+coordFile = fullfile(fileparts(mfilename('fullpath')), 'bier127_coords.mat');
+distFile  = fullfile(fileparts(mfilename('fullpath')), 'bier127_distance_matrix.txt');
 resultsDir = fullfile(fileparts(mfilename('fullpath')), 'results');
 
-%% ===== Load kroA150 dataset =====
-tmp = load(coordFile);  % → c150 (150×2)
-cityCoords = tmp.c150;
-fullDist150 = parseKroA150Dist(distFile);
-nCities = 150;
+%% ===== Load bier127 dataset =====
+tmp = load(coordFile);  % → c127 (127×2)
+cityCoords = tmp.c127;
+fullDist127 = parseBier127Dist(distFile);
+nCities = 127;
 
-fprintf('======== TSP Experiment: kroA150 ========\n');
+fprintf('======== TSP Experiment: bier127 ========\n');
 fprintf('Algorithm: %s\n', func2str(tspSolver));
 fprintf('Cities: %d | Runs: %d\n', nCities, nRuns);
 fprintf('Start/Goal: City 1 (%.0f, %.0f)\n', cityCoords(1,1), cityCoords(1,2));
-fprintf('Known optimal: 26524\n\n');
+fprintf('Known optimal: 118282\n\n');
 
-%% ===== Build 151x151 cost matrix (start=city1, goal=city1) =====
-nPts = nCities + 1;  % 151: [1=start, 2..150=cities2..150, 151=goal]
+%% ===== Build 128x128 cost matrix (start=city1, goal=city1) =====
+nPts = nCities + 1;  % 128: [1=start, 2..127=cities2..127, 128=goal]
 costMatrix = zeros(nPts);
-costMatrix(1, 2:nCities)         = fullDist150(1, 2:nCities);
-costMatrix(2:nCities, 1)         = fullDist150(2:nCities, 1);
-costMatrix(2:nCities, nPts)      = fullDist150(2:nCities, 1);
-costMatrix(nPts, 2:nCities)      = fullDist150(1, 2:nCities);
-costMatrix(2:nCities, 2:nCities) = fullDist150(2:nCities, 2:nCities);
+costMatrix(1, 2:nCities)         = fullDist127(1, 2:nCities);
+costMatrix(2:nCities, 1)         = fullDist127(2:nCities, 1);
+costMatrix(2:nCities, nPts)      = fullDist127(2:nCities, 1);
+costMatrix(nPts, 2:nCities)      = fullDist127(1, 2:nCities);
+costMatrix(2:nCities, 2:nCities) = fullDist127(2:nCities, 2:nCities);
 
-%% ===== 30 Independent Runs =====
+%% ===== Independent Runs =====
 allOrders   = zeros(nRuns, nPts);
 allCosts    = zeros(nRuns, 1);
 allHistories = cell(1, nRuns);
@@ -82,13 +82,14 @@ fprintf('Best:   %.2f  (Run #%d)\n', stats.bestCost, bestRunIdx);
 fprintf('Worst:  %.2f\n', stats.worstCost);
 fprintf('Avg:    %.2f ± %.2f\n', stats.avgCost, stats.stdCost);
 fprintf('Median: %.2f\n', stats.medianCost);
-fprintf('Gap to optimal (26524): %.1f%%\n', (stats.bestCost - 26524) / 26524 * 100);
+fprintf('Gap to optimal (118282): %.1f%%\n', (stats.bestCost - 118282) / 118282 * 100);
 fprintf('Total wall time: %.1fs\n', totalWallTime);
 
 %% ===== Export Data =====
-resultsFile = fullfile(resultsDir, 'exp_aco_kroA150_results.mat');
+if ~exist(resultsDir, 'dir'), mkdir(resultsDir); end
+resultsFile = fullfile(resultsDir, 'exp_aco_bier127_results.mat');
 save(resultsFile, 'allOrders', 'allCosts', 'allHistories', 'bestRunIdx', 'stats', ...
-    'fullDist150', 'cityCoords', 'costMatrix');
+    'fullDist127', 'cityCoords', 'costMatrix');
 fprintf('\nResults saved to: %s\n', resultsFile);
 
 %% ===== Figure 1: Optimal Path Map =====
@@ -98,10 +99,10 @@ hold on;
 scatter(cityCoords(:,1), cityCoords(:,2), 25, [0.2, 0.5, 0.9], 'filled', ...
     'MarkerEdgeColor', 'none');
 
-% Label every 15th city
-labelStep = 15;
+% Label every 12th city
+labelStep = 12;
 for i = 1:labelStep:nCities
-    text(cityCoords(i,1) + 30, cityCoords(i,2) + 30, num2str(i), ...
+    text(cityCoords(i,1) + 80, cityCoords(i,2) + 80, num2str(i), ...
         'FontSize', 6, 'Color', [0.2, 0.2, 0.2]);
 end
 
@@ -120,11 +121,11 @@ plot(cityCoords(cityIdx,1), cityCoords(cityIdx,2), '-', 'Color', [0.9, 0.3, 0.2]
 % Start marker
 plot(cityCoords(1,1), cityCoords(1,2), 'o', ...
     'MarkerSize', 12, 'MarkerFaceColor', [0.2, 0.8, 0.2], 'MarkerEdgeColor', 'k', 'LineWidth', 1.5);
-text(cityCoords(1,1) + 60, cityCoords(1,2) - 80, 'Start', ...
+text(cityCoords(1,1) + 300, cityCoords(1,2) - 400, 'Start', ...
     'HorizontalAlignment', 'center', 'FontSize', 10, 'FontWeight', 'bold', 'Color', [0.2, 0.6, 0.2]);
 
 xlabel('X'); ylabel('Y');
-title(sprintf('Best TSP Tour — kroA150 (Cost: %.2f, Run #%d)', stats.bestCost, bestRunIdx), 'FontSize', 13);
+title(sprintf('Best TSP Tour — bier127 (Cost: %.2f, Run #%d)', stats.bestCost, bestRunIdx), 'FontSize', 13);
 axis equal tight;
 grid on; set(gca, 'GridAlpha', 0.1);
 hold off;
@@ -151,10 +152,10 @@ fill([xIter, fliplr(xIter)], [loIter, fliplr(hiIter)], ...
     [0.2, 0.5, 0.9], 'FaceAlpha', 0.15, 'EdgeColor', 'none');
 hold on;
 plot(xIter, medIter, '-', 'Color', [0.2, 0.5, 0.9], 'LineWidth', 2.0);
-yline(26524, '--', 'Color', [0.2, 0.7, 0.2], 'LineWidth', 1.0);
+yline(118282, '--', 'Color', [0.2, 0.7, 0.2], 'LineWidth', 1.0);
 xlabel('Iteration'); ylabel('Best Cost');
 title('Convergence — Iteration (Median + 95% CI)');
-legend('95% CI', 'Median', 'Optimal (26524)', 'Location', 'northeast'); grid on;
+legend('95% CI', 'Median', 'Optimal (118282)', 'Location', 'northeast'); grid on;
 hold off;
 
 %% ===== Figure 3: Convergence Curves (Time) =====
@@ -188,17 +189,17 @@ fill([tCommon, fliplr(tCommon)], [loTime, fliplr(hiTime)], ...
     [0.8, 0.4, 0.2], 'FaceAlpha', 0.15, 'EdgeColor', 'none');
 hold on;
 plot(tCommon, medTime, '-', 'Color', [0.8, 0.4, 0.2], 'LineWidth', 2.0);
-yline(26524, '--', 'Color', [0.2, 0.7, 0.2], 'LineWidth', 1.0);
+yline(118282, '--', 'Color', [0.2, 0.7, 0.2], 'LineWidth', 1.0);
 xlabel('Time (s)'); ylabel('Best Cost');
 title('Convergence — Time (Median + 95% CI)');
-legend('95% CI', 'Median', 'Optimal (26524)', 'Location', 'northeast'); grid on;
+legend('95% CI', 'Median', 'Optimal (118282)', 'Location', 'northeast'); grid on;
 hold off;
 
 %% ===== Figure 4: Cost Distribution =====
 figure('Position', [50, 760, 750, 520], 'Color', 'w');
 
 subplot(2,1,1);
-histogram(allCosts, 12, 'FaceColor', [0.2, 0.5, 0.9], 'EdgeColor', 'k', 'LineWidth', 0.5);
+histogram(allCosts, 10, 'FaceColor', [0.2, 0.5, 0.9], 'EdgeColor', 'k', 'LineWidth', 0.5);
 hold on;
 xline(stats.bestCost, '--', 'Color', [0.9, 0.2, 0.2], 'LineWidth', 1.5);
 xline(stats.medianCost, '--', 'Color', [0.2, 0.7, 0.2], 'LineWidth', 1.5);
@@ -220,11 +221,12 @@ fprintf('\nAll figures ready. (Not auto-saved)\n');
 
 %% ===== Local Functions =====
 
-function distMatrix = parseKroA150Dist(distFile)
-%PARSEKROA150DIST Parse kroA150 distance matrix
-%   distMatrix - 150x150 symmetric distance matrix
+function distMatrix = parseBier127Dist(distFile)
+%PARSEBIER127DIST Parse bier127 distance matrix
+%   distMatrix - 127x127 symmetric distance matrix
+%   Format: upper triangular, cols in descending order, no header
 
-    nCities = 150;
+    nCities = 127;
 
     % --- Parse distance matrix (upper triangular, cols in descending order) ---
     distMatrix = zeros(nCities);
@@ -232,17 +234,10 @@ function distMatrix = parseKroA150Dist(distFile)
     if fid < 0, error('Cannot open: %s', distFile); end
     cleanup1 = onCleanup(@() fclose(fid));
 
-    for h = 1:4, fgetl(fid); end  % skip header
-
     for i = 1:(nCities - 1)
         line = strtrim(fgetl(fid));
-        colonPos = strfind(line, ':');
-        if ~isempty(colonPos)
-            line = strtrim(line(colonPos+1:end));
-        end
         vals = sscanf(line, '%f');
-        nVals = length(vals);
-        for p = 1:nVals
+        for p = 1:length(vals)
             j = nCities - p + 1;
             distMatrix(i, j) = vals(p);
             distMatrix(j, i) = vals(p);
