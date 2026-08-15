@@ -22,7 +22,7 @@ midIdx = 2:(nPts - 1);
 
 % ===== 可调参数 =====
 popSize        = 300;     % 种群大小
-nGen           = 2000;   % 最大进化代数
+nGen           = 1200;   % 最大进化代数
 crossoverRate  = 0.80;    % 交叉概率
 baseMutationRate = 0.20;  % 基础变异率
 maxMutationRate  = 0.5;  % 最大变异率（自适应上限）

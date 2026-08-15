@@ -12,12 +12,12 @@ addpath(genpath(rootDir));
 % tspSolver = @(costMatrix, nPts) TSP_ACO(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_ACO_v0(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_ACO_v1_7(costMatrix, nPts);
-tspSolver = @(costMatrix, nPts) TSP_SA_v0(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_SA_v0(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_SA_v0_1(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_GA_v1_1(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_GA(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_ACO_v1_7_1(costMatrix, nPts);
-% tspSolver = @(costMatrix, nPts) TSP_ACO_v2_3(costMatrix, nPts);
+tspSolver = @(costMatrix, nPts) TSP_ACO_v2_3(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_ACO_v2_2(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_ACO_v2_1(costMatrix, nPts);
 

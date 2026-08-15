@@ -6,37 +6,59 @@ rootDir = fileparts(fileparts(fileparts(fileparts(mfilename('fullpath')))));
 addpath(genpath(rootDir));
 
 resultsDir = fullfile(fileparts(mfilename('fullpath')), 'results');
-algoNames = {'ACO', 'ACO_v0', 'ACO_v2_2', 'GA', 'GA_v1_1', 'SA_v0', 'SA_v0_1'};
-displayNames = {'ACO', 'ACO_v0', 'ACO_v2_2', 'GA', 'GA_v1_1', 'SA_v0', 'SA_v0_1'};
-colors = lines(length(algoNames));
+
+% ===== Config: algo → display label → color (optional) =====
+%  Column 1: algorithm name (used in file pattern kroA100_40_%s.mat)
+%  Column 2: display name in legend
+%  Column 3: color [R,G,B] (optional — auto-assigned if omitted or empty)
+algoLabels = {
+    'ACO',      'ACO',       [0.00, 0.45, 0.74];   % blue
+    'ACO_v0',   'ACO\_v0',   [0.85, 0.33, 0.10];   % orange
+    'ACO_v2_2', 'ACO\_v2\_2', [0.47, 0.67, 0.19];   % green
+    'GA',       'GA',        [0.93, 0.69, 0.13];   % yellow
+    'SA_v0',    'SA\_v0',    [0.49, 0.18, 0.56];   % purple
+};
+algoNames    = algoLabels(:,1);
+displayNames = algoLabels(:,2);
+nAlgo = length(algoNames);
+
+% Build colors: use user-specified color if provided, else auto-assign
+defaultColors = lines(nAlgo);
+colors = zeros(nAlgo, 3);
+for ai = 1:nAlgo
+    if size(algoLabels, 2) >= 3 && ~isempty(algoLabels{ai, 3})
+        colors(ai,:) = algoLabels{ai, 3};
+    else
+        colors(ai,:) = defaultColors(ai,:);
+    end
+end
 knownOpt = 21282;
 
 %% ===== Load all data =====
-allData = cell(1, length(algoNames));
-for ai = 1:length(algoNames)
+allData = cell(1, nAlgo);
+for ai = 1:nAlgo
     fname = fullfile(resultsDir, sprintf('kroA100_40_%s.mat', algoNames{ai}));
     if ~exist(fname, 'file')
         warning('Missing: %s', fname); allData{ai} = []; continue;
     end
     data = load(fname);
     data.costs = [];
-    % Handle different field names from batch vs individual runs
-    if isfield(data, 'ac'), data.costs = data.ac;
-    elseif isfield(data, 'allCosts'), data.costs = data.allCosts; end
+    if isfield(data, 'allCosts'), data.costs = data.allCosts;
+    elseif isfield(data, 'ac'), data.costs = data.ac; end
     data.histories = [];
-    if isfield(data, 'ah'), data.histories = data.ah;
-    elseif isfield(data, 'allHistories'), data.histories = data.allHistories; end
+    if isfield(data, 'allHistories'), data.histories = data.allHistories;
+    elseif isfield(data, 'ah'), data.histories = data.ah; end
     data.st = [];
-    if isfield(data, 's'), data.st = data.s;
-    elseif isfield(data, 'stats'), data.st = data.stats; end
+    if isfield(data, 'stats'), data.st = data.stats;
+    elseif isfield(data, 's'), data.st = data.s; end
     % Compute stats if missing
-    if isempty(data.st) || ~isfield(data.st,'bestCost')
+    if isempty(data.st) || ~isfield(data.st, 'bestCost')
         data.st = struct();
         [data.st.bestCost, data.st.bestRunIdx] = min(data.costs);
-        data.st.worstCost = max(data.costs);
-        data.st.avgCost = mean(data.costs);
-        data.st.stdCost = std(data.costs);
-        data.st.medianCost = median(data.costs);
+        data.st.worstCost   = max(data.costs);
+        data.st.avgCost     = mean(data.costs);
+        data.st.stdCost     = std(data.costs);
+        data.st.medianCost  = median(data.costs);
     end
     allData{ai} = data;
     fprintf('Loaded %20s: Best=%.1f  Avg=%.1f±%.1f  Gap=%.1f%%\n', algoNames{ai}, ...
@@ -46,7 +68,7 @@ end
 %% ===== Figure 1: Convergence (Iteration) — all algorithms overlaid =====
 figure('Position', [50, 50, 1000, 650], 'Color', 'w');
 hold on;
-for ai = 1:length(algoNames)
+for ai = 1:nAlgo
     data = allData{ai};
     if isempty(data) || isempty(data.histories), continue; end
     nR = length(data.histories); maxIter = max(cellfun(@(h) h.iterCount, data.histories));
@@ -67,7 +89,7 @@ legend('Location', 'northeast'); grid on; hold off;
 %% ===== Figure 2: Convergence (Time) — all algorithms overlaid =====
 figure('Position', [50, 50, 1000, 650], 'Color', 'w');
 hold on;
-for ai = 1:length(algoNames)
+for ai = 1:nAlgo
     data = allData{ai};
     if isempty(data) || isempty(data.histories), continue; end
     nR = length(data.histories);
@@ -106,10 +128,27 @@ for ai = 1:length(algoNames)
         boxGroup = [boxGroup; repmat(ai, length(c), 1)];
     end
 end
-h = boxplot(boxData, boxGroup, 'Labels', displayNames);
-% Color the boxes
-for ai = 1:length(algoNames)
+h = boxplot(boxData, boxGroup, 'Labels', displayNames, 'Symbol', 'o');
+for ai = 1:nAlgo
     set(h(:,ai), 'Color', colors(ai,:));
+    % Median line → black
+    if size(h,1) >= 6, set(h(6,ai), 'Color', 'k', 'LineWidth', 1.2); end
+    % Outlier markers → filled circles
+    if size(h,1) >= 7
+        set(h(7,ai), 'MarkerFaceColor', colors(ai,:), 'MarkerSize', 5);
+    end
+end
+hold on;
+% Overlay all data points as jittered scatter
+jitterWidth = 0.25;
+for ai = 1:nAlgo
+    if ~isempty(allData{ai})
+        cVals = allData{ai}.costs(:);
+        nPts = length(cVals);
+        xJitter = ai + jitterWidth * (rand(nPts, 1) - 0.5);
+        scatter(xJitter, cVals, 12, colors(ai,:), 'filled', ...
+            'MarkerFaceAlpha', 0.5, 'MarkerEdgeColor', 'none');
+    end
 end
 yline(knownOpt, '--k', 'Optimal (21282)', 'LineWidth', 1.0);
 ylabel('Best Cost'); title(sprintf('Cost Distribution Comparison (%d runs each)', nR));
@@ -134,7 +173,7 @@ ylabel('Best Cost'); title('Best Cost by Algorithm');
 yline(knownOpt, '--k', 'Optimal (21282)', 'LineWidth', 1.0); grid on; hold off;
 
 %% ===== Figures 5+: Individual Best Cost distributions =====
-for ai = 1:length(algoNames)
+for ai = 1:nAlgo
     data = allData{ai};
     if isempty(data), continue; end
     figure('Position', [50, 50, 600, 450], 'Color', 'w');

@@ -1,6 +1,6 @@
-%% exp_aco_v2_2_kroA150 — TSP_ACO_v2_2 参数敏感性分析（kroA150）
+%% exp_aco_v2_3_kroA150 — TSP_ACO_v2_3 参数敏感性分析（kroA150）
 %  方法: 一次一个参数（OPAT），其他参数固定在默认值
-%  参数: nAnts, alpha, beta, rho, Q, q0, optRatio_end
+%  参数: nAnts, alpha, beta, rho, Q, q0, optRatio_end, kCand
 %  每组合: 10次独立运行，自适应停止
 
 clear variables; close all;
@@ -26,23 +26,24 @@ costMatrix(nPts, 2:nCities)      = fullDist150(1, 2:nCities);
 costMatrix(2:nCities, 2:nCities) = fullDist150(2:nCities, 2:nCities);
 
 %% ===== Parameter Definitions =====
-% Default values (matching TSP_ACO_v2_2)
-defaults = struct('nAnts', 55, 'alpha', 1.0, 'beta', 2.0, ...
-    'rho', 0.25, 'Q', 175, 'q0', 0.4, 'optRatio_end', 0.45);
+% Default values (matching TSP_ACO_v2_3)
+defaults = struct('nAnts', 40, 'alpha', 1.0, 'beta', 2.0, ...
+    'rho', 0.25, 'Q', 225, 'q0', 0.45, 'optRatio_end', 0.3, 'kCand', 50);
 
 paramDefs = {
-    'nAnts',        [35, 40, 45, 50, 55, 60];
+%    'nAnts',        [35, 40, 45, 50, 55, 60];
 %    'alpha',        [0.5, 1.0, 1.5, 2.0, 3.0, 4.0];
-    'beta',         [1.8, 2.0, 2.2, 2.4];
+%    'beta',         [1.8, 2.0, 2.2, 2.4];
 %    'rho',          [0.2, 0.25, 0.3, 0.35, 0.40];
-    'Q',            [175, 200, 225, 250];
-    'q0',           [0.25, 0.30, 0.35, 0.40, 0.45, 0.5];
-    'optRatio_end', [0.30, 0.35, 0.40, 0.45, 0.5, 0.55];
+%    'Q',            [175, 200, 225, 250, 275];
+%    'q0',           [0.25, 0.30, 0.35, 0.40, 0.45, 0.5];
+%    'optRatio_end', [0.15, 0.20, 0.25, 0.30, 0.35, 0.40];
+    'kCand',        [3, 6, 9, 12, 15];
 };
 nParams = size(paramDefs, 1);
 
 %% ===== Run Ablation =====
-fprintf('======== TSP_ACO_v2_2 Sensitivity: kroA150 ========\n');
+fprintf('======== TSP_ACO_v2_3 Sensitivity: kroA150 ========\n');
 fprintf('Method: One-Parameter-At-A-Time | Runs per combo: %d\n', nRunsPerCombo);
 fprintf('Known optimal: 26524\n\n');
 
@@ -69,7 +70,7 @@ for pi = 1:nParams
             comboCount, totalCombos, pName, pv, nRunsPerCombo);
 
         for r = 1:nRunsPerCombo
-            [order, cost, history] = TSP_ACO_v2_2_ablated(costMatrix, nPts, overrides);
+            [order, cost, history] = TSP_ACO_v2_3_ablated(costMatrix, nPts, overrides);
             costs(r) = cost; convergeIters(r) = findConvergeIter(history.bestCostHistory, cost);
             times(r) = history.elapsedTime;
             if cost < bestCostLocal, bestCostLocal = cost; bestOrderLocal = order; end
@@ -97,7 +98,7 @@ for pi = 1:nParams
         (pr.stats(bestIdx).meanCost - 26524) / 26524 * 100);
 end
 
-save(fullfile(resultsDir, 'exp_aco_v2_2_kroA150_results.mat'), ...
+save(fullfile(resultsDir, 'exp_aco_v2_3_kroA150_results.mat'), ...
     'paramResults', 'paramDefs', 'bestParams', 'defaults', ...
     'fullDist150', 'cityCoords', 'costMatrix', 'nRunsPerCombo');
 
@@ -113,7 +114,7 @@ for pi = 1:nParams
     title(sprintf('%s (best: %.4g @ %.4g)', pr.paramName, means(bi), vals(bi)));
     grid on; set(gca, 'GridAlpha', 0.15);
 end
-sgtitle('TSP\_ACO\_v2\_2 Sensitivity (kroA150) — Cost', 'FontSize', 14);
+sgtitle('TSP\_ACO\_v2\_3 Sensitivity (kroA150) — Cost', 'FontSize', 14);
 
 %% ===== Figure 2: Convergence Speed =====
 figure('Position', [50, 50, 1500, 1000], 'Color', 'w');
@@ -128,7 +129,7 @@ for pi = 1:nParams
     title(sprintf('%s (fastest: %.0f @ %.4g)', pr.paramName, cv(fi), vals(fi)));
     grid on; set(gca, 'GridAlpha', 0.15);
 end
-sgtitle('TSP\_ACO\_v2\_2 Sensitivity (kroA150) — Conv Speed', 'FontSize', 14);
+sgtitle('TSP\_ACO\_v2\_3 Sensitivity (kroA150) — Conv Speed', 'FontSize', 14);
 
 %% ===== Figure 3: Runtime =====
 figure('Position', [50, 50, 1500, 1000], 'Color', 'w');
@@ -140,11 +141,11 @@ for pi = 1:nParams
     xlabel(pr.paramName); ylabel('Runtime (s)'); title(sprintf('%s — Runtime', pr.paramName));
     grid on; set(gca, 'GridAlpha', 0.15);
 end
-sgtitle('TSP\_ACO\_v2\_2 Sensitivity (kroA150) — Runtime', 'FontSize', 14);
+sgtitle('TSP\_ACO\_v2\_3 Sensitivity (kroA150) — Runtime', 'FontSize', 14);
 
 %% ===== Figure 4: Best-Param Tour =====
-fprintf('\nRunning TSP_ACO_v2_2 with best parameters for tour visualization...\n');
-[bestOrder, bestCost, ~] = TSP_ACO_v2_2_ablated(costMatrix, nPts, bestParams);
+fprintf('\nRunning TSP_ACO_v2_3 with best parameters for tour visualization...\n');
+[bestOrder, bestCost, ~] = TSP_ACO_v2_3_ablated(costMatrix, nPts, bestParams);
 fprintf('  Best-param cost: %.2f (gap: %.1f%%)\n', bestCost, (bestCost-26524)/26524*100);
 figure('Position', [150, 150, 750, 680], 'Color', 'w'); hold on;
 scatter(cityCoords(:,1), cityCoords(:,2), 25, [0.2, 0.5, 0.9], 'filled', 'MarkerEdgeColor', 'none');
@@ -162,8 +163,8 @@ plot(cityCoords(1,1), cityCoords(1,2), 'o', 'MarkerSize', 12, ...
     'MarkerFaceColor', [0.2, 0.8, 0.2], 'MarkerEdgeColor', 'k', 'LineWidth', 1.5);
 text(cityCoords(1,1)+60, cityCoords(1,2)-80, 'Start', ...
     'HorizontalAlignment', 'center', 'FontSize', 10, 'FontWeight', 'bold', 'Color', [0.2, 0.6, 0.2]);
-bpText = sprintf('Best: nAnts=%.4g, alpha=%.4g, beta=%.4g, rho=%.4g, Q=%.4g, q0=%.4g, optRatio_e=%.4g', ...
-    bestParams.nAnts, bestParams.alpha, bestParams.beta, bestParams.rho, bestParams.Q, bestParams.q0, bestParams.optRatio_end);
+bpText = sprintf('Best: nAnts=%.4g, alpha=%.4g, beta=%.4g, rho=%.4g, Q=%.4g, q0=%.4g, optRatio_e=%.4g, kCand=%.4g', ...
+    bestParams.nAnts, bestParams.alpha, bestParams.beta, bestParams.rho, bestParams.Q, bestParams.q0, bestParams.optRatio_end, bestParams.kCand);
 xlabel('X'); ylabel('Y');
 title(sprintf('Best-Param TSP Tour (Cost: %.2f, gap: %.1f%%)\n%s', bestCost, (bestCost-26524)/26524*100, bpText), 'FontSize', 9);
 axis equal tight; grid on; set(gca, 'GridAlpha', 0.1); hold off;
@@ -177,13 +178,15 @@ function convIter = findConvergeIter(bestCostHistory, finalCost)
     if isempty(idx), convIter = length(bestCostHistory); else, convIter = idx; end
 end
 
-function [bestOrder, bestCost, history] = TSP_ACO_v2_2_ablated(costMatrix, nPts, params)
-    % TSP_ACO_v2_2 ablated — parameterized for sensitivity analysis
-    % Ablated params: nAnts, alpha, beta, rho, Q, q0, optRatio_end
+function [bestOrder, bestCost, history] = TSP_ACO_v2_3_ablated(costMatrix, nPts, params)
+    % TSP_ACO_v2_3 ablated — parameterized for sensitivity analysis
+    % Ablated params: nAnts, alpha, beta, rho, Q, q0, optRatio_end, kCand
+    % Upgraded from v2_2: candidate list (kCand) accelerates VND,
+    %   simplified adaptive stop (stagnation limit replaces DB mutation)
 
-    % ---- Ablatable parameters (defaults) ----
-    nAnts = 50; alpha = 1.0; beta = 2.0; rho = 0.25; Q = 150; q0 = 0.1;
-    optRatio_end = 0.30;
+    % ---- Ablatable parameters (defaults matching TSP_ACO_v2_3) ----
+    nAnts = 40; alpha = 1.0; beta = 2.0; rho = 0.25; Q = 225; q0 = 0.45;
+    optRatio_end = 0.3; kCand = 50;
     if nargin >= 3 && ~isempty(params)
         if isfield(params, 'nAnts'),        nAnts        = params.nAnts;        end
         if isfield(params, 'alpha'),        alpha        = params.alpha;        end
@@ -192,6 +195,7 @@ function [bestOrder, bestCost, history] = TSP_ACO_v2_2_ablated(costMatrix, nPts,
         if isfield(params, 'Q'),            Q            = params.Q;            end
         if isfield(params, 'q0'),           q0           = params.q0;           end
         if isfield(params, 'optRatio_end'), optRatio_end = params.optRatio_end; end
+        if isfield(params, 'kCand'),        kCand        = params.kCand;        end
     end
 
     % ---- Fixed parameters ----
@@ -200,13 +204,11 @@ function [bestOrder, bestCost, history] = TSP_ACO_v2_2_ablated(costMatrix, nPts,
     optRatio_start = 0.00;
     optTransInterval = [0, 100];
     optCurveA = 2.0;
-    optEliteRatio = 0.66;
-    optRandomCap = 0.10;
-    dbStagThr = 50;
-    dbFailLimit = 1;
-    dbEliteRatio = 0.05;
+    optEliteRatio = 0.6;
+    optRandomCap = 0.15;
     enableAdaptiveStop = 1;
     cvThreshold = 0.001;
+    stagnationLim = 150;
     minIter = 30;
 
     nMid = nPts - 2; midIdx = 2:(nPts - 1);
@@ -227,6 +229,15 @@ function [bestOrder, bestCost, history] = TSP_ACO_v2_2_ablated(costMatrix, nPts,
         return;
     end
 
+    % ---- Candidate list: k nearest neighbors per city (VND acceleration) ----
+    isCand = false(nPts, nPts);
+    for i = 1:nPts
+        dists = costMatrix(i, :);
+        dists(i) = inf;
+        [~, idx] = sort(dists);
+        isCand(i, idx(1:min(kCand, nPts-1))) = true;
+    end
+
     % Heuristic matrix
     eta = zeros(nMid, nMid);
     for i = 1:nMid, for j = 1:nMid, if i ~= j
@@ -241,7 +252,7 @@ function [bestOrder, bestCost, history] = TSP_ACO_v2_2_ablated(costMatrix, nPts,
     tau = min(tau, tauMax); tau = max(tau, tauMin);
 
     globalBestCost = inf; globalBestTour = midIdx;
-    costTol = 1e-9; stagnationCount = 0; dbFailCount = 0; stopReason = '';
+    costTol = 1e-9; stagnationCount = 0; stopReason = '';
 
     for iter = 1:nIter
         % ---- S-curve progressive local search ratio ----
@@ -285,29 +296,16 @@ function [bestOrder, bestCost, history] = TSP_ACO_v2_2_ablated(costMatrix, nPts,
 
         % ---- LS ant selection: elite + random explore ----
         [~, sortIdx] = sort(antCosts);
-        triggerDB = (stagnationCount > 0 && mod(stagnationCount, dbStagThr) == 0 && nMid >= 8);
 
         nElite = round(nOptAnts * optEliteRatio);
         nRandom = min(nOptAnts - nElite, round(nAnts * optRandomCap));
         randPool = nElite + randperm(nAnts - nElite, nRandom);
         lsAnts = [sortIdx(1:nElite); sortIdx(randPool)];
 
-        % Regular VND for all LS ants
+        % VND with candidate-list acceleration (no DB mutation in v2_3)
         for idx = 1:length(lsAnts)
             a = lsAnts(idx);
-            [antTours{a}, antCosts(a)] = vndSearch(antTours{a}, midIdx, costMatrix, nPts);
-        end
-
-        % ---- Stagnation-triggered DB mutation for top + random ants ----
-        if triggerDB
-            nDBelite = round(nAnts * dbEliteRatio);
-            dbAnts = [sortIdx(1:nDBelite); sortIdx(randPool)];
-            dbAnts = unique(dbAnts, 'stable');
-            for idx = 1:length(dbAnts)
-                a = dbAnts(idx);
-                antTours{a} = doubleBridge(antTours{a});
-                [antTours{a}, antCosts(a)] = vndSearch(antTours{a}, midIdx, costMatrix, nPts);
-            end
+            [antTours{a}, antCosts(a)] = vndSearchLocal(antTours{a}, midIdx, costMatrix, nPts, isCand);
         end
 
         [iterBestCost, bestAntIdx] = min(antCosts);
@@ -324,19 +322,16 @@ function [bestOrder, bestCost, history] = TSP_ACO_v2_2_ablated(costMatrix, nPts,
             timeHistory(iter) = toc(tStart);
         end
 
-        % ---- Adaptive stop: CV + DB fail count ----
+        % ---- Adaptive stop: CV + stagnation count ----
         if enableAdaptiveStop && iter >= minIter
             cv = std(antCosts) / mean(antCosts);
             if cv < cvThreshold
                 stopReason = sprintf('CV=%.4f<%g', cv, cvThreshold); break;
             end
-            if improved, stagnationCount = 0; dbFailCount = 0;
+            if improved, stagnationCount = 0;
             else, stagnationCount = stagnationCount + 1; end
-            if triggerDB && ~improved
-                dbFailCount = dbFailCount + 1;
-                if dbFailCount >= dbFailLimit
-                    stopReason = sprintf('DB fail(%d)', dbFailCount); break;
-                end
+            if stagnationCount >= stagnationLim
+                stopReason = sprintf('stagnation(%d)', stagnationCount); break;
             end
         end
 
@@ -376,14 +371,17 @@ function [bestOrder, bestCost, history] = TSP_ACO_v2_2_ablated(costMatrix, nPts,
     end
 end
 
-% ---- VND: 2-opt → relocate → swap → cycle ----
-function [tour, cost] = vndSearch(tour, midIdx, costMatrix, nPts)
+% ---- VND: 2-opt → relocate → swap → cycle (candidate-accelerated) ----
+function [tour, cost] = vndSearchLocal(tour, midIdx, costMatrix, nPts, isCand)
     cost = tourCostLocal(tour, midIdx, costMatrix, nPts); improved = true;
     while improved
         improved = false;
-        [tour, cost, ok] = twoOptFI(tour, midIdx, costMatrix, nPts, cost); improved = improved || ok;
-        [tour, cost, ok] = relocateFI(tour, midIdx, costMatrix, nPts, cost); improved = improved || ok;
-        [tour, cost, ok] = swapFI(tour, midIdx, costMatrix, nPts, cost); improved = improved || ok;
+        [tour, cost, ok] = twoOptFI(tour, midIdx, costMatrix, nPts, cost, isCand);
+        improved = improved || ok;
+        [tour, cost, ok] = relocateFI(tour, midIdx, costMatrix, nPts, cost, isCand);
+        improved = improved || ok;
+        [tour, cost, ok] = swapFI(tour, midIdx, costMatrix, nPts, cost, isCand);
+        improved = improved || ok;
     end
 end
 
@@ -392,13 +390,16 @@ function c = tourCostLocal(tour, midIdx, costMatrix, nPts)
     for k = 1:(nPts - 1), c = c + costMatrix(fo(k), fo(k + 1)); end
 end
 
-% ---- 2-opt (first-improvement) ----
-function [tour, cost, improved] = twoOptFI(tour, midIdx, costMatrix, nPts, cost)
+% ---- 2-opt (candidate-accelerated: only if new edge involves a candidate pair) ----
+function [tour, cost, improved] = twoOptFI(tour, midIdx, costMatrix, nPts, cost, isCand)
     nMid = length(tour); fullOrder = [1, midIdx(tour), nPts]; improved = false;
     for i = 1:(nMid - 1), for j = (i + 1):nMid
             fi = i + 1; fj = j + 1;
-            old = costMatrix(fullOrder(fi), fullOrder(fi + 1)) + costMatrix(fullOrder(fj), fullOrder(fj + 1));
-            nw = costMatrix(fullOrder(fi), fullOrder(fj)) + costMatrix(fullOrder(fi + 1), fullOrder(fj + 1));
+            u = fullOrder(fi); v = fullOrder(fj);
+            up1 = fullOrder(fi + 1); vp1 = fullOrder(fj + 1);
+            if ~isCand(u, v) && ~isCand(up1, vp1), continue; end
+            old = costMatrix(u, up1) + costMatrix(v, vp1);
+            nw  = costMatrix(u, v) + costMatrix(up1, vp1);
             if nw < old - 1e-10
                 tour((i + 1):j) = tour(j:-1:(i + 1));
                 cost = cost - old + nw; improved = true;
@@ -407,8 +408,8 @@ function [tour, cost, improved] = twoOptFI(tour, midIdx, costMatrix, nPts, cost)
     end; end
 end
 
-% ---- Node relocate (first-improvement) ----
-function [tour, cost, improved] = relocateFI(tour, midIdx, costMatrix, nPts, cost)
+% ---- Node relocate (candidate-accelerated: only if Cv is candidate of Lp or Rp) ----
+function [tour, cost, improved] = relocateFI(tour, midIdx, costMatrix, nPts, cost, isCand)
     nMid = length(tour); improved = false;
     for v = 1:nMid
         Cv = midIdx(tour(v));
@@ -419,6 +420,7 @@ function [tour, cost, improved] = relocateFI(tour, midIdx, costMatrix, nPts, cos
             if p == 0, Lp = 1; Rp = midIdx(tour(1));
             elseif p == nMid, Lp = midIdx(tour(nMid)); Rp = nPts;
             else, Lp = midIdx(tour(p)); Rp = midIdx(tour(p + 1)); end
+            if ~isCand(Lp, Cv) && ~isCand(Rp, Cv), continue; end
             oldCost = costMatrix(Lv, Cv) + costMatrix(Cv, Rv) + costMatrix(Lp, Rp);
             newCost = costMatrix(Lv, Rv) + costMatrix(Lp, Cv) + costMatrix(Cv, Rp);
             if newCost < oldCost - 1e-10
@@ -431,13 +433,15 @@ function [tour, cost, improved] = relocateFI(tour, midIdx, costMatrix, nPts, cos
     end
 end
 
-% ---- Node swap (first-improvement) ----
-function [tour, cost, improved] = swapFI(tour, midIdx, costMatrix, nPts, cost)
+% ---- Node swap (candidate-accelerated: only if swapped cities are mutual candidates) ----
+function [tour, cost, improved] = swapFI(tour, midIdx, costMatrix, nPts, cost, isCand)
     nMid = length(tour); fullOrder = [1, midIdx(tour), nPts]; improved = false;
     for i = 1:(nMid - 1), for j = (i + 1):nMid
             fi = i + 1; fj = j + 1;
-            Li = fullOrder(fi - 1); Ai = fullOrder(fi); Ri = fullOrder(fi + 1);
-            Lj = fullOrder(fj - 1); Aj = fullOrder(fj); Rj = fullOrder(fj + 1);
+            Ai = fullOrder(fi); Aj = fullOrder(fj);
+            if ~isCand(Ai, Aj), continue; end
+            Li = fullOrder(fi - 1); Ri = fullOrder(fi + 1);
+            Lj = fullOrder(fj - 1); Rj = fullOrder(fj + 1);
             if j == i + 1
                 oldCost = costMatrix(Li, Ai) + costMatrix(Ai, Aj) + costMatrix(Aj, Rj);
                 newCost = costMatrix(Li, Aj) + costMatrix(Aj, Ai) + costMatrix(Ai, Rj);
@@ -450,17 +454,6 @@ function [tour, cost, improved] = swapFI(tour, midIdx, costMatrix, nPts, cost)
                 improved = true; fullOrder = [1, midIdx(tour), nPts];
             end
     end; end
-end
-
-% ---- Double-bridge mutation ----
-function tour = doubleBridge(tour)
-    nMid = length(tour); if nMid < 8, return; end
-    minSeg = 2;
-    i = randi([minSeg, nMid - 3*minSeg]);
-    j = randi([i + minSeg, nMid - 2*minSeg]);
-    k = randi([j + minSeg, nMid - minSeg]);
-    A = tour(1:i); B = tour(i+1:j); C = tour(j+1:k); D = tour(k+1:end);
-    tour = [A, C(end:-1:1), B(end:-1:1), D];
 end
 
 % ---- Parse distance matrix ----
