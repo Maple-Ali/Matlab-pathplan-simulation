@@ -27,7 +27,7 @@ q0 = 0.45;               % 贪心选择概率
 % ===== 方案 S：渐进式局部搜索 (S 曲线) =====
 optRatio_start = 0.00;       % 初期局部搜索比例 (y_min)
 optRatio_end   = 0.3;       % 后期局部搜索比例 (y_max)
-optTransInterval = [0, 100]; % 过渡区间 [x_L, x_R]
+optTransInterval = [0, 80]; % 过渡区间 [x_L, x_R]
 optCurveA      = 2.0;        % S 曲线陡峭度
 optEliteRatio  = 0.6;       % 局部搜索预算中精英蚂蚁占比
 optRandomCap   = 0.15;       % 随机抽取比例上限

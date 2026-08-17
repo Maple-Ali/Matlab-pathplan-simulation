@@ -17,12 +17,12 @@ addpath(genpath(rootDir));
 % tspSolver = @(costMatrix, nPts) TSP_GA_v1_1(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_GA(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_ACO_v1_7_1(costMatrix, nPts);
-tspSolver = @(costMatrix, nPts) TSP_ACO_v2_3(costMatrix, nPts);
+tspSolver = @(costMatrix, nPts) TSP_ACO_v2_4(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_ACO_v2_2(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_ACO_v2_1(costMatrix, nPts);
 
 % ===== Experiment Config =====
-nRuns = 40;
+nRuns = 10;
 coordFile = fullfile(fileparts(mfilename('fullpath')), 'kroA100_coords.mat');
 distFile  = fullfile(fileparts(mfilename('fullpath')), '..', 'kroA100_distance_matrix.txt');
 resultsDir = fullfile(fileparts(mfilename('fullpath')), 'results');

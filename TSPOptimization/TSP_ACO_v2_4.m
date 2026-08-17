@@ -1,25 +1,31 @@
 function [bestOrder, bestCost, history] = TSP_ACO_v2_4(costMatrix, nPts)
-%TSP_ACO_V2_4 蚁群 + 虚拟点(起点终点合并) + 候选列表加速 VND 求解 TSP
+%TSP_ACO_V2_4 蚁群 + 虚拟节点(哑节点) + 候选列表加速 VND 求解 TSP
 %   基于 TSP_ACO_v2_3，核心升级:
-%     V. 虚拟点法: 将起点(节点1)与终点(节点nPts)合并为一个虚拟点 V,
-%        把"固定起点终点的路径 TSP"转化为"闭合回路 TSP"。
-%        虚拟点 V 到起点/终点的距离为 0 (起点=终点=同一货栈时等价于 V 位于货栈处);
-%        虚拟点 V 到各中间点的距离 = 货栈到该中间点的真实距离
-%        (起点=终点场景下 V 与中间点并非"无穷远", 而是货栈真实距离——
-%         这是虚拟点法可计算的关键; 若按字面设无穷远, 回路成本恒为无穷)。
+%     V. 虚拟节点法(标准哑节点): 新增虚拟节点 V = nPts+1, 将其与起点(节点1)
+%        和终点(节点nPts)分别用 0 距离连接, 与所有中间点用极大惩罚 BIG 连接,
+%        把"固定起点终点的路径 TSP"转化为"闭环 TSP"。
 %
-%   与 v2_3 的区别:
-%       v2_3 将起点1/终点nPts 固定为路径两端, 信息素仅覆盖中间点;
-%       v2_4 将起点终点合并为虚拟点 V, 作为闭合回路中的一个普通节点,
-%            信息素覆盖 V 及全部中间点, 2-opt/重定位/交换在完整回路上进行。
+%   步骤:
+%     1. 构造扩展距离矩阵 costExt (nPts+1 个节点):
+%          costExt(V,1)=costExt(1,V)=0            (虚拟点→起点)
+%          costExt(V,nPts)=costExt(nPts,V)=0      (虚拟点→终点)
+%          costExt(V,midIdx)=costExt(midIdx,V)=BIG (虚拟点→中间点, 极大惩罚)
+%          其他节点间距离不变
+%     2. 在扩展矩阵上运行闭环 TSP: 蚂蚁构造、VND 局部搜索、信息素更新
+%        均基于 costExt, 求解包含所有节点的最短回路
+%     3. 从最优回路提取开环路径: 定位虚拟点, 去掉后按方向整理出
+%        起点→终点路径
 %
-%   约化节点映射: 约化节点 1 = 虚拟点 V; 约化节点 k (k>=2) = 原始节点 k。
-%   回路表示 [1, tour, 1] (V 固定为回路首), 还原为路径 [1, tour, nPts]。
+%   与 v2_3 的区别: v2_3 将起点/终点固定为路径两端、信息素只覆盖中间点;
+%                   v2_4 引入虚拟点后, 起点/终点/中间点均为闭合回路中的普通节点,
+%                   信息素覆盖全部 nPts+1 个节点, 局部搜索在完整回路上进行。
 %
 %   保留 v2_3 全部机制: MMAS / C(候选列表) / K(伪随机) / S(S曲线) / B(自适应停止)
 
 nMid = nPts - 2;
-nNodes = nMid + 1;          % 虚拟点(1) + 中间点(2..nPts-1) = nPts-1 个节点
+midIdx = 2:(nPts - 1);
+nNodes = nPts + 1;          % 节点数 (含虚拟点)
+Vidx  = nPts + 1;           % 虚拟节点索引
 
 % ===== 算法基础参数 =====
 nAnts = 40;              % 蚂蚁数量
@@ -36,7 +42,7 @@ q0 = 0.45;               % 贪心选择概率
 % ===== 方案 S：渐进式局部搜索 (S 曲线) =====
 optRatio_start = 0.00;       % 初期局部搜索比例 (y_min)
 optRatio_end   = 0.3;        % 后期局部搜索比例 (y_max)
-optTransInterval = [0, 100]; % 过渡区间 [x_L, x_R]
+optTransInterval = [0, 80]; % 过渡区间 [x_L, x_R]
 optCurveA      = 2.0;        % S 曲线陡峭度
 optEliteRatio  = 0.6;        % 局部搜索预算中精英蚂蚁占比
 optRandomCap   = 0.15;       % 随机抽取比例上限
@@ -67,32 +73,41 @@ if nMid == 0
     return;
 end
 
-% ---- 方案 V：构建虚拟点约化闭合回路成本矩阵 (nNodes×nNodes) ----
-cmRed = zeros(nNodes);
-cmRed(2:nNodes, 2:nNodes) = costMatrix(2:(nPts-1), 2:(nPts-1));   % 中间点之间
-cmRed(1, 2:nNodes)        = costMatrix(1, 2:(nPts-1));            % V → 中间点 (货栈真实距离)
-cmRed(2:nNodes, 1)        = costMatrix(2:(nPts-1), 1);            % 中间点 → V
+% =========================================================================
+%  步骤 1：构造扩展距离矩阵 costExt (nPts+1 个节点)
+% =========================================================================
+finitePos = costMatrix(costMatrix > 0 & isfinite(costMatrix));
+if isempty(finitePos), maxFinite = 1; else, maxFinite = max(finitePos); end
+BIG = (nPts + 1) * maxFinite * 2;   % 极大惩罚: 严格大于任何可行回路成本
 
-% ---- 方案 C：预计算候选列表 ----
-% isCand(i,j) = true 若 j 是 i 的 k 个最近邻居之一
+costExt = zeros(nNodes);
+costExt(1:nPts, 1:nPts) = costMatrix;         % 其他节点间距离不变
+costExt(Vidx, 1) = 0;  costExt(1, Vidx) = 0;  % 虚拟点 → 起点
+costExt(Vidx, nPts) = 0; costExt(nPts, Vidx) = 0;  % 虚拟点 → 终点
+costExt(Vidx, midIdx) = BIG; costExt(midIdx, Vidx) = BIG;  % 虚拟点 → 中间点
+
+% ---- 方案 C：预计算候选列表 (基于 costExt) ----
 isCand = false(nNodes, nNodes);
 for i = 1:nNodes
-    dists = cmRed(i, :);
+    dists = costExt(i, :);
     dists(i) = inf;                    % 排除自身
     [~, idx] = sort(dists);
     isCand(i, idx(1:min(kCand, nNodes-1))) = true;
 end
 
-% 启发式信息矩阵
+% 启发式信息矩阵 eta = 1/d
+% 虚拟点到起点/终点的 0 距离边: 1/0 → 用极大值 BIG 表示"必连"
 eta = zeros(nNodes, nNodes);
 for i = 1:nNodes
     for j = 1:nNodes
         if i ~= j
-            d = cmRed(i, j);
+            d = costExt(i, j);
             if d > 0 && ~isinf(d), eta(i, j) = 1.0 / d; end
         end
     end
 end
+eta(Vidx, 1) = BIG; eta(1, Vidx) = BIG;   % 虚拟点 ↔ 起点 (0 距离 → 极大吸引)
+eta(Vidx, nPts) = BIG; eta(nPts, Vidx) = BIG;  % 虚拟点 ↔ 终点
 
 % ---- 均匀初始信息素 (无外部启发式) ----
 tau0 = 0.1;
@@ -106,11 +121,14 @@ tau = min(tau, tauMax);
 tau = max(tau, tauMin);
 
 globalBestCost = inf;
-globalBestTour = 2:nNodes;
-costTol = 1e-9;           % 成本比较容差 (消除浮点累加噪声, 100边×eps≈3.6e-10)
+globalBestTour = 1:nNodes;
+costTol = 1e-9;           % 成本比较容差 (消除浮点累加噪声)
 stagnationCount = 0;
 stopReason = '';
 
+% =========================================================================
+%  步骤 2：在扩展矩阵上运行闭环 TSP
+% =========================================================================
 for iter = 1:nIter
     % ---- 方案 S：渐进式局部搜索比例 (S 曲线) ----
     xL = optTransInterval(1); xR = optTransInterval(2);
@@ -128,16 +146,16 @@ for iter = 1:nIter
     antTours = cell(nAnts, 1);
     antCosts = zeros(nAnts, 1);
 
+    % ---- 蚂蚁构造: 包含所有 nNodes 节点的闭合回路 ----
     for a = 1:nAnts
-        tour = zeros(1, nMid);
+        cycle = zeros(1, nNodes);
         visited = false(1, nNodes);
-        visited(1) = true;              % 虚拟点 V 固定为回路首
-        start = randi([2, nNodes]);
-        tour(1) = start;
+        start = randi(nNodes);
+        cycle(1) = start;
         visited(start) = true;
 
-        for step = 2:nMid
-            curIdx = tour(step - 1);
+        for step = 2:nNodes
+            curIdx = cycle(step - 1);
             candidates = find(~visited);
             nCand = length(candidates);
             scores = zeros(1, nCand);
@@ -157,27 +175,26 @@ for iter = 1:nIter
                     nxt = candidates(find(cumsum(prob) >= rand(), 1, 'first'));
                 end
             end
-            tour(step) = nxt;
+            cycle(step) = nxt;
             visited(nxt) = true;
         end
 
-        antTours{a} = tour;
-        antCosts(a) = tourCostV(tour, cmRed, nNodes);
+        antTours{a} = cycle;
+        antCosts(a) = cycleCost(cycle, costExt, nNodes);
     end
 
     % ---- 方案 S：局部搜索蚂蚁选择 (精英 + 随机探索) ----
     [~, sortIdx] = sort(antCosts);
 
-    % 拆分: 精英 (前 optEliteRatio) + 随机探索 (剩余, 上限 optRandomCap)
     nElite = round(nOptAnts * optEliteRatio);
     nRandom = min(nOptAnts - nElite, round(nAnts * optRandomCap));
     randPool = nElite + randperm(nAnts - nElite, nRandom);
     lsAnts = [sortIdx(1:nElite); sortIdx(randPool)];   % 全部局部搜索蚂蚁
 
-    % VND 搜索 (所有 lsAnts, 候选列表加速)
+    % VND 搜索 (闭合回路, 候选列表加速)
     for idx = 1:length(lsAnts)
         a = lsAnts(idx);
-        [antTours{a}, antCosts(a)] = vndSearchV(antTours{a}, cmRed, nNodes, isCand);
+        [antTours{a}, antCosts(a)] = vndSearchClosed(antTours{a}, costExt, nNodes, isCand);
     end
 
     [iterBestCost, bestAntIdx] = min(antCosts);
@@ -219,16 +236,16 @@ for iter = 1:nIter
 
     % --- 信息素沉积 (闭合回路全部边, 含虚拟点两侧边) ---
     deposit = Q / iterBestCost;
-    cyc = [1, iterBestTour, 1];
     for k = 1:nNodes
-        i = cyc(k); j = cyc(k + 1);
+        i = iterBestTour(k);
+        j = iterBestTour(mod(k, nNodes) + 1);
         tau(i, j) = tau(i, j) + deposit;
         tau(j, i) = tau(j, i) + deposit;
     end
     eliteDeposit = Q / globalBestCost;
-    cyc = [1, globalBestTour, 1];
     for k = 1:nNodes
-        i = cyc(k); j = cyc(k + 1);
+        i = globalBestTour(k);
+        j = globalBestTour(mod(k, nNodes) + 1);
         tau(i, j) = tau(i, j) + eliteDeposit;
         tau(j, i) = tau(j, i) + eliteDeposit;
     end
@@ -241,8 +258,11 @@ for iter = 1:nIter
     tauMin = max(tauMin, 1e-6);
 end
 
+% =========================================================================
+%  步骤 3：从最优闭合回路提取开环路径
+% =========================================================================
 bestCost = globalBestCost;
-bestOrder = [1, globalBestTour, nPts];
+bestOrder = extractPath(globalBestTour, nPts, Vidx);
 actualIter = iter;
 
 if trackHistory
@@ -258,109 +278,147 @@ end
 end
 
 % =========================================================================
+%  提取开环路径: 定位虚拟点, 去掉后按方向整理出 起点→终点 路径
+% =========================================================================
+function order = extractPath(cycle, nPts, Vidx)
+n = length(cycle);
+vPos = find(cycle == Vidx, 1);
+% 从虚拟点顺时针下一节点开始走一圈, 收集去掉虚拟点后的 nPts 个节点
+order = zeros(1, nPts);
+idx = mod(vPos, n) + 1;
+for t = 1:nPts
+    order(t) = cycle(idx);
+    idx = mod(idx, n) + 1;
+end
+% 方向校正: 若终点 nPts 在首位则反转 (使起点 1 在前、终点 nPts 在后)
+if order(1) == nPts
+    order = fliplr(order);
+end
+% 起点校正: 若 1 不在首位 (罕见不可行情形, 保险), 旋转使 1 在首位
+if order(1) ~= 1
+    p1 = find(order == 1, 1);
+    order = [order(p1:end), order(1:p1-1)];
+end
+end
+
+% =========================================================================
 %  VND 局部搜索 (闭合回路): 2-opt → 重定位 → 交换 → 循环 (候选列表加速)
 % =========================================================================
-function [tour, cost] = vndSearchV(tour, cmRed, nNodes, isCand)
-cost = tourCostV(tour, cmRed, nNodes);
+function [cycle, cost] = vndSearchClosed(cycle, costExt, nNodes, isCand)
+cost = cycleCost(cycle, costExt, nNodes);
 improved = true;
 while improved
     improved = false;
-    [tour, cost, ok] = twoOptV(tour, cmRed, cost, isCand);
+    [cycle, cost, ok] = twoOptClosed(cycle, costExt, cost, isCand);
     improved = improved || ok;
-    [tour, cost, ok] = relocateV(tour, cmRed, cost, isCand);
+    [cycle, cost, ok] = relocateClosed(cycle, costExt, cost, isCand);
     improved = improved || ok;
-    [tour, cost, ok] = swapV(tour, cmRed, cost, isCand);
+    [cycle, cost, ok] = swapClosed(cycle, costExt, cost, isCand);
     improved = improved || ok;
+end
+% 重新精确计算成本, 避免回路含 Inf 边被移除时 cost=Inf-Inf+finite=NaN 污染
+cost = cycleCost(cycle, costExt, nNodes);
+end
+
+function c = cycleCost(cycle, costExt, nNodes)
+c = 0;
+for k = 1:nNodes
+    c = c + costExt(cycle(k), cycle(mod(k, nNodes) + 1));
 end
 end
 
-function c = tourCostV(tour, cmRed, nNodes)
-fo = [1, tour, 1]; c = 0;
-for k = 1:nNodes, c = c + cmRed(fo(k), fo(k + 1)); end
-end
-
-% ---- 2-opt (候选加速: 仅当新边涉及候选边对时评估) ----
-function [tour, cost, improved] = twoOptV(tour, cmRed, cost, isCand)
-nMid = length(tour);
-fullOrder = [1, tour, 1];
+% ---- 2-opt (闭合回路, 候选加速) ----
+function [cycle, cost, improved] = twoOptClosed(cycle, costExt, cost, isCand)
+n = length(cycle);
+full = [cycle, cycle(1)];
 improved = false;
-for i = 1:(nMid - 1)
-    for j = (i + 1):nMid
-        fi = i + 1; fj = j + 1;
-        u = fullOrder(fi); v = fullOrder(fj);
-        up1 = fullOrder(fi + 1); vp1 = fullOrder(fj + 1);
-        % 仅当新边 (u,v) 或 (up1,vp1) 至少一对是候选边时才评估
-        if ~isCand(u, v) && ~isCand(up1, vp1)
+for i = 1:(n - 1)
+    for j = (i + 2):n
+        u = full(i); v = full(i + 1);
+        x = full(j); y = full(j + 1);
+        % 仅当新边 (u,x) 或 (v,y) 至少一对是候选边时才评估
+        if ~isCand(u, x) && ~isCand(v, y)
             continue;
         end
-        old = cmRed(u, up1) + cmRed(v, vp1);
-        nw  = cmRed(u, v) + cmRed(up1, vp1);
+        old = costExt(u, v) + costExt(x, y);
+        nw  = costExt(u, x) + costExt(v, y);
         if nw < old - 1e-10
-            tour((i + 1):j) = tour(j:-1:(i + 1));
+            full((i + 1):j) = full(j:-1:(i + 1));
+            cycle = full(1:n);
             cost = cost - old + nw; improved = true;
-            fullOrder = [1, tour, 1];
+            return;
         end
     end
 end
 end
 
-% ---- 节点重定位 (候选加速: 仅当插入城市是新邻居的候选邻居时评估) ----
-function [tour, cost, improved] = relocateV(tour, cmRed, cost, isCand)
-nMid = length(tour); improved = false;
-for v = 1:nMid
-    Cv = tour(v);
-    if v == 1, Lv = 1; else, Lv = tour(v - 1); end
-    if v == nMid, Rv = 1; else, Rv = tour(v + 1); end
-    for p = 0:nMid
-        if p == v || p == v - 1, continue; end
-        if p == 0, Lp = 1; Rp = tour(1);
-        elseif p == nMid, Lp = tour(nMid); Rp = 1;
-        else, Lp = tour(p); Rp = tour(p + 1);
-        end
+% ---- 节点重定位 (闭合回路, 候选加速) ----
+function [cycle, cost, improved] = relocateClosed(cycle, costExt, cost, isCand)
+n = length(cycle); improved = false;
+for v = 1:n
+    Cv = cycle(v);
+    Lv = cycle(mod(v - 2, n) + 1);
+    Rv = cycle(mod(v, n) + 1);
+    for p = 1:n
+        % 跳过退化插入点: p==v (插到自身前) 或 p==v-1 循环意义下 (插到自身后, Rp==Cv)
+        if p == v || p == mod(v - 2, n) + 1, continue; end
+        Lp = cycle(p);
+        Rp = cycle(mod(p, n) + 1);
         % 仅当 Cv 是 Lp 或 Rp 的候选邻居时才评估
         if ~isCand(Lp, Cv) && ~isCand(Rp, Cv)
             continue;
         end
-        oldCost = cmRed(Lv, Cv) + cmRed(Cv, Rv) + cmRed(Lp, Rp);
-        newCost = cmRed(Lv, Rv) + cmRed(Lp, Cv) + cmRed(Cv, Rp);
+        oldCost = costExt(Lv, Cv) + costExt(Cv, Rv) + costExt(Lp, Rp);
+        newCost = costExt(Lv, Rv) + costExt(Lp, Cv) + costExt(Cv, Rp);
         if newCost < oldCost - 1e-10
-            cityVal = tour(v);
+            cityVal = cycle(v);
             if p < v
-                newTour = [tour(1:p), cityVal, tour(p+1:v-1), tour(v+1:end)];
+                newCycle = [cycle(1:p), cityVal, cycle(p+1:v-1), cycle(v+1:end)];
             else
-                newTour = [tour(1:v-1), tour(v+1:p), cityVal, tour(p+1:end)];
+                newCycle = [cycle(1:v-1), cycle(v+1:p), cityVal, cycle(p+1:end)];
             end
-            tour = newTour; cost = cost - oldCost + newCost; improved = true; return;
+            cycle = newCycle; cost = cost - oldCost + newCost; improved = true; return;
         end
     end
 end
 end
 
-% ---- 节点交换 (候选加速: 仅当两个城市互为候选邻居时评估) ----
-function [tour, cost, improved] = swapV(tour, cmRed, cost, isCand)
-nMid = length(tour);
-fullOrder = [1, tour, 1]; improved = false;
-for i = 1:(nMid - 1)
-    for j = (i + 1):nMid
-        fi = i + 1; fj = j + 1;
-        Ai = fullOrder(fi); Aj = fullOrder(fj);
-        % 仅当两个被交换城市互为候选邻居时才评估
+% ---- 节点交换 (闭合回路, 候选加速) ----
+function [cycle, cost, improved] = swapClosed(cycle, costExt, cost, isCand)
+n = length(cycle);
+full = [cycle, cycle(1)]; improved = false;
+for i = 1:(n - 1)
+    for j = (i + 1):n
+        Ai = full(i); Aj = full(j);
+        % 仅当两个被交换节点互为候选邻居时才评估
         if ~isCand(Ai, Aj)
             continue;
         end
-        Li = fullOrder(fi - 1); Ri = fullOrder(fi + 1);
-        Lj = fullOrder(fj - 1); Rj = fullOrder(fj + 1);
         if j == i + 1
-            oldCost = cmRed(Li, Ai) + cmRed(Ai, Aj) + cmRed(Aj, Rj);
-            newCost = cmRed(Li, Aj) + cmRed(Aj, Ai) + cmRed(Ai, Rj);
+            % 相邻交换 (线性相邻)
+            if i == 1, Li = full(n); else, Li = full(i - 1); end
+            Rj = full(j + 1);
+            oldCost = costExt(Li, Ai) + costExt(Ai, Aj) + costExt(Aj, Rj);
+            newCost = costExt(Li, Aj) + costExt(Aj, Ai) + costExt(Ai, Rj);
+        elseif i == 1 && j == n
+            % 相邻交换 (跨闭合边: cycle(n)-cycle(1) 相邻, 对序为 (cycle(n), cycle(1)))
+            Li = full(n - 1);
+            Rj = full(2);
+            oldCost = costExt(Li, Aj) + costExt(Aj, Ai) + costExt(Ai, Rj);
+            newCost = costExt(Li, Ai) + costExt(Ai, Aj) + costExt(Aj, Rj);
         else
-            oldCost = cmRed(Li, Ai) + cmRed(Ai, Ri) + cmRed(Lj, Aj) + cmRed(Aj, Rj);
-            newCost = cmRed(Li, Aj) + cmRed(Aj, Ri) + cmRed(Lj, Ai) + cmRed(Ai, Rj);
+            % 非相邻交换
+            if i == 1, Li = full(n); else, Li = full(i - 1); end
+            Ri = full(i + 1);
+            Lj = full(j - 1);
+            Rj = full(j + 1);
+            oldCost = costExt(Li, Ai) + costExt(Ai, Ri) + costExt(Lj, Aj) + costExt(Aj, Rj);
+            newCost = costExt(Li, Aj) + costExt(Aj, Ri) + costExt(Lj, Ai) + costExt(Ai, Rj);
         end
         if newCost < oldCost - 1e-10
-            tour([i, j]) = tour([j, i]);
+            cycle([i, j]) = cycle([j, i]);
             cost = cost - oldCost + newCost; improved = true;
-            fullOrder = [1, tour, 1];
+            full = [cycle, cycle(1)];
         end
     end
 end

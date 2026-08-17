@@ -28,17 +28,17 @@ costMatrix(2:nCities, 2:nCities) = fullDist150(2:nCities, 2:nCities);
 %% ===== Parameter Definitions =====
 % Default values (matching TSP_ACO_v2_3)
 defaults = struct('nAnts', 40, 'alpha', 1.0, 'beta', 2.0, ...
-    'rho', 0.25, 'Q', 225, 'q0', 0.45, 'optRatio_end', 0.3, 'kCand', 50);
+    'rho', 0.25, 'Q', 225, 'q0', 0.45, 'optRatio_end', 0.3, 'kCand', 9);
 
 paramDefs = {
-%    'nAnts',        [35, 40, 45, 50, 55, 60];
+    'nAnts',        [35, 40, 45, 50, 55, 60];
 %    'alpha',        [0.5, 1.0, 1.5, 2.0, 3.0, 4.0];
 %    'beta',         [1.8, 2.0, 2.2, 2.4];
 %    'rho',          [0.2, 0.25, 0.3, 0.35, 0.40];
 %    'Q',            [175, 200, 225, 250, 275];
 %    'q0',           [0.25, 0.30, 0.35, 0.40, 0.45, 0.5];
 %    'optRatio_end', [0.15, 0.20, 0.25, 0.30, 0.35, 0.40];
-    'kCand',        [3, 6, 9, 12, 15];
+%    'kCand',        [3, 6, 9, 12, 15];
 };
 nParams = size(paramDefs, 1);
 
