@@ -7,7 +7,7 @@ clear variables; close all;
 % ===== 结果文件路径（按需修改） =====
 resultsDir = fullfile(fileparts(mfilename('fullpath')), 'results');
 %此处设置绘图的数据名称
-resultsFile = fullfile(resultsDir, 'B66.mat');
+resultsFile = fullfile(resultsDir, 'exp_kroA150_city1_to_city150.mat');
 
 if ~exist(resultsFile, 'file')
     error('结果文件不存在: %s\n请先运行实验脚本生成数据。', resultsFile);

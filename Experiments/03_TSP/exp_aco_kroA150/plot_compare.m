@@ -13,20 +13,50 @@ resultsDir = fullfile(fileparts(mfilename('fullpath')), 'results');
 %  Column 2: display name in legend
 %  Column 3: color [R,G,B] (optional — auto-assigned if omitted or empty)
 algoLabels = {
-    '1.mat',                    'MMAS-VND-CL',   [0.47, 0.67, 0.19];   % green
-%    '2.mat',                    'Algo #2',   [0.85, 0.33, 0.10];   % orange
-%    '3.mat',                    'Algo #3',   [0.93, 0.69, 0.13];   % yellow
-%    '4.mat',                    'Algo #4',   [0.00, 0.45, 0.74];   % blue
-%    '5.mat',                    'Algo #5',   [0.30, 0.75, 0.93];   % cyan
-%    '6.mat',                    'Algo #6',   [0.49, 0.18, 0.56];   % purple
-%    'B1.mat',                   'ACO\_v2\_3', [0.64, 0.08, 0.18]; % maroon
+   'C33442.mat',                'MMAS-VND-CL',   [0.47, 0.67, 0.19];   % green
+   'A2.mat',                    'No module A',   [0.85, 0.33, 0.10];   % orange
+   'A3.mat',                    'No module B',   [0.93, 0.69, 0.13];   % yellow
+   'A4.mat',                    'No module C',   [0.00, 0.45, 0.74];   % blue
+   'A5.mat',                    'No module D',   [0.30, 0.75, 0.93];   % cyan
+   'A6.mat',                    'No module E',   [0.49, 0.18, 0.56];   % purple
+%    'name.mat',                  'show_name', [0.64, 0.08, 0.18]; % maroon
 
-    'B1.mat',                    'Standard ACO',   [0.85, 0.33, 0.10];   % orange
-    'B2.mat',                    'GA',             [0.93, 0.69, 0.13];   % yellow
-    'B3.mat',                    'SA',             [0.00, 0.45, 0.74];   % blue
-    'B5.mat',                    'Improved GA',    [0.30, 0.75, 0.93];   % cyan
-    'B6.mat',                    'Improved SA',    [0.49, 0.18, 0.56];   % purple
+    % 'C33442.mat',                'MMAS-VND-CL',   [0.47, 0.67, 0.19];   % green
+    % 'B2.mat',                    'Standard ACO',   [0.85, 0.33, 0.10];   % orange
+    % 'B3.mat',                    'GA',             [0.93, 0.69, 0.13];   % yellow
+    % 'B4.mat',                    'SA',             [0.00, 0.45, 0.74];   % blue
+    % 'B5.mat',                    'Improved GA',    [0.30, 0.75, 0.93];   % cyan
+    % 'B6.mat',                    'Improved SA',    [0.49, 0.18, 0.56];   % purple
  
+    % 'C13442.mat',                    '1/3/4/4/2',   [0.85, 0.33, 0.10];   % orange
+    % 'C23442.mat',                    '2/3/4/4/2',   [0.93, 0.69, 0.13];   % yellow
+    % 'C33442.mat',                    '3/3/4/4/2',   [0.00, 0.45, 0.74];   % blue
+    % 'C43442.mat',                    '4/3/4/4/2',   [0.30, 0.75, 0.93];   % cyan
+    % 'C53442.mat',                    '5/3/4/4/2',   [0.49, 0.18, 0.56];   % purple
+
+    % 'C31442.mat',                    '3/1/4/4/2',   [0.85, 0.33, 0.10];   % orange
+    % 'C32442.mat',                    '3/2/4/4/2',   [0.93, 0.69, 0.13];   % yellow
+    % 'C33442.mat',                    '3/3/4/4/2',   [0.00, 0.45, 0.74];   % blue
+    % 'C34442.mat',                    '3/4/4/4/2',   [0.30, 0.75, 0.93];   % cyan
+    % 'C35442.mat',                    '3/5/4/4/2',   [0.49, 0.18, 0.56];   % purple
+
+    % 'C33142.mat',                    '3/3/1/4/2',   [0.85, 0.33, 0.10];   % orange
+    % 'C33242.mat',                    '3/3/2/4/2',   [0.93, 0.69, 0.13];   % yellow
+    % 'C33342.mat',                    '3/3/3/4/2',   [0.00, 0.45, 0.74];   % blue
+    % 'C33442.mat',                    '3/3/4/4/2',   [0.30, 0.75, 0.93];   % cyan
+    % 'C33542.mat',                    '3/3/5/4/2',   [0.49, 0.18, 0.56];   % purple
+
+    % 'C33412.mat',                    '3/3/4/1/2',   [0.85, 0.33, 0.10];   % orange
+    % 'C33422.mat',                    '3/3/4/2/2',   [0.93, 0.69, 0.13];   % yellow
+    % 'C33432.mat',                    '3/3/4/3/2',   [0.00, 0.45, 0.74];   % blue
+    % 'C33442.mat',                    '3/3/4/4/2',   [0.30, 0.75, 0.93];   % cyan
+    % 'C33452.mat',                    '3/3/4/5/2',   [0.49, 0.18, 0.56];   % purple
+
+    % 'C33441.mat',                    '3/3/4/4/1',   [0.85, 0.33, 0.10];   % orange
+    % 'C33442.mat',                    '3/3/4/4/2',   [0.93, 0.69, 0.13];   % yellow
+    % 'C33443.mat',                    '3/3/4/4/3',   [0.00, 0.45, 0.74];   % blue
+    % 'C33444.mat',                    '3/3/4/4/4',   [0.30, 0.75, 0.93];   % cyan
+    % 'C33445.mat',                    '3/3/4/4/5',   [0.49, 0.18, 0.56];   % purple
 };
 algoFiles    = algoLabels(:,1);
 displayNames = algoLabels(:,2);
@@ -96,7 +126,8 @@ for ai = 1:nAlgo
     plot(x, med, '-', 'Color', colors(ai,:), 'LineWidth', 1.8, ...
         'DisplayName', displayNames{ai});
 end
-yline(knownOpt, '--k', 'Optimal (26524)', 'LineWidth', 1.0);
+yline(knownOpt, '--k', 'Optimal (26524)', 'LineWidth', 1.0, ...
+    'LabelVerticalAlignment', 'bottom');
 xlabel('Iteration'); ylabel('Best Cost (log)');
 title(sprintf('Convergence — Iteration (Median + 95%% CI, %d runs each)', nR));
 set(gca, 'YScale', 'log');
@@ -136,7 +167,8 @@ for ai = 1:nAlgo
     plot(tC, med, '-', 'Color', colors(ai,:), 'LineWidth', 1.8, ...
         'DisplayName', displayNames{ai});
 end
-yline(knownOpt, '--k', 'Optimal (26524)', 'LineWidth', 1.0);
+yline(knownOpt, '--k', 'Optimal (26524)', 'LineWidth', 1.0, ...
+    'LabelVerticalAlignment', 'bottom');
 xlabel('Time (s)'); ylabel('Best Cost (log)');
 title(sprintf('Convergence — Time (Median + 95%% CI, %d runs each)', nR));
 set(gca, 'YScale', 'log');
@@ -176,47 +208,87 @@ for ai = 1:nAlgo
             'MarkerFaceAlpha', 0.5, 'MarkerEdgeColor', 'none');
     end
 end
-yline(1, '--k', 'Optimal (26524)', 'LineWidth', 1.0);
+yline(1, '--k', 'Optimal (26524)', 'LineWidth', 1.0, ...
+    'LabelVerticalAlignment', 'bottom');
 set(gca, 'YScale', 'log');
 ylabel('Best Cost − 26523 (log)');
 title(sprintf('Cost Distribution Comparison (%d runs each)', nR));
 grid on;
 
-%% ===== Figure 4: Best Cost Bar Chart =====
-figure('Position', [50, 50, 850, 500], 'Color', 'w');
-bestVals  = zeros(1, nAlgo);
-avgVals   = zeros(1, nAlgo);
-for ai = 1:nAlgo
-    if isempty(allData{ai}), continue; end
-    bestVals(ai) = allData{ai}.st.bestCost;
-    avgVals(ai)  = allData{ai}.st.avgCost;
-end
-bar(bestVals, 'FaceColor', 'flat', 'CData', colors); hold on;
-for ai = 1:nAlgo
-    text(ai, bestVals(ai) + 15, sprintf('%.0f', bestVals(ai)), ...
-        'HorizontalAlignment', 'center', 'FontSize', 8, 'FontWeight', 'bold');
-end
-set(gca, 'XTickLabel', displayNames, 'XTickLabelRotation', 15);
-ylabel('Best Cost');
-title('Best Cost by Algorithm');
-yline(knownOpt, '--k', 'Optimal (26524)', 'LineWidth', 1.0);
-grid on; hold off;
-
-%% ===== Figure 5+: Individual Cost Distributions =====
+%% ===== Figure 4: Average OptimalCost per Algorithm (Line, log scale) =====
+figure('Position', [50, 50, 900, 500], 'Color', 'w');
+avgOptCosts = nan(1, nAlgo);
+tolerance = 1e-12;
 for ai = 1:nAlgo
     data = allData{ai};
-    if isempty(data), continue; end
-    figure('Position', [50 + mod(ai-1,3)*350, 50 + floor((ai-1)/3)*400, 600, 450], 'Color', 'w');
-    histogram(data.costs, 10, 'FaceColor', colors(ai,:), 'EdgeColor', 'k', 'LineWidth', 0.5);
-    hold on;
-    xline(data.st.bestCost, '--r', sprintf('Best=%.1f', data.st.bestCost), 'LineWidth', 1.5);
-    xline(data.st.medianCost, '--', sprintf('Median=%.1f', data.st.medianCost), ...
-        'Color', [0.2, 0.7, 0.2], 'LineWidth', 1.5);
-    xline(knownOpt, '--k', 'Optimal (26524)', 'LineWidth', 1.0);
-    xlabel('Best Cost'); ylabel('Frequency');
-    title(sprintf('%s — Cost Distribution (Gap: %.1f%%)', displayNames{ai}, ...
-        (data.st.bestCost - knownOpt) / knownOpt * 100));
-    grid on; hold off;
+    if isempty(data) || isempty(data.histories), continue; end
+    runCosts = nan(1, length(data.histories));
+    for r = 1:length(data.histories)
+        h = data.histories{r};
+        if isfield(h, 'bestCostHistory') && ~isempty(h.bestCostHistory)
+            runCosts(r) = h.bestCostHistory(h.iterCount);
+        end
+    end
+    avgOptCosts(ai) = mean(runCosts, 'omitnan');
 end
+% Baseline shift + log scale (same as boxplot Figure 3)
+avgShifted = avgOptCosts - 26523;
+hold on;
+for ai = 1:nAlgo
+    if ai == 1 || isnan(avgShifted(ai-1))
+        plot(ai, avgShifted(ai), '-o', 'Color', [0.4 0.4 0.4], ...
+            'MarkerFaceColor', colors(ai,:), 'MarkerSize', 8, 'LineWidth', 1.5);
+    else
+        plot([ai-1, ai], [avgShifted(ai-1), avgShifted(ai)], '-', 'Color', [0.4 0.4 0.4], 'LineWidth', 1.5);
+        plot(ai, avgShifted(ai), '-o', 'Color', [0.4 0.4 0.4], ...
+            'MarkerFaceColor', colors(ai,:), 'MarkerSize', 8, 'LineWidth', 1.5);
+    end
+    text(ai, avgShifted(ai) * 1.15, sprintf('%.2f', avgOptCosts(ai)), ...
+        'HorizontalAlignment', 'center', 'FontSize', 8, 'FontWeight', 'bold');
+end
+set(gca, 'XTick', 1:nAlgo, 'XTickLabel', displayNames, 'XTickLabelRotation', 15, 'YScale', 'log');
+ylabel('Average OptimalCost − 26523 (log)');
+title(sprintf('Average OptimalCost per Algorithm (%d runs each)', nR));
+yline(1, '--k', 'Optimal (26524)', 'LineWidth', 1.0, ...
+    'LabelVerticalAlignment', 'bottom');
+grid on; hold off;
+
+%% ===== Figure 5: Average TimeToOptimal per Algorithm (Line) =====
+figure('Position', [50, 50, 900, 500], 'Color', 'w');
+avgTTO = nan(1, nAlgo);
+for ai = 1:nAlgo
+    data = allData{ai};
+    if isempty(data) || isempty(data.histories), continue; end
+    runTTO = nan(1, length(data.histories));
+    for r = 1:length(data.histories)
+        h = data.histories{r};
+        if ~isfield(h, 'bestCostHistory') || ~isfield(h, 'timeHistory'), continue; end
+        best = h.bestCostHistory(1:h.iterCount);
+        time = h.timeHistory(1:h.iterCount);
+        if isempty(best) || length(best) ~= length(time), continue; end
+        finalCost = best(end);
+        idx = find(abs(best - finalCost) <= tolerance * max(1, abs(finalCost)), 1, 'first');
+        if isempty(idx), idx = find(best == finalCost, 1, 'first'); end
+        if ~isempty(idx), runTTO(r) = time(idx); end
+    end
+    avgTTO(ai) = mean(runTTO, 'omitnan');
+end
+hold on;
+for ai = 1:nAlgo
+    if ai == 1 || isnan(avgTTO(ai-1))
+        plot(ai, avgTTO(ai), '-o', 'Color', [0.4 0.4 0.4], ...
+            'MarkerFaceColor', colors(ai,:), 'MarkerSize', 8, 'LineWidth', 1.5);
+    else
+        plot([ai-1, ai], [avgTTO(ai-1), avgTTO(ai)], '-', 'Color', [0.4 0.4 0.4], 'LineWidth', 1.5);
+        plot(ai, avgTTO(ai), '-o', 'Color', [0.4 0.4 0.4], ...
+            'MarkerFaceColor', colors(ai,:), 'MarkerSize', 8, 'LineWidth', 1.5);
+    end
+    text(ai, avgTTO(ai) + max(avgTTO)*0.03, sprintf('%.2f s', avgTTO(ai)), ...
+        'HorizontalAlignment', 'center', 'FontSize', 8, 'FontWeight', 'bold');
+end
+set(gca, 'XTick', 1:nAlgo, 'XTickLabel', displayNames, 'XTickLabelRotation', 15);
+ylabel('Average TimeToOptimal (s)');
+title(sprintf('Average TimeToOptimal per Algorithm (%d runs each)', nR));
+grid on; hold off;
 
 fprintf('\nAll figures ready. (Not auto-saved)\n');

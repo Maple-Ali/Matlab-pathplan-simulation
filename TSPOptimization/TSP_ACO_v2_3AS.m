@@ -17,24 +17,24 @@ rho   = 0.25;            % 信息素蒸发率
 Q     = 225;             % 信息素沉积常数
 
 % ===== 方案 K：伪随机比例规则 (ACS 风格) =====
-enablePseudoRandom = 0;  % 1=开启
+enablePseudoRandom = 1;  % 1=开启
 q0 = 0.45;               % 贪心选择概率
 
 % ===== 方案 S：渐进式局部搜索 (S 曲线) =====
 optRatio_start = 0.00;       % 初期局部搜索比例 (y_min)
-optRatio_end   = 0.3;       % 后期局部搜索比例 (y_max)
-optTransInterval = [0, 100]; % 过渡区间 [x_L, x_R]
+optRatio_end   = 0.6;       % 后期局部搜索比例 (y_max)
+optTransInterval = [0, 50]; % 过渡区间 [x_L, x_R]
 optCurveA      = 2.0;        % S 曲线陡峭度
-optEliteRatio  = 0.6;       % 局部搜索预算中精英蚂蚁占比
-optRandomCap   = 0.15;       % 随机抽取比例上限
+optEliteRatio  = 0.7;       % 局部搜索预算中精英蚂蚁占比
+% 随机抽取 = 局部搜索预算 - 精英数量, 不再单独设上限
 
 % ===== 方案 C：候选列表加速 VND =====
-kCand = 50;               % 每个城市的候选邻居数 (10~15)
+kCand = 9;               % 每个城市的候选邻居数 (10~15)
 
 % ===== 方案 B：自适应停止 =====
 enableAdaptiveStop = 1;  % 1=开启
 cvThreshold  = 0.001;    % 种群 CV 阈值 (CV < 阈值 → 种群同质停止)
-stagnationLim = 200;      % 最优解连续停滞上限 (代)
+stagnationLim = 100;      % 最优解连续停滞上限 (代)
 minIter      = 30;       % 最少迭代代数
 
 trackHistory = (nargout >= 3);
@@ -141,9 +141,9 @@ for iter = 1:nIter
     % ---- 方案 S：局部搜索蚂蚁选择 (精英 + 随机探索) ----
     [~, sortIdx] = sort(antCosts);
 
-    % 拆分: 精英 (前 optEliteRatio) + 随机探索 (剩余, 上限 optRandomCap)
+    % 拆分: 精英 (前 optEliteRatio) + 随机探索 (剩余 = nOptAnts - nElite)
     nElite = round(nOptAnts * optEliteRatio);
-    nRandom = min(nOptAnts - nElite, round(nAnts * optRandomCap));
+    nRandom = nOptAnts - nElite;
     randPool = nElite + randperm(nAnts - nElite, nRandom);
     lsAnts = [sortIdx(1:nElite); sortIdx(randPool)];   % 全部局部搜索蚂蚁
 

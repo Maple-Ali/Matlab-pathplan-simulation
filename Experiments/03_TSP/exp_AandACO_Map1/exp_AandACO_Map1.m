@@ -11,7 +11,7 @@ addpath(genpath(rootDir));
 
 % ===== Config（可在此切换算法 / 运行次数）=====
 planner   = @(map, s, g) AStar_v1(map, s, g, 0);   % 全局规划器，返回 [path, info]
-tspSolver = @(costMatrix, nPts) TSP_ACO_v2_3(costMatrix, nPts);  % TSP 求解器
+tspSolver = @(costMatrix, nPts) TSP_ACO_v2_4(costMatrix, nPts);  % TSP 求解器
 nRuns = 20;          % TSP 重复运行次数
 mapSize = 50;
 safetyMargin = 0.4;  % SimplifyPath 拐角裁剪安全距离（栅格单位）

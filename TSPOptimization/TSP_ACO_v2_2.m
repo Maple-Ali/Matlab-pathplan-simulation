@@ -1,7 +1,7 @@
 function [bestOrder, bestCost, history] = TSP_ACO_v2_2(costMatrix, nPts)
 %TSP_ACO_V2_2 蚁群 + VND 局部搜索 求解 TSP
 %   基于 TSP_ACO_v2_1，核心改进:
-%     S+. 局部搜索拆分: 精英(前optEliteRatio) + 随机探索(剩余,上限optRandomCap)
+%     S+. 局部搜索拆分: 精英(前optEliteRatio) + 随机探索(剩余=nOptAnts-nElite)
 %     B. 自适应停止: 最优成本连续 stagnationLim 代未改进则停止
 %
 %   保留 v2_1 全部机制: VND / K / S / A
@@ -23,11 +23,11 @@ q0 = 0.45;               % 贪心选择概率
 
 % ===== 方案 S：渐进式局部搜索 (S 曲线) =====
 optRatio_start = 0.00;       % 初期局部搜索比例 (y_min)
-optRatio_end   = 0.30;       % 后期局部搜索比例 (y_max)
-optTransInterval = [0, 100]; % 过渡区间 [x_L, x_R]
+optRatio_end   = 0.60;       % 后期局部搜索比例 (y_max)
+optTransInterval = [0, 50]; % 过渡区间 [x_L, x_R]
 optCurveA      = 2.0;        % S 曲线陡峭度
-optEliteRatio  = 0.6;       % 局部搜索预算中精英蚂蚁占比
-optRandomCap   = 0.15;       % 随机抽取比例上限
+optEliteRatio  = 0.7;       % 局部搜索预算中精英蚂蚁占比
+% 随机抽取 = 局部搜索预算 - 精英数量, 不再单独设上限
 
 % ===== 方案 B：自适应停止 =====
 enableAdaptiveStop = 1;  % 1=开启
@@ -136,9 +136,9 @@ for iter = 1:nIter
     % ---- 方案 S：局部搜索蚂蚁选择 (精英 + 随机探索) ----
     [~, sortIdx] = sort(antCosts);
 
-    % 拆分: 精英 (前 optEliteRatio) + 随机探索 (剩余, 上限 optRandomCap)
+    % 拆分: 精英 (前 optEliteRatio) + 随机探索 (剩余 = nOptAnts - nElite)
     nElite = round(nOptAnts * optEliteRatio);
-    nRandom = min(nOptAnts - nElite, round(nAnts * optRandomCap));
+    nRandom = nOptAnts - nElite;
     randPool = nElite + randperm(nAnts - nElite, nRandom);
     lsAnts = [sortIdx(1:nElite); sortIdx(randPool)];   % 全部局部搜索蚂蚁
 

@@ -8,7 +8,7 @@ function results = analyzeConvergenceTime(matFilePath)
 %   以及 TimeToOptimal 的平均值，并返回包含每个实验详细信息的表格。
 %
 %   输入以下内容运行：
-%   resultTable = analyzeConvergenceTime('file_name.mat'); disp(resultTable);
+%   resultTable = analyzeConvergenceTime('exp_aco_kroA150_results.mat'); disp(resultTable);
 %
 %   输入参数：
 %       matFilePath - .mat 文件的完整路径（字符串）
@@ -114,9 +114,9 @@ function results = analyzeConvergenceTime(matFilePath)
         fprintf('OptimalCost 最佳值   : %.6g\n', bestCost);
         fprintf('OptimalCost 中位数   : %.6g\n', medianCost);
         fprintf('OptimalCost 极差     : %.6g\n', rangeCost);
-        fprintf('OptimalCost 平均值   : %.6g\n', avgCost);
+        fprintf('OptimalCost 平均值   : %.4f\n', avgCost);
         fprintf('OptimalCost 标准差   : %.6g\n', stdCost);
-        fprintf('TimeToOptimal 平均值 : %.6g\n', avgTime);
+        fprintf('TimeToOptimal 平均值 : %.4f\n', avgTime);
         fprintf('（基于 %d 个有效实验）\n', sum(validIdx));
     else
         fprintf('\n没有有效数据可供计算统计量。\n');
