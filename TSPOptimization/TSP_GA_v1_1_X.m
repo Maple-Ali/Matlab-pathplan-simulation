@@ -13,20 +13,20 @@ function [bestOrder, bestCost, history] = TSP_GA_v1_1_X(costMatrix, nPts)
 %     bestCost   - 最优路径总成本
 %     history    - （可选）收敛历史结构体
 
-nNodes = nPts;  % 闭合环路: 排列 1:nPts, 虚拟节点隐含
+nMid = nPts - 2;
+midIdx = 2:(nPts - 1);
+nNodes = nPts + 1;  % 闭合环路节点数: nPts + 虚拟节点 V
 
 % 扩展成本矩阵: 添加虚拟节点 V = nPts+1
 Vidx = nPts + 1;
-nExt = nPts + 1;
 maxFinite = max(costMatrix(costMatrix < inf));
 if isempty(maxFinite), maxFinite = 1; end
 BIG = (nPts + 1) * maxFinite * 2;
 
-costExt = zeros(nExt);
+costExt = zeros(nNodes);
 costExt(1:nPts, 1:nPts) = costMatrix;
 costExt(Vidx, 1) = 0;  costExt(1, Vidx) = 0;
 costExt(Vidx, nPts) = 0;  costExt(nPts, Vidx) = 0;
-midIdx = 2:(nPts - 1);
 costExt(Vidx, midIdx) = BIG;  costExt(midIdx, Vidx) = BIG;
 
 % ===== 可调参数 =====
@@ -47,7 +47,8 @@ if trackHistory
     timeHistory = zeros(nGen, 1);
 end
 
-if nNodes <= 2
+% 边界情况：无中间目标点
+if nMid == 0
     bestOrder = [1, nPts];
     bestCost = costMatrix(1, nPts);
     if trackHistory
@@ -58,17 +59,18 @@ if nNodes <= 2
     return;
 end
 
-% ---- 随机初始化种群 ----
-pop = zeros(popSize, nNodes);
+% ---- 随机初始化种群: 每个个体为 midIdx 的随机排列 ----
+pop = zeros(popSize, nMid);
 for i = 1:popSize
-    pop(i, :) = randperm(nNodes);
+    pop(i, :) = midIdx(randperm(nMid));
 end
 
-% 适应度函数（闭合环路成本）
-    function c = fitness(order)
+% 适应度函数（闭合环路成本: [V, 1, midOrder, nPts] 形成闭环）
+    function c = fitness(midOrder)
+        cycle = [Vidx, 1, midOrder, nPts];
         c = 0;
         for k = 1:nNodes
-            c = c + costExt(order(k), order(mod(k, nNodes) + 1));
+            c = c + costExt(cycle(k), cycle(mod(k, nNodes) + 1));
         end
     end
 
@@ -106,7 +108,7 @@ for gen = 1:nGen
     end
 
     % ---- 选择（锦标赛） ----
-    newPop = zeros(popSize, nNodes);
+    newPop = zeros(popSize, nMid);
     for i = 1:popSize
         candidates = randi(popSize, [2, 1]);
         [~, winner] = min(fit(candidates));
@@ -118,22 +120,22 @@ for gen = 1:nGen
         if rand < crossoverRate && i + 1 <= popSize
             p1 = newPop(i, :);
             p2 = newPop(i + 1, :);
-            cp = sort(randi(nNodes, [1, 2]));
-            child1 = zeros(1, nNodes);
+            cp = sort(randi(nMid, [1, 2]));
+            child1 = zeros(1, nMid);
             child1(cp(1):cp(2)) = p1(cp(1):cp(2));
             remain = setdiff(p2, child1(cp(1):cp(2)), 'stable');
             idx = 1;
-            for j = 1:nNodes
+            for j = 1:nMid
                 if child1(j) == 0
                     child1(j) = remain(idx);
                     idx = idx + 1;
                 end
             end
-            child2 = zeros(1, nNodes);
+            child2 = zeros(1, nMid);
             child2(cp(1):cp(2)) = p2(cp(1):cp(2));
             remain = setdiff(p1, child2(cp(1):cp(2)), 'stable');
             idx = 1;
-            for j = 1:nNodes
+            for j = 1:nMid
                 if child2(j) == 0
                     child2(j) = remain(idx);
                     idx = idx + 1;
@@ -147,7 +149,7 @@ for gen = 1:nGen
     % ---- 变异（交换变异） ----
     for i = 1:popSize
         if rand < mutationRate
-            swap = randperm(nNodes, 2);
+            swap = randperm(nMid, 2);
             newPop(i, swap) = newPop(i, swap(end:-1:1));
         end
     end
@@ -161,8 +163,16 @@ for gen = 1:nGen
     pop = newPop;
 end
 
-bestCost = globalBestCost - costExt(globalBestMid(nNodes), globalBestMid(1));  % 减去闭合边
-bestOrder = extractPath(globalBestMid, nPts, Vidx);
+fit = zeros(popSize, 1);
+for i = 1:popSize
+    fit(i) = fitness(pop(i, :));
+end
+[bestCost, bestIdx] = min(fit);
+bestMid = pop(bestIdx, :);
+
+% 提取开路径: 从闭合环路中去掉虚拟节点 V, 校正方向
+bestCycle = [Vidx, 1, bestMid, nPts];
+bestOrder = extractPath(bestCycle, nPts, Vidx);
 
 if trackHistory
     history = struct();

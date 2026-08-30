@@ -1,13 +1,14 @@
 function [bestOrder, bestCost, history] = TSP_SA_v0_1_X(costMatrix, nPts)
 %TSP_SA_V0_1_X 自适应模拟退火算法求解 TSP（虚拟节点法：起点终点固定 + 中间点全排列优化）
 %   在原 TSP_SA_v0_1 基础上，将起点终点固定问题通过虚拟节点转化为闭合环路 TSP。
+%   起点(1)和终点(nPts)固定在首尾，仅排列中间点。
 %   虚拟节点 V 与起点(1)、终点(nPts) 距离为 0，与中间点距离 BIG。
-%   求解闭合环路后，去掉虚拟节点并校正方向，得到 起点→中间点→终点 的开路径。
 %
 %   Inputs: costMatrix, nPts
-%   Outputs: bestOrder, bestCost, history
+%   Outputs: bestOrder, bestCost (开路径成本), history
 
-nNodes = nPts;  % 闭合环路: 排列 1:nPts, 虚拟节点隐含
+nMid = nPts - 2;
+midIdx = 2:(nPts - 1);
 
 % 扩展成本矩阵: 添加虚拟节点 V = nPts+1
 Vidx = nPts + 1;
@@ -20,7 +21,6 @@ costExt = zeros(nExt);
 costExt(1:nPts, 1:nPts) = costMatrix;
 costExt(Vidx, 1) = 0;  costExt(1, Vidx) = 0;
 costExt(Vidx, nPts) = 0;  costExt(nPts, Vidx) = 0;
-midIdx = 2:(nPts - 1);
 costExt(Vidx, midIdx) = BIG;  costExt(midIdx, Vidx) = BIG;
 
 % ===== 可调参数 =====
@@ -39,7 +39,7 @@ nInnerMin   = 55;
 trackHistory = (nargout >= 3);
 if trackHistory, tStart = tic; end
 
-if nNodes <= 2
+if nMid == 0
     bestOrder = [1, nPts]; bestCost = costMatrix(1, nPts);
     if trackHistory
         history = struct('bestCostHistory', bestCost, ...
@@ -49,10 +49,10 @@ if nNodes <= 2
     return;
 end
 
-% ---- 随机初始解 (闭合环路排列) ----
-midOrder = randperm(nNodes);
+% ---- 随机初始解 (仅排列中间点) ----
+midOrder = midIdx(randperm(nMid));
 
-curCost = calcCost(midOrder, costExt, nNodes);
+curCost = calcCost(midOrder, costExt, nPts, nMid);
 bestMid = midOrder; bestCost = curCost;
 
 % ---- SA 参数 (用原 costMatrix 避免 BIG 值影响 T0) ----
@@ -63,7 +63,7 @@ else
 end
 if isempty(T0) || T0 == 0, T0 = 100; end
 T = T0;
-nInnerBase = max(nNodes * nInnerMult, 50);
+nInnerBase = max(nMid * nInnerMult, 50);
 
 nEst = ceil(log(T_min / T0) / log(alpha_min)) + 200;
 if trackHistory
@@ -87,10 +87,10 @@ while T > T_min
     end
 
     for i = 1:nInner
-        % 单一邻域操作: swap (闭合环路, 交换任意两个位置)
-        pair = sort(randperm(nNodes, 2));
+        % 单一邻域操作: swap (中间点位置, 1~nMid)
+        pair = sort(randperm(nMid, 2));
         i1 = pair(1); i2 = pair(2);
-        [newCost, delta] = deltaSwap(curMid, i1, i2, curCost, costExt, nNodes);
+        [newCost, delta] = deltaSwap(curMid, i1, i2, curCost, costExt, nMid);
 
         if delta < 0 || rand < exp(-delta / T)
             curMid([i1, i2]) = curMid([i2, i1]);
@@ -118,9 +118,8 @@ while T > T_min
     T = T * alpha;
 end
 
-% 提取开路径: 去掉虚拟节点, 校正方向, 返回开路径成本
-bestOrder = extractPath(bestMid, nPts, Vidx);
-bestCost = bestCost - costExt(bestMid(nNodes), bestMid(1));  % 减去闭合边
+% 输出: bestCost 已是开路径成本 (calcCost 已减去闭合边)
+bestOrder = [1, bestMid, nPts];
 
 if trackHistory
     history = struct();
@@ -133,51 +132,30 @@ end
 end
 
 % =========================================================================
-function c = calcCost(order, costExt, n)
-% 闭合环路成本
-c = 0;
-for k = 1:n
-    c = c + costExt(order(k), order(mod(k, n) + 1));
+function c = calcCost(midOrder, costExt, nPts, nMid)
+% 开路径成本: start→midOrder(1)→...→midOrder(nMid)→goal
+c = costExt(1, midOrder(1));
+for k = 1:(nMid - 1)
+    c = c + costExt(midOrder(k), midOrder(k + 1));
 end
+c = c + costExt(midOrder(nMid), nPts);
 end
 
-function [nc, d] = deltaSwap(o, i, j, cur, cm, n)
-% 闭合环路 swap 邻域的增量成本 (闭合: pos n 与 pos 1 相邻)
+function [nc, d] = deltaSwap(o, i, j, cur, cm, nMid)
+% 开路径 swap 邻域的增量成本 (起点/终点固定在首尾之外)
 Ai = o(i);  Aj = o(j);
-Li = o(mod(i - 2, n) + 1);  Ri = o(mod(i, n) + 1);
-Lj = o(mod(j - 2, n) + 1);  Rj = o(mod(j, n) + 1);
-if i == 1 && j == n
-    % 首尾相邻 (闭合环路的跨越边): 仅替换两条边
-    old = cm(Aj, Ai) + cm(Ai, Rj);
-    nw  = cm(Ai, Aj) + cm(Aj, Rj);
-elseif j == i + 1
+if j == i + 1
+    if i == 1, Li = 1;    else, Li = o(i - 1); end
+    if j == nMid, Rj = nMid + 2; else, Rj = o(j + 1); end
     old = cm(Li, Ai) + cm(Ai, Aj) + cm(Aj, Rj);
     nw  = cm(Li, Aj) + cm(Aj, Ai) + cm(Ai, Rj);
 else
+    if i == 1, Li = 1;    else, Li = o(i - 1); end
+    Ri = o(i + 1);
+    Lj = o(j - 1);
+    if j == nMid, Rj = nMid + 2; else, Rj = o(j + 1); end
     old = cm(Li, Ai) + cm(Ai, Ri) + cm(Lj, Aj) + cm(Aj, Rj);
     nw  = cm(Li, Aj) + cm(Aj, Ri) + cm(Lj, Ai) + cm(Ai, Rj);
 end
 d = nw - old; nc = cur + d;
-end
-
-function order = extractPath(cycle, nPts, Vidx)
-n = length(cycle);
-vPos = find(cycle == Vidx, 1);
-if isempty(vPos)
-    order = cycle;
-else
-    order = zeros(1, nPts);
-    idx = mod(vPos, n) + 1;
-    for t = 1:nPts
-        order(t) = cycle(idx);
-        idx = mod(idx, n) + 1;
-    end
-end
-if order(1) == nPts
-    order = fliplr(order);
-end
-if order(1) ~= 1
-    p1 = find(order == 1, 1);
-    order = [order(p1:end), order(1:p1-1)];
-end
 end

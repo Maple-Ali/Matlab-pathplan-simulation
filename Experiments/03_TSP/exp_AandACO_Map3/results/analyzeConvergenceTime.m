@@ -8,7 +8,7 @@ function results = analyzeConvergenceTime(matFilePath)
 %   以及 TimeToOptimal 的平均值，并返回包含每个实验详细信息的表格。
 %
 %   输入以下内容运行：
-%   resultTable = analyzeConvergenceTime('file_name.mat'); disp(resultTable);
+%   resultTable = analyzeConvergenceTime('exp_AandACO_Map3_results.mat'); disp(resultTable);
 %
 %   输入参数：
 %       matFilePath - .mat 文件的完整路径（字符串）

@@ -21,7 +21,7 @@ midIdx = 2:(nPts - 1);
 
 % 算法参数
 nAnts = 40;          % 蚂蚁数量
-nIter = 1000;         % 最大迭代次数
+nIter = 500;         % 最大迭代次数
 alpha = 1.0;         % 信息素权重
 beta = 2.0;          % 启发式信息权重（距离倒数）
 rho = 0.25;           % 信息素蒸发率
@@ -150,7 +150,7 @@ for iter = 1:nIter
     end
 
     % 额外沉积全局最优路径（精英策略）
-    eliteDeposit = Q / globalBestCost * 0.5;
+    eliteDeposit = Q / globalBestCost * 0.3;
     for k = 1:(length(globalBestTour) - 1)
         i = globalBestTour(k);
         j = globalBestTour(k + 1);

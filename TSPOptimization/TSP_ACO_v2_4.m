@@ -41,8 +41,8 @@ q0 = 0.45;               % 贪心选择概率
 
 % ===== 方案 S：渐进式局部搜索 (S 曲线) =====
 optRatio_start = 0.00;       % 初期局部搜索比例 (y_min)
-optRatio_end   = 0.6;        % 后期局部搜索比例 (y_max)
-optTransInterval = [0, 50]; % 过渡区间 [x_L, x_R]
+optRatio_end   = 0.4;        % 后期局部搜索比例 (y_max)
+optTransInterval = [0, 30]; % 过渡区间 [x_L, x_R]
 optCurveA      = 2.0;        % S 曲线陡峭度
 optEliteRatio  = 0.7;        % 局部搜索预算中精英蚂蚁占比
 % 随机抽取 = 局部搜索预算 - 精英数量, 不再单独设上限
@@ -53,8 +53,11 @@ kCand = 9;               % 每个节点的候选邻居数
 % ===== 方案 B：自适应停止 =====
 enableAdaptiveStop = 1;  % 1=开启
 cvThreshold  = 0.001;    % 种群 CV 阈值 (CV < 阈值 → 种群同质停止)
-stagnationLim = 100;      % 最优解连续停滞上限 (代)
+stagnationLim = 70;      % 最优解连续停滞上限 (代)
 minIter      = 30;       % 最少迭代代数
+
+% ===== 方案 A：MMAS 限幅 + 动态更新 =====
+enableMMAS = 1;   % 1=启用MMAS限幅与动态更新，0=禁用
 
 trackHistory = (nargout >= 3);
 if trackHistory, tStart = tic;
@@ -114,11 +117,13 @@ tau0 = 0.1;
 tau = ones(nNodes, nNodes) * tau0;
 
 % ---- 方案 A：MMAS 初始信息素限幅 (保守) ----
-tauMax = 1 / (rho * tau0 * nNodes);
-tauMin = tauMax / (5 * nNodes);
-tauMin = max(tauMin, 1e-6);
-tau = min(tau, tauMax);
-tau = max(tau, tauMin);
+if enableMMAS
+    tauMax = 1 / (rho * tau0 * nNodes);
+    tauMin = tauMax / (5 * nNodes);
+    tauMin = max(tauMin, 1e-6);
+    tau = min(tau, tauMax);
+    tau = max(tau, tauMin);
+end
 
 globalBestCost = inf;
 globalBestTour = 1:nNodes;
@@ -252,11 +257,13 @@ for iter = 1:nIter
     end
 
     % ---- 方案 A：MMAS 限幅 + 动态更新 ----
-    tau = min(tau, tauMax);
-    tau = max(tau, tauMin);
-    tauMax = 1 / (rho * globalBestCost);
-    tauMin = tauMax / nNodes;
-    tauMin = max(tauMin, 1e-6);
+    if enableMMAS
+        tau = min(tau, tauMax);
+        tau = max(tau, tauMin);
+        tauMax = 1 / (rho * globalBestCost);
+        tauMin = tauMax / nNodes;
+        tauMin = max(tauMin, 1e-6);
+    end
 end
 
 % =========================================================================

@@ -1,19 +1,39 @@
-function [path, info] = AStar_v1(map, startGrid, goalGrid, delay, callback, alpha, beta)
-%ASTAR_V1 A* 全局路径规划 — 改进版 v1
-%   [path, info] = AStar_v1(map, startGrid, goalGrid, delay, callback, alpha, beta)
+function [path, info] = AStar_v1_1(map, startGrid, goalGrid, delay, callback, alpha, d_ref)
+%ASTAR_V1_1 A* 全局路径规划 — 改进版 v1_1（障碍物距离自适应权重）
+%   [path, info] = AStar_v1_1(map, startGrid, goalGrid, delay, callback, alpha, d_ref)
 %   map: Map 对象
 %   startGrid, goalGrid: [row, col] 栅格索引
 %   delay: 可视化延迟（0=不绘制，仅 callback 为空时生效）
 %   callback: 可选回调函数 @(stateInfo) 返回 'continue'/'pause'/'stop'
-%   alpha: 自适应启发式最大额外权重（默认 0.3）
-%   beta:  衰减速率（默认 3.0）
 %   path: N×2 [row, col] 路径点数组
 %   info: 结构体 — .expandedNodes, .pathLength, .pathCost, .openMaxSize
 %
 %   改进内容：
 %     1. 二叉堆优先队列替代线性扫描 — O(log n) 取最小 f
-%     2. 自适应指数加权启发式 — 远距离加大权重加速搜索，近距离趋于标准 A*
+%     2. 基于障碍物距离的自适应加权 A* — 障碍物附近精细搜索，开阔区域贪心加速
 %     3. 改进的 tie-breaking — f 相同时优先选 h 更小的节点（更接近目标）
+%     4. 延迟终止 — 首次到达目标后继续搜索，直到确认无更优路径
+%
+%   注意：使用延迟终止后，算法会找到最优路径（与 Dijkstra 相同），
+%         但扩展节点数会比标准加权 A* 多。alpha 的作用变为控制搜索方向偏好，
+%         而非牺牲最优性。
+%
+%   ============================================
+%   主要可调节参数（直接修改下方默认值即可调试）
+%   ============================================
+%   alpha  = 0.2;   % 最大额外权重，范围建议 [0.1, 0.5]
+%                    % 越大 → 开阔区域越贪心（搜索更快但路径代价更高）
+%                    % 越小 → 越接近标准 A*（路径更优但搜索更慢）
+%                    % 推荐 0.2~0.3，兼顾速度与质量
+%
+%   d_ref  = 0.07;  % 障碍物距离阈值（占地图对角距离百分比），范围建议 [0.02, 0.15]
+%                    % 越小 → 障碍物影响范围越窄（只有紧贴障碍物才减速）
+%                    % 越大 → 障碍物影响范围越广（提前减速，路径更安全）
+%
+%   权重函数: w(d_obs) = 1 + alpha * (1 - exp(-d_obs / d_actual))
+%   其中 d_actual = d_ref * sqrt(mapSize² + mapSize²)
+%   w ∈ [1, 1+alpha]，障碍物附近 w≈1，开阔区域 w≈1+alpha
+%   ============================================
 
 if nargin < 4
     delay = 0;
@@ -22,10 +42,10 @@ if nargin < 5
     callback = [];
 end
 if nargin < 6 || isempty(alpha)
-    alpha = 0.1;
+    alpha = 0.5;    % 最大额外权重 [0.1, 0.5]，越大搜索越快但路径代价越高
 end
-if nargin < 7 || isempty(beta)
-    beta = 3.0;
+if nargin < 7 || isempty(d_ref)
+    d_ref = 0.07;   % 障碍物距离阈值(对角距离百分比) [0.02, 0.15]
 end
 
 n = map.mapSize;
@@ -43,21 +63,22 @@ dRow = [-1, -1, -1,  0,  0,  1,  1,  1];
 dCol = [-1,  0,  1, -1,  1, -1,  0,  1];
 moveCost = [sqrt(2), 1, sqrt(2), 1, 1, sqrt(2), 1, sqrt(2)];
 
-% 起终点欧氏距离（用于归一化）
-startDist = sqrt((startGrid(1) - goalGrid(1))^2 + (startGrid(2) - goalGrid(2))^2);
-if startDist == 0
-    startDist = 1;  % 起终点重合保护
-end
+% ---- 改进 2: 基于障碍物距离的自适应权重 ----
+%   预计算每个栅格到最近障碍物的欧氏距离
+%   权重函数: w(d_obs) = 1 + alpha * (1 - exp(-d_obs / d_actual))
+%   障碍物附近 (d_obs→0): w → 1（标准 A*，精细搜索）
+%   开阔区域 (d_obs>>d_actual): w → 1+alpha（贪心加速）
+diagonalDist = sqrt(2 * n^2);  % 地图对角距离
+d_actual = d_ref * diagonalDist;  % 实际距离阈值
 
-% ---- 改进 2: 自适应指数加权启发式 ----
-%   w(d) = 1 + alpha * exp(-beta * (1 - d/d0))
-%   d    = 当前节点到目标的欧氏距离
-%   d0   = 起终点距离（归一化基准）
-%   远离目标 (d→d0): w → 1+alpha（贪心搜索加速）
-%   接近目标 (d→0) : w → 1        （恢复标准 A*，保证精度）
-%   alpha: 最大额外权重，beta: 衰减速率
+% 预计算距离场（bwdist 计算每个栅格到最近障碍物的距离）
+distField = bwdist(double(occGrid));
+
+% 权重映射函数（基于障碍物距离）
+hWeight = @(r, c) 1 + alpha * (1 - exp(-distField(r, c) / d_actual));
+
+% 启发式函数
 h = @(r, c) sqrt((r - goalGrid(1))^2 + (c - goalGrid(2))^2);
-hWeight = @(r, c) 1 + alpha * exp(-beta * (1 - h(r, c) / startDist));
 weightedH = @(r, c) hWeight(r, c) * h(r, c);
 
 % g 值矩阵
@@ -77,7 +98,7 @@ parent = zeros(n, n, 2);
 
 % ---- 改进 1: 二叉堆优先队列 ----
 %   堆元素: [f, h, row, col]
-%   按 f 排序，f 相同时按 h 排序（tie-breaking: 优先 h 小的）
+%   按 f 排序，f 相同时按 h 排序（tie-breaking: 优先 h 更小的）
 %   用索引矩阵 track 每个节点在堆中的位置（0 = 不在堆中）
 heapSize = 0;
 heap = zeros(n * n, 4);  % 预分配最大可能大小
@@ -97,6 +118,10 @@ closedSet = false(n, n);
 
 % 迭代计数（供 callback 使用）
 iter = 0;
+
+% 延迟终止相关变量
+bestGoalG = inf;    % 目标节点的最优 g 值
+bestPath = [];      % 目标节点的最优路径
 
 % 指标统计
 expandedCount = 0;
@@ -144,19 +169,32 @@ while heapSize > 0
         end
     end
 
-    % 到达目标
+    % 到达目标（加权 A* 延迟终止：继续搜索直到确认最优）
     if current(1) == goalGrid(1) && current(2) == goalGrid(2)
-        path = reconstructPath(parent, startGrid, goalGrid);
-        expandedCount = expandedCount + 1;
-        info = struct('expandedNodes', expandedCount, ...
-                      'pathLength', size(path, 1), ...
-                      'pathCost', gScore(goalGrid(1), goalGrid(2)), ...
-                      'openMaxSize', openMaxSize);
-        if ~isempty(callback)
-            callback(struct('type', 'finish', 'path', path, ...
-                'iteration', iter, 'success', true));
+        goalG = gScore(goalGrid(1), goalGrid(2));
+        % 检查 open set 中是否有 f 值更小的节点
+        % 如果有，可能存在更优路径，继续搜索
+        if heapSize > 0 && heap(1, 1) < goalG
+            % open set 中最小 f < 目标 g，继续搜索
+            % 但标记已找到目标，后续可提前终止
+            if ~exist('bestGoalG', 'var') || goalG < bestGoalG
+                bestGoalG = goalG;
+                bestPath = reconstructPath(parent, startGrid, goalGrid);
+            end
+        else
+            % 确认是最优路径
+            path = reconstructPath(parent, startGrid, goalGrid);
+            expandedCount = expandedCount + 1;
+            info = struct('expandedNodes', expandedCount, ...
+                          'pathLength', size(path, 1), ...
+                          'pathCost', gScore(goalGrid(1), goalGrid(2)), ...
+                          'openMaxSize', openMaxSize);
+            if ~isempty(callback)
+                callback(struct('type', 'finish', 'path', path, ...
+                    'iteration', iter, 'success', true));
+            end
+            return;
         end
-        return;
     end
 
     closedSet(current(1), current(2)) = true;
@@ -225,13 +263,27 @@ while heapSize > 0
     end
 end
 
-% 无路径
-info = struct('expandedNodes',expandedCount,'pathLength',0,'pathCost',inf,'openMaxSize',openMaxSize);
-if ~isempty(callback)
-    callback(struct('type', 'finish', 'path', [], ...
-        'iteration', iter, 'success', false));
+% 循环结束，检查是否找到了路径
+if ~isempty(bestPath)
+    % 找到了路径（延迟终止）
+    path = bestPath;
+    info = struct('expandedNodes', expandedCount, ...
+                  'pathLength', size(path, 1), ...
+                  'pathCost', bestGoalG, ...
+                  'openMaxSize', openMaxSize);
+    if ~isempty(callback)
+        callback(struct('type', 'finish', 'path', path, ...
+            'iteration', iter, 'success', true));
+    end
+else
+    % 无路径
+    info = struct('expandedNodes',expandedCount,'pathLength',0,'pathCost',inf,'openMaxSize',openMaxSize);
+    if ~isempty(callback)
+        callback(struct('type', 'finish', 'path', [], ...
+            'iteration', iter, 'success', false));
+    end
+    path = [];
 end
-path = [];
 
 % ======================== 堆操作（嵌套函数，共享工作区） ========================
 
@@ -295,7 +347,7 @@ path = [];
         heapPos(rj, cj) = i;
     end
 
-end  % AStar_v1 主函数结束
+end  % AStar_v1_1 主函数结束
 
 % ======================== 路径重建 ========================
 

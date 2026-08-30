@@ -55,8 +55,8 @@
 |------|-----|---------|
 | 1 | Context | Real-world multi-point traversal applications (autonomous shuttles, logistics, inspection robots). Fundamental challenge: robot must (a) find collision-free paths between points AND (b) decide the optimal visitation order. |
 | 2 | Gap | Traditional TSP assumes Euclidean/straight-line distances — no obstacle model. Pure path planning (A*, RRT) handles obstacles but solves only single-pair routing. No existing framework unifies both for general grid-map obstacle environments. |
-| 3 | Approach summary | We propose a two-layer framework: (i) an improved A* global planner with adaptive exponential heuristic + path simplification/smoothing pipeline encodes obstacle constraints into pairwise costs; (ii) an improved ACO solver integrating MMAS, candidate-list-accelerated VND, and S-curve progressive local search optimizes the open-TSP visitation order. |
-| 4 | Contributions | Three-layer contributions: (1) Problem-level: obstacle-aware unified framework; (2) Collaboration-level: path-simplification-aware cost matrix for accurate TSP costing; (3) Component-level: AEWH for A*, CL-VND + S-curve for ACO. |
+| 3 | Approach summary | We propose a two-layer framework: (i) an improved A* global planner with adaptive exponential heuristic + path simplification/smoothing pipeline encodes obstacle constraints into pairwise costs; (ii) an improved ACO solver integrating MMAS, candidate-list-accelerated VND, and S-curve progressive local search optimizes the open-TSP visitation order via a virtual node method that converts the open TSP into a closed TSP. |
+| 4 | Contributions | Three-layer contributions: (1) Problem-level: obstacle-aware unified framework; (2) Collaboration-level: path-simplification-aware cost matrix for accurate TSP costing; (3) Component-level: AEWH for A*, virtual node method + CL-VND + S-curve for ACO. |
 | 5 | Paper structure | Roadmap of sections 2–6. |
 
 ---
@@ -159,9 +159,11 @@
 
 **4.3 Improved Ant Colony Optimization for Open TSP**
 
-**4.3.1 Open TSP Encoding and Pheromone Model**
-- Fixed boundary: nodes 1 (start) and N (goal) are fixed; only middle N−2 nodes are permuted
-- Pheromone matrix τ: (N−2) × (N−2), heuristic η_ij = 1 / d_ij
+**4.3.1 Virtual Node Method for Open TSP Encoding**
+- Virtual node V = N+1 connected to start (0 cost) and goal (0 cost), BIG penalty to intermediate points
+- Extended cost matrix D_ext: (N+1)×(N+1), converts open TSP to closed TSP
+- Pheromone matrix τ: (N+1) × (N+1), heuristic η_ij = 1 / d_ij (with BIG for V↔start/goal)
+- Path extraction: locate V in best cycle, remove V, orient sequence start→goal
 - Tour cost: `C = cost(1, mid₁) + Σ cost(mid_k, mid_{k+1}) + cost(mid_last, N)`
 - [FORMULA: tour cost from internal permutation]
 
@@ -177,11 +179,11 @@
 - [FORMULA: transition probability]
 
 **4.3.4 VND Local Search with Candidate List Acceleration** (Motivation → Design → Advantage)
-- Motivation: VND (2-opt → relocate → swap → cycle) improves solution quality but O(n²) per neighborhood is prohibitive for 100+ nodes
-- Design: Precompute kCand = 50 nearest neighbors per node; prune each VND operator:
+- Motivation: VND (2-opt → relocate → swap → cycle) on closed cycles improves solution quality but O(n²) per neighborhood is prohibitive for large instances
+- Design: Precompute kCand = 9 nearest neighbors per node on extended cost matrix D_ext; prune each VND operator:
   - 2-opt: only if new edge involves candidate pair
   - Relocate: only if moved node is candidate of insertion endpoints
-  - Swap: only if swapped nodes are mutual candidates
+  - Swap: only if swapped nodes are mutual candidates (including wrap-around edge handling)
 - Complexity: O(n²) → O(n · k)
 - [PSEUDOCODE: Candidate-list-accelerated VND]
 - [FLOWCHART: VND neighborhood sequence — Mermaid]
@@ -189,17 +191,17 @@
 **4.3.5 S-Curve Progressive Local Search Scheduling** (Motivation → Design → Advantage)
 - Motivation: Early iterations need exploration; later iterations need exploitation. Fixed LS ratio suboptimal.
 - Design: S-curve: optRatio(t) = y_min + (y_max − y_min) · tᵃ / (tᵃ + (1−t)ᵃ)
-- LS ant selection: optEliteRatio (60%) elite + optRandomCap (15%) random exploration
+- LS ant selection: optEliteRatio (70%) elite + remaining random exploration
 - [FORMULA: S-curve function]
 - [FIGURE: S-curve plot — optRatio vs. iteration]
 
 **4.3.6 Adaptive Stopping Criterion**
 - Condition 1: CV(ant costs) < 0.001 → population homogeneity
-- Condition 2: best cost unchanged ≥ 150 generations → stagnation
+- Condition 2: best cost unchanged ≥ 70 generations → stagnation
 - Guard: both only active after minIter = 30
 
 **4.3.7 Algorithm Summary**
-- [PSEUDOCODE: Complete TSP_ACO_v2_3 algorithm]
+- [PSEUDOCODE: Complete TSP_ACO_v2_4 algorithm]
 - [FLOWCHART: Overall ACO flow — Mermaid]
 
 ---
@@ -219,7 +221,7 @@
 
 **5.1 Experimental Setup**
 - Hardware: [TO FILL — CPU, RAM, MATLAB version]
-- Common parameters: [TABLE — AStar_v1 params, SimplifyPath params, SmoothPath params, ACO_v2_3 params]
+- Common parameters: [TABLE — AStar_v1 params, SimplifyPath params, SmoothPath params, ACO_v2_4 params]
 - Metrics: path length, expanded nodes, computation time, TSP cost, gap-to-optimal(%), iteration count
 
 **5.2 Global Path Planning Comparison**
@@ -234,7 +236,7 @@
   - [FIGURE: three-panel pipeline comparison]
 
 **5.3 TSP Solver Comparison on TSPLIB Benchmarks**
-- Purpose: Validate ACO_v2_3 against state-of-the-practice
+- Purpose: Validate ACO_v2_4 against state-of-the-practice
 - Dataset: TSPLIB kroA150 (150 cities, optimal = 26524)
 - Baselines: Standard ACO, GA, SA
 - N runs per algorithm: [TO FILL — suggested 30]
@@ -250,12 +252,12 @@
 
 | Group | Description | Disabled Component |
 |-------|-------------|-------------------|
-| Full | Complete ACO_v2_3 | None |
+| Full | Complete ACO_v2_4 | None |
 | A | No pseudo-random | enablePseudoRandom = 0 (pure roulette) |
 | B | No VND | VND removed (pure ACO construction) |
 | C | No S-curve | Fixed optRatio = 0.3 (no progressive scheduling) |
 | D | No candidate list | kCand = inf (full O(n²) VND) |
-| E | No MMAS bounds | Pheromone unconstrained (v2_3AS variant) |
+| E | No MMAS bounds | Pheromone unconstrained |
 
 - [TABLE: per-group Best/Worst/Avg/Std, iterations, time]
 - [FIGURE: overlaid convergence curves (6 groups)]
@@ -266,7 +268,7 @@
 - Purpose: Demonstrate full system on realistic obstacle maps
 - Scenario: [TO DESIGN — self-built map, K target points, distinct start/end]
   - [DESCRIPTION: Map size, obstacle layout mimicking buildings/walls, application narrative]
-- Method: Full pipeline (AStar_v1 + SimplifyPath-cost + ACO_v2_3 + SmoothPath)
+- Method: Full pipeline (AStar_v1 + SimplifyPath-cost + ACO_v2_4 + SmoothPath)
 - [TABLE: ordered visitation sequence, per-segment path lengths, total cost]
 - [FIGURE: Full map — obstacles, numbered targets, visit order arrows, smoothed paths]
 - [TABLE: computation time breakdown — cost matrix vs. TSP solve vs. post-processing]
@@ -327,7 +329,7 @@
 - [ ] Review and approve this outline
 - [ ] Prepare Map 1 (efficiency comparison) for Section 5.2
 - [ ] Prepare Map 2 (simplification/smoothing validation) for Section 5.2
-- [ ] Run kroA150 comparison experiments (ACO_v2_3 vs baseline ACO/GA/SA, N≥30 runs)
+- [ ] Run kroA150 comparison experiments (ACO_v2_4 vs baseline ACO/GA/SA, N≥30 runs)
 - [ ] Run all 6 ablation groups on kroA150
 - [ ] Design and build obstacle-rich end-to-end scenario map for Section 5.5
 - [ ] Provide hardware/software specs for Section 5.1

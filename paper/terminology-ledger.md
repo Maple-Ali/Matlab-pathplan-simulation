@@ -15,6 +15,7 @@
 | Pseudo-Random Proportional Rule | — | "伪随机比例规则", "ACS-style" | Describe as "ACS-style pseudo-random proportional rule" |
 | S-Curve Progressive Local Search | — | "S曲线渐进局部搜索", "progressive local search" | Use "S-curve progressive local search" |
 | Open TSP | TSP with fixed start and end points | "开放TSP", "指定起点终点的TSP" | Define contrast with "closed TSP" |
+| Virtual Node (Dummy Node) | Method to convert open TSP to closed TSP by adding a virtual point | "虚拟节点", "哑节点" | Use "virtual node" after first mention |
 | Cost Matrix | — | "代价矩阵", "distance matrix" | Use "cost matrix" consistently |
 | Occupancy Grid | — | "占用栅格", "occGrid" | Use "occupancy grid" |
 | Safety Margin | — | "安全裕度", "safetyMargin" | Use "safety margin" |

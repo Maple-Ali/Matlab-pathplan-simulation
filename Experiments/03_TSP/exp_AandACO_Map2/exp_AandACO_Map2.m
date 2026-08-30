@@ -1,8 +1,8 @@
-%% exp_AandACO_Map1 — A* + ACO 多目标导航实验
+%% exp_AandACO_Map2 — A* + ACO 多目标导航实验
 %  流程: 全局规划(AStar_v1) → 拐角裁剪(SimplifyPath) → 平滑(SmoothPath) → 距离矩阵
-%        TSP(ACO_v2_3) → 遍历顺序 → 生成简化+平滑后的路径
-%  数据: map1_dataset.mat (由 goal.txt / staticObstactes.txt 一次性转换)
-%  起点 = navPoints(1)，终点 = navPoints(50)，中间 48 个 = 目标
+%        TSP(ACO_v2_4) → 遍历顺序 → 生成简化+平滑后的路径
+%  数据: map2_dataset.mat (由 Map_2.mat 的 mapData 一次性转换)
+%  起点 = navPoints(1)，终点 = navPoints(70)，中间 68 个 = 目标
 %  距离矩阵每次运行只计算一次，缓存到 distMatrix.mat
 
 clear variables; close all;
@@ -21,13 +21,14 @@ tspSolver = @(costMatrix, nPts) TSP_GA_X(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_GA(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_SA_v0(costMatrix, nPts);
 
+
 nRuns = 40;          % TSP 重复运行次数
-mapSize = 50;
+mapSize = 80;
 safetyMargin = 0.4;  % SimplifyPath 拐角裁剪安全距离（栅格单位）
 smoothDensity = 10;  % SmoothPath 平滑插值密度
 
 expDir      = fileparts(mfilename('fullpath'));
-datasetFile = fullfile(expDir, 'map1_dataset.mat');
+datasetFile = fullfile(expDir, 'map2_dataset.mat');
 distFile    = fullfile(expDir, 'distMatrix.mat');
 resultsDir  = fullfile(expDir, 'results');
 if ~exist(resultsDir, 'dir'), mkdir(resultsDir); end
@@ -35,11 +36,11 @@ if ~exist(resultsDir, 'dir'), mkdir(resultsDir); end
 %% ===== 加载数据集 =====
 ds = load(datasetFile);   % mapSize, staticObstacles, navPoints
 staticObstacles = ds.staticObstacles;   % M×2 [row, col]
-navPoints = ds.navPoints;               % 50×2 [row, col]
+navPoints = ds.navPoints;               % 70×2 [row, col]
 nPts = size(navPoints, 1);
-nMid = nPts - 2;   % 中间目标数 = 48
+nMid = nPts - 2;   % 中间目标数 = 68
 
-fprintf('======== A* + ACO Experiment: Map1 ========\n');
+fprintf('======== A* + ACO Experiment: Map2 ========\n');
 fprintf('Planner: %s | TSP: %s\n', func2str(planner), func2str(tspSolver));
 fprintf('Map: %dx%d | Nav points: %d (start + %d targets + goal) | TSP runs: %d\n', ...
     mapSize, mapSize, nPts, nMid, nRuns);
@@ -81,7 +82,7 @@ else
 end
 
 %% ===== 运行 TSP（可多次）=====
-costMatrix = distMatrix;   % 50×50：第1=起点，第50=终点，2~49=目标
+costMatrix = distMatrix;   % 70×70：第1=起点，第70=终点，2~69=目标
 allOrders    = zeros(nRuns, nPts);
 allCosts     = zeros(nRuns, 1);
 allHistories = cell(1, nRuns);
@@ -138,7 +139,7 @@ pathCostCheck = sum(segCost);
 fprintf('拼接路径总代价(距离矩阵): %.4f (TSP bestCost: %.4f)\n', pathCostCheck, stats.bestCost);
 
 %% ===== 导出结果 =====
-resultsFile = fullfile(resultsDir, 'exp_AandACO_Map1_results.mat');
+resultsFile = fullfile(resultsDir, 'exp_AandACO_Map2_results.mat');
 save(resultsFile, 'allOrders', 'allCosts', 'allHistories', 'bestRunIdx', 'stats', ...
     'bestOrder', 'segSmooth', 'fullSmoothPath', 'distMatrix', 'distMatrixTime', ...
     'navPoints', 'staticObstacles', 'mapSize', 'nRuns', 'safetyMargin', 'smoothDensity');
@@ -170,19 +171,19 @@ plot(ax, fullSmoothPath(:,1), fullSmoothPath(:,2), '-', 'Color', [0.9, 0.3, 0.2]
 % 起点（圆形，缩小）
 plot(ax, navXY(1,1), navXY(1,2), 'o', 'MarkerSize', 8, ...
     'MarkerFaceColor', [0.2, 0.8, 0.2], 'MarkerEdgeColor', 'k', 'LineWidth', 0.5);
-text(ax, navXY(1,1), navXY(1,2) - 1, 'Start', ...
+text(ax, navXY(1,1), navXY(1,2) - 1.8, 'Start', ...
     'HorizontalAlignment', 'center', 'FontSize', 10, 'FontWeight', 'bold', 'Color', [0.2, 0.6, 0.2]);
 % 终点（三角形，缩小）
 plot(ax, navXY(end,1), navXY(end,2), '^', 'MarkerSize', 8, ...
     'MarkerFaceColor', [0.9, 0.2, 0.2], 'MarkerEdgeColor', 'k', 'LineWidth', 0.5);
-text(ax, navXY(end,1), navXY(end,2) + 1, 'Goal', ...
+text(ax, navXY(end,1), navXY(end,2) + 1.8, 'Goal', ...
     'HorizontalAlignment', 'center', 'FontSize', 10, 'FontWeight', 'bold', 'Color', [0.8, 0.2, 0.2]);
 
 xlim(ax, [0, mapSize]); ylim(ax, [0, mapSize]);
 set(ax, 'YDir', 'normal', 'XTick', 0:5:mapSize, 'YTick', 0:5:mapSize);
 grid(ax, 'on'); set(ax, 'GridAlpha', 0.15);
 xlabel('X (列)'); ylabel('Y (行)');
-title(sprintf('Map1 — A*+ACO 最优路径 (Cost: %.4f, Run #%d)', stats.bestCost, bestRunIdx), 'FontSize', 12);
+title(sprintf('Map2 — A*+ACO 最优路径 (Cost: %.4f, Run #%d)', stats.bestCost, bestRunIdx), 'FontSize', 12);
 hold(ax, 'off');
 
 %% ===== Figure 2: 收敛曲线（迭代维度）=====

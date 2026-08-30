@@ -12,21 +12,21 @@ addpath(genpath(rootDir));
 % ===== TSP Algorithm Selector =====
 %tspSolver = @(costMatrix, nPts) TSP_ACO_v2_4(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_SA_v0(costMatrix, nPts);
-% tspSolver = @(costMatrix, nPts) TSP_ACO_v2_4(costMatrix, nPts);
+tspSolver = @(costMatrix, nPts) TSP_ACO_v2_4(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_ACO_X(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_GA_v1_1_X(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_GA_X(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_SA_v0_1_X(costMatrix, nPts);
-tspSolver = @(costMatrix, nPts) TSP_SA_v0_X(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_SA_v0_X(costMatrix, nPts);
 
 % ===== 起点/终点城市编号 (1~100) =====
 startCity = 1;    % 起点城市编号
-endCity   = 100;  % 终点城市编号（与起点相同 = 回路）
+endCity   = 1;  % 终点城市编号（与起点相同 = 回路）
 
 % ===== Experiment Config =====
-nRuns = 1;
+nRuns = 40;
 coordFile = fullfile(fileparts(mfilename('fullpath')), 'kroA100_coords.mat');
-distFile  = fullfile(fileparts(mfilename('fullpath')), '..', 'kroA100_distance_matrix.txt');
+distFile  = fullfile(fileparts(mfilename('fullpath')), 'kroA100_dist_matrix.txt');
 resultsDir = fullfile(fileparts(mfilename('fullpath')), 'results');
 
 %% ===== Load kroA100 dataset =====
@@ -253,22 +253,9 @@ fprintf('\nAll figures ready. (Not auto-saved)\n');
 %% ===== Local Functions =====
 
 function distMatrix = parseKroA100Dist(distFile)
-    nCities = 100;
-    distMatrix = zeros(nCities);
-    fid = fopen(distFile, 'r');
-    if fid < 0, error('Cannot open: %s', distFile); end
-    cleanup1 = onCleanup(@() fclose(fid));
-    for h = 1:4, fgetl(fid); end
-    for i = 1:(nCities - 1)
-        line = strtrim(fgetl(fid));
-        colonPos = strfind(line, ':');
-        if ~isempty(colonPos), line = strtrim(line(colonPos+1:end)); end
-        vals = sscanf(line, '%f');
-        for p = 1:length(vals)
-            j = nCities - p + 1;
-            distMatrix(i, j) = vals(p); distMatrix(j, i) = vals(p);
-        end
-    end
+%PARSEKROA100DIST Parse kroA100 distance matrix (100x100, space-separated)
+%   distMatrix - 100x100 symmetric distance matrix
+    distMatrix = dlmread(distFile, ' ');
 end
 
 function result = iff(cond, a, b)

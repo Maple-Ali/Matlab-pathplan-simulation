@@ -1,6 +1,6 @@
-%% exp_aco_kroA150_customSE — 可设定起点/终点城市编号的kroA150 TSP实验
-%  数据集: kroA150 (150城市, EUC_2D坐标, 预计算距离矩阵)
-%  与 exp_aco_kroA150.m 的区别：可自定义起点和终点城市编号
+%% exp_aco_kroB100_customSE — 可设定起点/终点城市编号的kroB100 TSP实验
+%  数据集: kroB100 (100城市, EUC_2D坐标, 预计算距离矩阵)
+%  与 exp_aco_kroB100.m 的区别：可自定义起点和终点城市编号
 %  起点/终点可以是同一城市（回路），也可以是不同城市（路径）
 %
 %  用法：修改下方 startCity / endCity 后直接运行
@@ -10,30 +10,38 @@ rootDir = fileparts(fileparts(fileparts(fileparts(mfilename('fullpath')))));
 addpath(genpath(rootDir));
 
 % ===== TSP Algorithm Selector =====
-tspSolver = @(costMatrix, nPts) TSP_ACO_v2_4(costMatrix, nPts);
+%tspSolver = @(costMatrix, nPts) TSP_ACO_v2_4(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_ACO_X(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_GA_X(costMatrix, nPts);
+tspSolver = @(costMatrix, nPts) TSP_SA_v0_X(costMatrix, nPts);
 
-% ===== 起点/终点城市编号 (1~150) =====
+% tspSolver = @(costMatrix, nPts) TSP_ACO(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_GA(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_SA_v0(costMatrix, nPts);
+
+
+% ===== 起点/终点城市编号 (1~100) =====
 startCity = 1;    % 起点城市编号
 endCity   = 1;  % 终点城市编号（与起点相同 = 回路）
 
 % ===== Experiment Config =====
-nRuns = 1;
-coordFile = fullfile(fileparts(mfilename('fullpath')), 'kroA150_coords.mat');
-distFile  = fullfile(fileparts(mfilename('fullpath')), 'kroA150_dist_matrix.txt');
+nRuns = 40;
+coordFile = fullfile(fileparts(mfilename('fullpath')), 'kroB100_coords.mat');
+distFile  = fullfile(fileparts(mfilename('fullpath')), 'kroB100_dist_matrix.txt');
 resultsDir = fullfile(fileparts(mfilename('fullpath')), 'results');
 
-%% ===== Load kroA150 dataset =====
-tmp = load(coordFile);  % → c150 (150×2)
-cityCoords = tmp.c150;
-fullDist150 = parseKroA150Dist(distFile);
-nCities = 150;
+%% ===== Load kroB100 dataset =====
+tmp = load(coordFile);  % → c100 (100×2)
+cityCoords = tmp.c100;
+fullDist100 = parseKroB100Dist(distFile);
+nCities = 100;
 
 % 校验输入
 assert(startCity >= 1 && startCity <= nCities, 'startCity 必须在 1~%d 之间', nCities);
 assert(endCity >= 1 && endCity <= nCities, 'endCity 必须在 1~%d 之间', nCities);
 
 isLoop = (startCity == endCity);
-fprintf('======== TSP Experiment: kroA150 (Custom Start/End) ========\n');
+fprintf('======== TSP Experiment: kroB100 (Custom Start/End) ========\n');
 fprintf('Algorithm: %s\n', func2str(tspSolver));
 fprintf('Cities: %d | Runs: %d\n', nCities, nRuns);
 fprintf('Start: City %d (%.0f, %.0f)\n', startCity, cityCoords(startCity,1), cityCoords(startCity,2));
@@ -41,37 +49,35 @@ fprintf('Goal:  City %d (%.0f, %.0f)\n', endCity, cityCoords(endCity,1), cityCoo
 fprintf('Type:  %s\n', iff(isLoop, 'Loop (start=goal)', 'Path (start≠goal)'));
 fprintf('\n');
 
-%% ===== Build 151x151 cost matrix =====
+%% ===== Build cost matrix =====
 % 节点映射:
-%   node 1     = startCity (起点)
-%   node 2~150 = 其余城市 (按原始编号顺序，跳过 startCity 和 endCity)
-%   node 151   = endCity (终点)
-%
-% 若 startCity == endCity，节点 1 和 151 代表同一城市
+%   node 1       = startCity (起点)
+%   node 2~nPts-1 = 其余城市 (按原始编号顺序，跳过 startCity 和 endCity)
+%   node nPts     = endCity (终点)
 
 % 确定中间城市序列 (排除 startCity 和 endCity；若回路则 startCity==endCity 只排除一次)
 if isLoop
-    midCities = setdiff(1:nCities, startCity);  % 149 个城市
+    midCities = setdiff(1:nCities, startCity);       % 99 个城市
 else
-    midCities = setdiff(1:nCities, [startCity, endCity]);  % 148 个城市
+    midCities = setdiff(1:nCities, [startCity, endCity]);  % 98 个城市
 end
-nPts = length(midCities) + 2;  % 回路=151, 非回路=150
+nPts = length(midCities) + 2;  % 回路=101, 非回路=100
 
 costMatrix = zeros(nPts);
 
 % start → midCities
-costMatrix(1, 2:nPts-1) = fullDist150(startCity, midCities);
+costMatrix(1, 2:nPts-1) = fullDist100(startCity, midCities);
 % midCities → start
-costMatrix(2:nPts-1, 1) = fullDist150(midCities, startCity);
+costMatrix(2:nPts-1, 1) = fullDist100(midCities, startCity);
 % midCities → goal
-costMatrix(2:nPts-1, nPts) = fullDist150(midCities, endCity);
+costMatrix(2:nPts-1, nPts) = fullDist100(midCities, endCity);
 % goal → midCities
-costMatrix(nPts, 2:nPts-1) = fullDist150(endCity, midCities);
+costMatrix(nPts, 2:nPts-1) = fullDist100(endCity, midCities);
 % midCities ↔ midCities
-costMatrix(2:nPts-1, 2:nPts-1) = fullDist150(midCities, midCities);
+costMatrix(2:nPts-1, 2:nPts-1) = fullDist100(midCities, midCities);
 
 %% ===== 城市编号映射表 (用于结果还原) =====
-nodeToCity = [startCity, midCities, endCity];  % 1×151
+nodeToCity = [startCity, midCities, endCity];  % 1×nPts
 
 %% ===== Independent Runs =====
 allOrders   = zeros(nRuns, nPts);
@@ -114,49 +120,58 @@ fprintf('Total wall time: %.1fs\n', totalWallTime);
 %% ===== Export Data =====
 startLabel = sprintf('city%d', startCity);
 goalLabel  = sprintf('city%d', endCity);
-resultsFile = fullfile(resultsDir, sprintf('exp_kroA150_%s_to_%s.mat', startLabel, goalLabel));
+resultsFile = fullfile(resultsDir, sprintf('exp_kroB100_%s_to_%s.mat', startLabel, goalLabel));
 save(resultsFile, 'allOrders', 'allCosts', 'allHistories', 'bestRunIdx', 'stats', ...
-    'fullDist150', 'cityCoords', 'costMatrix', 'nodeToCity', 'startCity', 'endCity');
+    'fullDist100', 'cityCoords', 'costMatrix', 'nodeToCity', 'startCity', 'endCity');
 fprintf('\nResults saved to: %s\n', resultsFile);
 
 %% ===== Figure 1: Optimal Path Map =====
 figure('Position', [50, 50, 750, 680], 'Color', 'w');
 hold on;
 
-scatter(cityCoords(:,1), cityCoords(:,2), 25, [0.2, 0.5, 0.9], 'filled', ...
+scatter(cityCoords(:,1), cityCoords(:,2), 30, [0.2, 0.5, 0.9], 'filled', ...
     'MarkerEdgeColor', 'none');
 
-% Label every 15th city
-labelStep = 15;
-for i = 1:labelStep:nCities
-    text(cityCoords(i,1) + 30, cityCoords(i,2) + 30, num2str(i), ...
-        'FontSize', 6, 'Color', [0.2, 0.2, 0.2]);
+for i = 1:nCities
+    text(cityCoords(i,1) + 20, cityCoords(i,2) + 20, num2str(i), ...
+        'FontSize', 5, 'Color', [0.2, 0.2, 0.2], 'HorizontalAlignment', 'center');
 end
 
 % Best tour path — map node indices back to city indices
 bestOrderAll = allOrders(bestRunIdx, :);
 cityIdx = nodeToCity(bestOrderAll);
+if isLoop
+    cityIdx = [cityIdx, cityIdx(1)];  % 回路: 闭合路径
+end
 plot(cityCoords(cityIdx,1), cityCoords(cityIdx,2), '-', 'Color', [0.9, 0.3, 0.2], 'LineWidth', 0.8);
 
 % Start marker
 plot(cityCoords(startCity,1), cityCoords(startCity,2), 'o', ...
-    'MarkerSize', 12, 'MarkerFaceColor', [0.2, 0.8, 0.2], 'MarkerEdgeColor', 'k', 'LineWidth', 1.5);
+    'MarkerSize', 8, 'MarkerFaceColor', [0.2, 0.8, 0.2], 'MarkerEdgeColor', 'k', 'LineWidth', 0.5);
+% text(cityCoords(startCity,1) + 60, cityCoords(startCity,2) - 80, ...
+%     sprintf('Start (C%d)', startCity), ...
+%     'HorizontalAlignment', 'center', 'FontSize', 10, 'FontWeight', 'bold', 'Color', [0.2, 0.6, 0.2]);
 text(cityCoords(startCity,1) + 60, cityCoords(startCity,2) - 80, ...
-    sprintf('Start (C%d)', startCity), ...
+    sprintf('Start', startCity), ...
     'HorizontalAlignment', 'center', 'FontSize', 10, 'FontWeight', 'bold', 'Color', [0.2, 0.6, 0.2]);
 
 % Goal marker (if different from start)
 if ~isLoop
     plot(cityCoords(endCity,1), cityCoords(endCity,2), 's', ...
-        'MarkerSize', 12, 'MarkerFaceColor', [0.9, 0.2, 0.2], 'MarkerEdgeColor', 'k', 'LineWidth', 1.5);
+        'MarkerSize', 8, 'MarkerFaceColor', [0.9, 0.2, 0.2], 'MarkerEdgeColor', 'k', 'LineWidth', 0.5);
     text(cityCoords(endCity,1) + 60, cityCoords(endCity,2) - 80, ...
         sprintf('Goal (C%d)', endCity), ...
         'HorizontalAlignment', 'center', 'FontSize', 10, 'FontWeight', 'bold', 'Color', [0.8, 0.2, 0.2]);
 end
 
 xlabel('X'); ylabel('Y');
-titleStr = sprintf('Best TSP Tour — kroA150 (C%d→C%d, Cost: %.2f, Run #%d)', ...
-    startCity, endCity, stats.bestCost, bestRunIdx);
+% 回路时补充闭合边代价用于显示
+dispCost = stats.bestCost;
+if isLoop
+    dispCost = dispCost + fullDist100(nodeToCity(allOrders(bestRunIdx, end)), startCity);
+end
+titleStr = sprintf('Best TSP Tour — kroB100 (C%d→C%d, Cost: %.2f, Run #%d)', ...
+    startCity, endCity, dispCost, bestRunIdx);
 title(titleStr, 'FontSize', 13);
 axis equal tight;
 grid on; set(gca, 'GridAlpha', 0.1);
@@ -190,7 +205,7 @@ legend('95% CI', 'Median', 'Location', 'northeast'); grid on;
 hold off;
 
 %% ===== Figure 3: Convergence Curves (Time) =====
-figure('Position', [820, 580, 700, 500], 'Color', 'w');
+figure('Position', [820, 400, 700, 500], 'Color', 'w');
 
 nTimePts = 500;
 maxTime = max(cellfun(@(h) h.elapsedTime, allHistories));
@@ -201,10 +216,8 @@ for run = 1:nRuns
     h = allHistories{run};
     tRaw = h.timeHistory(1:h.iterCount);
     cRaw = h.bestCostHistory(1:h.iterCount);
-    tRaw = [0; tRaw(:)];
-    cRaw = [cRaw(1); cRaw(:)];
-    [tUnique, ia] = unique(tRaw);
-    cUnique = cRaw(ia);
+    tRaw = [0; tRaw(:)]; cRaw = [cRaw(1); cRaw(:)];
+    [tUnique, ia] = unique(tRaw); cUnique = cRaw(ia);
     if length(tUnique) >= 2
         costMatrix_time(run, :) = interp1(tUnique, cUnique, tCommon, 'linear', cUnique(end));
     else
@@ -226,7 +239,7 @@ legend('95% CI', 'Median', 'Location', 'northeast'); grid on;
 hold off;
 
 %% ===== Figure 4: Cost Distribution =====
-figure('Position', [50, 760, 750, 520], 'Color', 'w');
+figure('Position', [50, 200, 750, 520], 'Color', 'w');
 
 subplot(2,1,1);
 histogram(allCosts, 12, 'FaceColor', [0.2, 0.5, 0.9], 'EdgeColor', 'k', 'LineWidth', 0.5);
@@ -251,9 +264,9 @@ fprintf('\nAll figures ready. (Not auto-saved)\n');
 
 %% ===== Local Functions =====
 
-function distMatrix = parseKroA150Dist(distFile)
-%PARSEKROA150DIST Parse kroA150 distance matrix (150x150, space-separated)
-%   distMatrix - 150x150 symmetric distance matrix
+function distMatrix = parseKroB100Dist(distFile)
+%PARSEKROB100DIST Parse kroB100 distance matrix (100x100, space-separated)
+%   distMatrix - 100x100 symmetric distance matrix
     distMatrix = dlmread(distFile, ' ');
 end
 

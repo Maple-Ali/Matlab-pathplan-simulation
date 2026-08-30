@@ -23,14 +23,13 @@ All experiments were conducted on a computer with [TO FILL: CPU model, RAM, oper
 | ACO | Evaporation rate | $\rho_{\text{ACO}}$ | 0.25 |
 | ACO | Deposit constant | $Q$ | 225 |
 | ACO | Greedy probability | $q_0$ | 0.45 |
-| ACO | Candidate list size | $k$ | 50 |
-| ACO | LS transition interval | $[x_L, x_R]$ | $[0, 100]$ |
-| ACO | LS ratio range | $[y_{\min}, y_{\max}]$ | $[0, 0.3]$ |
+| ACO | Candidate list size | $k$ | 9 |
+| ACO | LS transition interval | $[x_L, x_R]$ | $[0, 30]$ |
+| ACO | LS ratio range | $[y_{\min}, y_{\max}]$ | $[0, 0.4]$ |
 | ACO | S-curve steepness | $a$ | 2.0 |
-| ACO | Elite ratio | $r_{\text{elite}}$ | 0.6 |
-| ACO | Random cap | $r_{\text{cap}}$ | 0.15 |
+| ACO | Elite ratio | $r_{\text{elite}}$ | 0.7 |
 | ACO | CV threshold | — | 0.001 |
-| ACO | Stagnation limit | — | 150 |
+| ACO | Stagnation limit | — | 70 |
 | ACO | Min iterations | — | 30 |
 
 **Evaluation metrics.** The following metrics are reported across experiments:
@@ -92,13 +91,13 @@ All experiments were conducted on a computer with [TO FILL: CPU model, RAM, oper
 
 ## 5.3 TSP Solver Comparison on TSPLIB Benchmarks
 
-**Objective.** Evaluate the improved ACO solver (TSP_ACO_v2_3) against three baseline TSP metaheuristics—standard Ant Colony Optimization (ACO), Genetic Algorithm (GA), and Simulated Annealing (SA)—on a standard TSPLIB benchmark instance.
+**Objective.** Evaluate the improved ACO solver (TSP_ACO_v2_4) against three baseline TSP metaheuristics—standard Ant Colony Optimization (ACO), Genetic Algorithm (GA), and Simulated Annealing (SA)—on a standard TSPLIB benchmark instance.
 
 **Dataset.** The TSPLIB kroA150 instance, consisting of 150 cities with Euclidean 2D coordinates. The cost matrix is computed as the Euclidean distance between cities, yielding a known optimal tour cost of $26{,}524$. To model the open TSP with fixed start and end, city 1 serves as both start and goal: the cost matrix is augmented to size $151 \times 151$, with a copy of city 1 appended as the destination.
 
 **Baseline implementations.** The standard ACO baseline is the basic Ant System with uniform initialization, roulette-wheel selection (no pseudo-random rule), uniform evaporation and deposit, and no local search, MMAS bounds, or adaptive stopping. The GA baseline uses order-based crossover (OX) and tournament selection. The SA baseline uses 2-opt neighborhood moves with an exponential cooling schedule.
 
-**Procedure.** Each solver is run independently for [TO FILL: e.g., 30] trials with different random seeds. All solvers are given the same cost matrix. For the stochastic baselines (GA, SA), the population size and iteration budget are set to match the ACO's computational budget where feasible. For ACO_v2_3, the adaptive stopping mechanism (Section 4.3.6) may terminate the search before the maximum iteration limit; for the baselines, the search runs for a fixed budget equivalent to the average ACO_v2_3 runtime.
+**Procedure.** Each solver is run independently for [TO FILL: e.g., 30] trials with different random seeds. All solvers are given the same cost matrix. For the stochastic baselines (GA, SA), the population size and iteration budget are set to match the ACO's computational budget where feasible. For ACO_v2_4, the adaptive stopping mechanism (Section 4.3.6) may terminate the search before the maximum iteration limit; for the baselines, the search runs for a fixed budget equivalent to the average ACO_v2_4 runtime.
 
 **Results.** *[Table 4: TSP solver comparison on kroA150.]*
 
@@ -107,15 +106,15 @@ All experiments were conducted on a computer with [TO FILL: CPU model, RAM, oper
 | Standard ACO | [TO FILL] | [TO FILL] | [TO FILL] | [TO FILL] | [TO FILL] | [TO FILL] |
 | GA | [TO FILL] | [TO FILL] | [TO FILL] | [TO FILL] | [TO FILL] | [TO FILL] |
 | SA | [TO FILL] | [TO FILL] | [TO FILL] | [TO FILL] | [TO FILL] | [TO FILL] |
-| ACO_v2_3 (ours) | [TO FILL] | [TO FILL] | [TO FILL] | [TO FILL] | [TO FILL] | [TO FILL] |
+| ACO_v2_4 (ours) | [TO FILL] | [TO FILL] | [TO FILL] | [TO FILL] | [TO FILL] | [TO FILL] |
 
-*[Figure 10: Convergence curves — Best Cost vs. Iteration for all solvers. Median curve (solid line) with 95% confidence interval (shaded band). A horizontal dashed line marks the known optimal (26,524). For ACO_v2_3, the curve shows only iterations until adaptive termination; for baselines, the full budget is shown.]*
+*[Figure 10: Convergence curves — Best Cost vs. Iteration for all solvers. Median curve (solid line) with 95% confidence interval (shaded band). A horizontal dashed line marks the known optimal (26,524). For ACO_v2_4, the curve shows only iterations until adaptive termination; for baselines, the full budget is shown.]*
 
 *[Figure 11: Convergence curves — Best Cost vs. Time for all solvers, with the same median/CI/optimal conventions as Figure 10. This view accounts for per-iteration runtime differences between solvers.]*
 
 *[Figure 12: Cost distribution for each solver. Upper panel: histogram of best costs across 30 trials. Lower panel: boxplot (horizontal) with best-cost scatter overlaid.]*
 
-**Analysis.** *[TO FILL after data collection: Expected: ACO_v2_3 achieves lower mean cost and smaller variance than all baselines, with a gap to optimal of [XX]% vs. [XX]% (best baseline). The convergence curves show that ACO_v2_3 converges faster in both iteration count (due to pseudo-random rule and elite deposit) and wall-clock time (despite the overhead of VND local search, which is offset by candidate list acceleration). The cost distribution is tighter for ACO_v2_3 (lower standard deviation), indicating more reliable performance across random seeds.]*
+**Analysis.** *[TO FILL after data collection: Expected: ACO_v2_4 achieves lower mean cost and smaller variance than all baselines, with a gap to optimal of [XX]% vs. [XX]% (best baseline). The convergence curves show that ACO_v2_4 converges faster in both iteration count (due to pseudo-random rule and elite deposit) and wall-clock time (despite the overhead of VND local search, which is offset by candidate list acceleration). The cost distribution is tighter for ACO_v2_4 (lower standard deviation), indicating more reliable performance across random seeds.]*
 
 ## 5.4 Ablation Study of ACO Components
 
@@ -129,12 +128,12 @@ All experiments were conducted on a computer with [TO FILL: CPU model, RAM, oper
 
 | Group | Description | Mechanism Disabled | Configuration Change |
 |-------|-------------|--------------------|----------------------|
-| 1 | Complete | None | Full ACO_v2_3 (Table 1) |
+| 1 | Complete | None | Full ACO_v2_4 (Table 1) |
 | A | No pseudo-random | ACS pseudo-random rule (§4.3.3) | `enablePseudoRandom = 0` (pure roulette) |
 | B | No VND local search | VND (§4.3.4) | VND calls removed; ants use construction-only tours |
-| C | No S-curve scheduling | Progressive LS scheduling (§4.3.5) | Fixed `optRatio = 0.3` (constant 30% LS) |
+| C | No S-curve scheduling | Progressive LS scheduling (§4.3.5) | Fixed `optRatio = 0.4` (constant 40% LS) |
 | D | No candidate list | Candidate list acceleration (§4.3.4) | `kCand = N` (full O$(K^2)$ VND, no pruning) |
-| E | No MMAS bounds | MMAS pheromone limits (§4.3.2) | Pheromone bounds disabled (v2_3AS variant) |
+| E | No MMAS bounds | MMAS pheromone limits (§4.3.2) | Pheromone bounds disabled |
 
 **Procedure.** Each group is run for [TO FILL: e.g., 30] independent trials with different random seeds. The performance of each group is compared to Group 1 (complete) in terms of solution quality, convergence speed, and computation time.
 
@@ -173,7 +172,7 @@ All experiments were conducted on a computer with [TO FILL: CPU model, RAM, oper
 
 *[Figure 15: Obstacle-rich scenario map. Obstacles shown in black. Start point marked with a green circle, goal point with a red square, and the K target points numbered in order. The planned optimal tour is shown as a colored polyline with directional arrows indicating the visit sequence.]*
 
-**Procedure.** The full pipeline is executed: (1) the cost matrix is constructed by running AStar_v1 on all $\mathcal{O}(N^2)$ point pairs with `enableSimplify = true`; (2) ACO_v2_3 solves for the optimal visit order; (3) each segment path is simplified and smoothed via the post-processing pipeline (Section 4.2). The total computation time is broken down by stage.
+**Procedure.** The full pipeline is executed: (1) the cost matrix is constructed by running AStar_v1 on all $\mathcal{O}(N^2)$ point pairs with `enableSimplify = true`; (2) ACO_v2_4 solves for the optimal visit order; (3) each segment path is simplified and smoothed via the post-processing pipeline (Section 4.2). The total computation time is broken down by stage.
 
 **Results.** *[Table 8: End-to-end scenario results.]*
 

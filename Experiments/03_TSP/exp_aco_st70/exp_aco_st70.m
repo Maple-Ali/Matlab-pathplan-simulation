@@ -8,7 +8,7 @@ rootDir = fileparts(fileparts(fileparts(fileparts(mfilename('fullpath')))));
 addpath(genpath(rootDir));
 
 % tspSolver = @(costMatrix, nPts) TSP_ACO_v2(costMatrix, nPts);
-tspSolver = @(costMatrix, nPts) TSP_ACO_v2_3(costMatrix, nPts);
+tspSolver = @(costMatrix, nPts) TSP_ACO_v2_4(costMatrix, nPts);
 
 nRuns = 15;
 tspFile  = fullfile(fileparts(mfilename('fullpath')), '..', 'st70.tsp');

@@ -31,7 +31,7 @@ costExt(Vidx, midIdx) = BIG;  costExt(midIdx, Vidx) = BIG;
 
 % 算法参数
 nAnts = 40;
-nIter = 1000;
+nIter = 500;
 alpha = 1.0;
 beta = 2.0;
 rho = 0.25;
@@ -71,6 +71,9 @@ for i = 1:nNodes
         end
     end
 end
+% V 与起点/终点的 0 距离边: 1/0 无意义，用极大值表示"必连"
+eta(Vidx, 1) = BIG;    eta(1, Vidx) = BIG;
+eta(Vidx, nPts) = BIG;  eta(nPts, Vidx) = BIG;
 
 globalBestCost = inf;
 globalBestTour = [];
@@ -82,7 +85,8 @@ for iter = 1:nIter
     for a = 1:nAnts
         tour = zeros(1, nNodes);
         visited = false(1, nNodes);
-        start = randi(nNodes);
+        % 蚂蚁从中间点随机起始（V/起点/终点位置固定，不应作为起始点）
+        start = midIdx(randi(nMid));
         tour(1) = start;
         visited(start) = true;
 
@@ -141,7 +145,7 @@ for iter = 1:nIter
     end
 
     % 精英沉积（全局最优, 跳过 V 边）
-    eliteDeposit = Q / globalBestCost * 0.5;
+    eliteDeposit = Q / globalBestCost * 0.3;
     for k = 1:nNodes
         i = globalBestTour(k);
         j = globalBestTour(mod(k, nNodes) + 1);
