@@ -15,7 +15,7 @@ occGrid = map.getOccupancyGrid();
 
 %% 运行两种参数的 AStar_v1，记录搜索状态
 configs = {
-    struct('alpha', 0.0, 'beta', 0.1, 'label', '\alpha=0.0, \beta=0.1 (Standard A*)');
+    % struct('alpha', 0.0, 'beta', 0.1, 'label', '\alpha=0.0, \beta=0.1 (Standard A*)');
     struct('alpha', 0.3, 'beta', 3.0, 'label', '\alpha=0.3, \beta=3');
 };
 

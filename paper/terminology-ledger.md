@@ -2,7 +2,7 @@
 
 | Canonical term | First-use definition | Variants in source | Decision |
 |---|---|---|---|
-| Adaptive Exponential Weighted Heuristic (AEWH) | — | "自适应指数加权启发式", "adaptive weighted heuristic" | Define as AEWH on first use |
+| Jump Point Search (JPS) | — | "跳点搜索", "JPS" | Define as JPS on first use |
 | Binary Heap Priority Queue | — | "二叉堆优先队列" | Use "binary heap" after first mention |
 | Path Simplification | — | "拐角裁剪", "SimplifyPath", "path pruning", "corner-cutting" | Use "path simplification" |
 | Safety-Distance-Aware Simplification | — | "安全距离检测", "safety margin" | Describe as "safety-distance-aware" |
@@ -29,6 +29,6 @@
 | Ablation study | — | "消融实验" | Use "ablation study" |
 
 ## Key distinctions to maintain:
-- A* uses α, β for adaptive heuristic; ACO uses α (pheromone weight), β (heuristic weight), ρ (evaporation)
+- ACO uses α (pheromone weight), β (heuristic weight), ρ (evaporation); A* uses standard Euclidean heuristic with JPS
 - Use superscript notation to disambiguate: α_A*, β_A* vs α_ACO, β_ACO
 - "Path simplification" ≠ "path smoothing": simplification removes redundant waypoints, smoothing generates continuous curve

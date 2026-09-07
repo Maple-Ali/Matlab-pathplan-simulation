@@ -22,7 +22,7 @@ if nargin < 5
     callback = [];
 end
 if nargin < 6 || isempty(alpha)
-    alpha = 0.1;
+    alpha = 0.3;
 end
 if nargin < 7 || isempty(beta)
     beta = 3.0;

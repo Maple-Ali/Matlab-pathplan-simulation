@@ -2,34 +2,42 @@
 
 ## 4.1 Improved A* Global Path Planner
 
-The first layer of our framework computes pairwise obstacle-aware path costs between every pair of points in the visitation set. We adopt A* as the base planner for its optimality guarantee under an admissible heuristic, and introduce two algorithmic improvements: an adaptive exponential weighted heuristic that trades optimality for search speed in a principled, distance-dependent manner, and a tie-breaking strategy that biases expansion toward the goal direction. The open set is implemented as a binary min-heap, reducing the per-iteration extraction cost from $\mathcal{O}(m)$ to $\mathcal{O}(\log m)$ where $m$ is the open-set size; this is a standard data-structure optimization and is not discussed further.
+The first layer of our framework computes pairwise obstacle-aware path costs between every pair of points in the visitation set. We adopt A* as the base planner and introduce Jump Point Search (JPS) as the core algorithmic improvement. JPS exploits the symmetry inherent in uniform-cost grid maps to prune large portions of the search tree, expanding only "jump points"—nodes where the optimal path changes direction or encounters a forced choice—while skipping all intermediate nodes that can be reached by a straight-line traversal. The open set is implemented as a binary min-heap with a tie-breaking strategy that biases expansion toward the goal direction.
 
-### 4.1.1 Adaptive Exponential Weighted Heuristic
+### 4.1.1 Jump Point Search
 
-**Motivation.** Standard A* uses the evaluation function $f(n) = g(n) + h(n)$, where $g(n)$ is the accumulated path cost from the start node to node $n$, and $h(n)$ is a heuristic estimate of the remaining cost from $n$ to the goal. When $h(n)$ is admissible (i.e., never overestimates the true cost), A* guarantees optimality. Weighted A* introduces a constant inflation factor $\varepsilon > 1$ such that $f(n) = g(n) + \varepsilon \cdot h(n)$, trading optimality for speed by making the search greedier. However, a constant weight is coarse-grained: when the agent is far from the goal, aggressive weighting helps escape large open regions quickly; when the agent nears the goal, precision becomes more important than speed and the weight should approach unity. No single constant value optimally serves both regimes.
+**Motivation.** Standard A* expands every node in the open set uniformly, examining all 8 neighbors at each expansion step. On uniform-cost grid maps, many of these expansions are redundant: when moving in a straight line (horizontally, vertically, or diagonally) through open space, every intermediate node along the line leads to the same successor. Standard A* expands each of these intermediate nodes individually, wasting computation. Jump Point Search identifies this symmetry and "jumps" along straight lines until it encounters a point where the path must make a decision—either because an obstacle creates a forced neighbor, or because the goal is reached.
 
-**Mechanism.** We propose an Adaptive Exponential Weighted Heuristic (AEWH) whose weight decays smoothly with the remaining distance to the goal:
+**Mechanism.** The JPS algorithm modifies the standard A* expansion step. Instead of examining all 8 neighbors, each node is expanded by examining a set of pruned search directions, then "jumping" along each direction until a jump point is found.
 
-$$w(d) = 1 + \alpha \cdot \exp\left(-\beta \cdot \left(1 - \frac{d}{d_0}\right)\right) \quad (1)$$
+**Neighbor pruning.** When expanding a node $(r, c)$ that was reached from its parent via direction $(p_{dr}, p_{dc})$, the set of successor directions is pruned based on the parent direction:
 
-where $d = h(n) = \sqrt{(r_n - r_{\text{goal}})^2 + (c_n - c_{\text{goal}})^2}$ is the Euclidean distance from the current node $n$ to the goal, and $d_0 = \sqrt{(r_{\text{start}} - r_{\text{goal}})^2 + (c_{\text{start}} - c_{\text{goal}})^2}$ is the start-to-goal distance, serving as the normalization baseline. The parameters $\alpha$ (default $0.3$) and $\beta$ (default $3.0$) control the maximum extra weight and the decay rate, respectively.
+- **Start node** ($p_{dr} = 0, p_{dc} = 0$): all 8 directions are considered.
+- **Straight move** (one of $p_{dr}$ or $p_{dc}$ is zero): the natural successor is the continuation direction. Additionally, if an obstacle blocks a lateral cell and the diagonal cell beyond it is free, that diagonal becomes a forced direction.
+- **Diagonal move** (both $p_{dr}$ and $p_{dc}$ nonzero): three natural successors (the diagonal continuation and its two straight-line components). Additionally, if an obstacle blocks the lateral cell behind the diagonal, the reflected diagonal becomes forced.
 
-The evaluation function becomes:
+The pruning rules ensure that only directions that could potentially lead to an optimal path are explored, while all others are provably dominated.
 
-$$f(n) = g(n) + w(d) \cdot h(n) \quad (2)$$
+**Jump function.** For each pruned direction $(dr, dc)$, the `jump` function advances from the current node one step at a time along that direction:
 
-The weight function exhibits dual-regime behavior:
+1. If the next cell is an obstacle or out of bounds, return empty (dead end).
+2. If the next cell is the goal, return it as a jump point.
+3. If the next cell has a forced neighbor (i.e., an obstacle creates a forced directional choice), return it as a jump point.
+4. For diagonal moves, recursively check the two component straight-line directions for jump points. If either produces a jump point, return the current cell as a jump point.
 
-- **Far from goal** ($d \approx d_0$): the exponential term evaluates to $e^0 = 1$, giving $w \approx 1 + \alpha = 1.3$. The search is maximally greedy, rapidly expanding toward the goal along promising directions.
-- **Near goal** ($d \to 0$): the exponential term approaches $e^{-\beta} \approx 0.05$, giving $w \to 1 + 0.3 \times 0.05 \approx 1.015$, essentially recovering the standard admissible heuristic and preserving near-optimality in the critical final approach.
+If none of these conditions are met, the jump continues in the same direction. This process terminates in $\mathcal{O}(n)$ steps per jump (bounded by the map size), and typically finds a jump point in far fewer steps.
 
-The exponential form in Eq. (1) has two desirable properties. First, the rate of weight decay is proportional to the distance itself, making the transition from greedy to precise self-adapting without explicit switching logic. Second, the use of the normalized distance $(1 - d/d_0)$ makes the function scale-invariant: the same $\alpha$ and $\beta$ values apply across maps of different physical dimensions.
+**Path cost computation.** The cost of a jump from $(r, c)$ to $(r_j, c_j)$ along direction $(dr, dc)$ is accumulated step-by-step: each straight step costs $1$ and each diagonal step costs $\sqrt{2}$. This preserves the exact grid movement cost and ensures path optimality.
 
-*[Figure 1: Weight function $w(d)$ plotted against normalized distance $d/d_0$, showing the smooth decay from $1+\alpha$ at $d/d_0 = 1$ to approximately $1$ at $d/d_0 \to 0$.]*
+**Path reconstruction.** Because JPS skips intermediate nodes, the parent pointers record only the jump-point chain. The full grid path is reconstructed by linear interpolation between consecutive jump points: for each pair of jump points, the path is filled in by stepping one cell at a time along the sign of the direction vector. A post-processing step corrects diagonal corner-crossing artifacts: when a diagonal step would cut through the corner of an obstacle, the path is rerouted through the adjacent free cell to form an L-shaped detour.
+
+**Fallback.** In rare cases where JPS fails to find a path (e.g., in narrow maze-like environments where the symmetry assumptions break down), the algorithm falls back to standard A* with a binary heap to guarantee a solution is found when one exists.
+
+**Complexity.** On open grid maps, JPS expands significantly fewer nodes than standard A* because it skips all intermediate nodes along straight-line traversals. In the best case (a clear straight line from start to goal), JPS finds the path in a single jump. In the worst case (a maze with no straight-line symmetry), JPS degrades to standard A* performance. The binary heap operations remain $\mathcal{O}(\log m)$ per expansion, where $m$ is the open-set size.
 
 ### 4.1.2 Tie-Breaking Strategy
 
-**Motivation.** When multiple nodes in the open set share identical $f$-values, the standard A* selection order is determined by implementation-specific iteration order, which is essentially arbitrary. However, among nodes with equal $f$, those with smaller $h$ have already incurred greater actual cost $g = f - h$ and lie closer to the goal. Preferring these nodes biases the search toward the goal direction without affecting the optimality guarantee.
+**Motivation.** When multiple jump points in the open set share identical $f$-values, the standard A* selection order is determined by implementation-specific iteration order, which is essentially arbitrary. However, among nodes with equal $f$, those with smaller $h$ have already incurred greater actual cost $g = f - h$ and lie closer to the goal. Preferring these nodes biases the search toward the goal direction without affecting the optimality guarantee.
 
 **Mechanism.** When two nodes $n_1$ and $n_2$ share the same $f$-value, the node with a smaller $h$-value is expanded preferentially. The comparison rule for heap ordering is defined as:
 
@@ -38,37 +46,54 @@ $$\text{compare}(n_1, n_2) = \begin{cases}
     n_2, & f(n_1) > f(n_2) \\
     n_1, & f(n_1) = f(n_2) \land h(n_1) < h(n_2) \\
     n_2, & f(n_1) = f(n_2) \land h(n_1) > h(n_2)
-\end{cases} \quad (3)$$
+\end{cases} \quad (1)$$
 
 The comparison is embedded directly in the binary heap's bubble-up and bubble-down operations.
 
-**Physical meaning.** From the evaluation function $f(n) = g(n) + w \cdot h(n)$, when two nodes have identical $f$-values, a larger $g$ implies a smaller $h$. A larger $g$ means the node lies farther from the start, while a smaller $h$ means it is closer to the goal. Preferring such nodes biases the search toward the goal direction, reducing futile exploration in regions far from the goal. Since $h$ is already computed at node expansion time, this tie-breaking incurs no additional computational overhead.
+**Physical meaning.** From the evaluation function $f(n) = g(n) + h(n)$, when two nodes have identical $f$-values, a larger $g$ implies a smaller $h$. A larger $g$ means the node lies farther from the start, while a smaller $h$ means it is closer to the goal. Preferring such nodes biases the search toward the goal direction, reducing futile exploration in regions far from the goal. Since $h$ is already computed at node expansion time, this tie-breaking incurs no additional computational overhead.
 
 ---
 
 ## 4.2 Path Post-Processing Pipeline
 
-The raw grid path produced by A* (or any grid-based planner) contains two artifacts inherited from grid discretization: (i) redundant colinear waypoints and staircase-shaped zigzag segments that inflate the waypoint count without reducing path length, and (ii) piecewise-linear segments connected by sharp turns that are kinematically inefficient for physical robots. We address these with a two-stage post-processing pipeline: safety-distance-aware path simplification followed by arc-length parameterized cubic spline smoothing.
+The raw grid path produced by the global planner contains two artifacts inherited from grid discretization: (i) redundant colinear waypoints and staircase-shaped zigzag segments that inflate the waypoint count without reducing path length, and (ii) piecewise-linear segments connected by sharp turns that are kinematically inefficient for physical robots. We address these with a two-stage post-processing pipeline: safety-distance-aware path simplification followed by arc-length parameterized cubic spline smoothing.
 
 ### 4.2.1 Safety-Distance-Aware Path Simplification
 
-**Motivation.** Grid-constrained A* paths contain intermediate waypoints at every grid cell transition. Many of these waypoints are colinear with their neighbors and can be removed without altering the geometric trace of the path. More importantly, corridors and open areas produce staircase patterns—sequences of orthogonal segments that a single straight line could replace, potentially shortening the effective path. However, naive line-of-sight pruning that does not consult the obstacle map risks connecting two waypoints through an obstacle corner, violating the collision-free guarantee. A robust simplification must verify obstacle clearance for every pruned segment.
+**Motivation.** Grid-constrained paths contain intermediate waypoints at every grid cell transition. Many of these waypoints are colinear with their neighbors and can be removed without altering the geometric trace of the path. More importantly, corridors and open areas produce staircase patterns—sequences of orthogonal segments that a single straight line could replace, potentially shortening the effective path. However, naive line-of-sight pruning that does not consult the obstacle map risks connecting two waypoints through an obstacle corner, violating the collision-free guarantee. A robust simplification must verify obstacle clearance for every pruned segment.
 
-**Mechanism.** The simplification algorithm follows a greedy back-to-front line-of-sight strategy. From the current anchor waypoint $i$, it scans candidate waypoints $j$ from the path end backward to $i+1$. The first (and therefore farthest) candidate $j$ for which the straight-line segment is collision-free is accepted—its waypoint is appended to the output and becomes the new anchor. This is repeated until the anchor reaches the path end. Because the scan processes candidates in descending order of distance, each accepted jump removes the maximum possible number of intermediate waypoints, producing a minimal waypoint subset of the original path.
+**Mechanism.** The simplification algorithm operates in four steps:
 
-The core of the algorithm is the $\text{IsLineFree}$ check, which verifies that every point along the segment maintains at least a safety margin $d_{\text{safe}}$ from all obstacle cells. For a segment spanning $\ell = \max(|r_1 - r_2|, |c_1 - c_2|)$ grid units, we sample $N_s = \max(\lceil 10\ell \rceil, 30)$ equally spaced points. At each sample point $\mathbf{p} = (r, c)$ in continuous coordinates, all grid cells within a search radius of $d_{\max} = \lceil d_{\text{safe}} + 0.5 \rceil$ are examined.
+**Step 1 — Corner extraction.** The raw path is first reduced to its turning points (corners), defined as grid cells where the movement direction changes. For a grid path where each step moves to an adjacent cell, the direction of step $i$ is $(r_{i+1} - r_i, c_{i+1} - c_i)$. A cell $i$ (for $2 \leq i \leq N-1$) is classified as a corner if its incoming direction differs from its outgoing direction:
 
-The key technical detail is the exact point-to-cell-boundary distance calculation, illustrated in Figure 2. A grid cell at $(r_{\text{cell}}, c_{\text{cell}})$ occupies the axis-aligned rectangle $[r_{\text{cell}} - 0.5, r_{\text{cell}} + 0.5] \times [c_{\text{cell}} - 0.5, c_{\text{cell}} + 0.5]$. The distance from a continuous sample point to the boundary of this rectangle is:
+$$(r_i - r_{i-1}, c_i - c_{i-1}) \neq (r_{i+1} - r_i, c_{i+1} - c_i)$$
 
-$$d_x = \max\left(0,\; |r - r_{\text{cell}}| - 0.5\right) \quad (4)$$
+The start and end points are always included. This preprocessing step dramatically reduces the number of candidate waypoints (often by $80$--$90\%$ on grid paths), making the subsequent greedy search far more efficient.
 
-$$d_y = \max\left(0,\; |c - c_{\text{cell}}| - 0.5\right) \quad (5)$$
+**Step 2 — Greedy forward scan.** Starting from the first corner as the current anchor, the algorithm scans all subsequent corners $j$ in forward order and selects the **farthest** corner that is directly reachable (i.e., the line-of-sight segment passes the safety check). The selected corner becomes the new anchor, and the process repeats. This is a forward scan (not the back-to-front scan used in the previous version), which is more natural when operating on the pre-filtered corner set.
 
-$$d(\mathbf{p}, \text{cell}) = \sqrt{d_x^2 + d_y^2} \quad (6)$$
+**Step 3 — Intermediate point exploration.** After the greedy step identifies the farthest directly reachable corner $j$ from the current anchor $i$, the algorithm checks whether any skipped corner $k$ (between $i$ and $j$) can reach an even farther corner $j'$ (beyond $j$) via a direct line-of-sight connection. For each such pair $(k, j')$ that passes the safety check, the algorithm computes and compares two path costs:
 
-The $\max(0, \cdot)$ operator handles the case where the sample point lies within the cell's horizontal or vertical extent along one axis. For example, if the sample point is vertically aligned with the cell but horizontally outside, $d_y = 0$ and the distance reduces to the horizontal penetration $d_x$. If any sample point is within $d_{\text{safe}}$ of any occupied cell, the segment is rejected.
+- **Path A** (greedy): $d(i, j) + d(j, j')$ — reach $j$ first, then continue to $j'$.
+- **Path B** (via intermediate): $d(i, k) + d(k, j')$ — skip $j$ entirely and route through $k$.
 
-*[Figure 2: Illustration of the exact point-to-cell-boundary distance computation. The diagram shows a sample point $\mathbf{p}$ near a grid cell, with $d_x$ and $d_y$ labeled as the horizontal and vertical distances to the cell boundary. The shaded region indicates the safety margin $d_{\text{safe}}$ around the segment.]*
+If Path B is shorter, the intermediate corner $k$ is retained in the output, potentially producing a shorter overall simplified path than pure greedy selection.
+
+**Step 4 — Path comparison and selection.** The algorithm selects the shorter of the two paths (greedy vs. intermediate) and advances the anchor accordingly. This 4-step process produces a simplified path that is at most as long as the pure greedy result, and often shorter in environments where the greedy scan overshoots a useful intermediate waypoint.
+
+**Safety check.** The core $\text{IsLineFree}$ check verifies that every point along a segment maintains at least a safety margin $d_{\text{safe}}$ from all obstacle cells. For a segment spanning $\ell = \max(|r_1 - r_2|, |c_1 - c_2|)$ grid units, we sample $N_s = \max(\lceil 10\ell \rceil, 30)$ equally spaced points. At each sample point $\mathbf{p} = (r, c)$ in continuous coordinates, all grid cells within a search radius of $d_{\max} = \lceil d_{\text{safe}} + 0.5 \rceil$ are examined.
+
+The exact point-to-cell-boundary distance calculation is illustrated in Figure 1. A grid cell at $(r_{\text{cell}}, c_{\text{cell}})$ occupies the axis-aligned rectangle $[r_{\text{cell}} - 0.5, r_{\text{cell}} + 0.5] \times [c_{\text{cell}} - 0.5, c_{\text{cell}} + 0.5]$. The distance from a continuous sample point to the boundary of this rectangle is:
+
+$$d_x = \max\left(0,\; |r - r_{\text{cell}}| - 0.5\right) \quad (2)$$
+
+$$d_y = \max\left(0,\; |c - c_{\text{cell}}| - 0.5\right) \quad (3)$$
+
+$$d(\mathbf{p}, \text{cell}) = \sqrt{d_x^2 + d_y^2} \quad (4)$$
+
+The $\max(0, \cdot)$ operator handles the case where the sample point lies within the cell's horizontal or vertical extent along one axis. If any sample point is within $d_{\text{safe}}$ of any occupied cell, the segment is rejected.
+
+*[Figure 1: Illustration of the exact point-to-cell-boundary distance computation. The diagram shows a sample point $\mathbf{p}$ near a grid cell, with $d_x$ and $d_y$ labeled as the horizontal and vertical distances to the cell boundary. The shaded region indicates the safety margin $d_{\text{safe}}$ around the segment.]*
 
 The pseudocode for the simplification algorithm is given in Algorithm 1.
 
@@ -79,17 +104,20 @@ The pseudocode for the simplification algorithm is given in Algorithm 1.
 \textbf{Input:} $\text{path}[N \times 2]$ original grid path $[r, c]$, $\text{occGrid}$ occupancy grid ($n \times n$), $n$ map size, $d_{\text{safe}}$ safety margin \\
 \textbf{Output:} $\text{simplePath}[M \times 2]$ simplified path ($M \leq N$) \\
 \hline
-1: \quad \textbf{if } $N \leq 2$ \textbf{ then return } $\text{path}$ \\
-2: \quad $\text{simplePath} \gets [\text{path}(1,:)]$; \quad $i \gets 1$ \\
-3: \quad \textbf{while } $i < N$ \textbf{ do} \\
-4: \quad \quad \textbf{for } $j = N$ \textbf{ down to } $i+1$ \textbf{ do} \\
-5: \quad \quad \quad \textbf{if } $\text{IsLineFree}(\text{path}(i,:), \text{path}(j,:), \text{occGrid}, n, d_{\text{safe}})$ \textbf{ then} \\
-6: \quad \quad \quad \quad $\text{simplePath} \gets [\text{simplePath}; \; \text{path}(j,:)]$ \\
-7: \quad \quad \quad \quad $i \gets j$; \quad \textbf{break} \\
-8: \quad \quad \quad \textbf{end if} \\
-9: \quad \quad \textbf{end for} \\
-10: \quad \textbf{end while} \\
-11: \quad \textbf{return } $\text{simplePath}$ \\
+1: \quad $\text{corners} \gets \textsc{ExtractCorners}(\text{path})$ \quad // turning points + endpoints \\
+2: \quad $\text{simplePath} \gets [\text{corners}(1)]$; \quad $i \gets 1$ \\
+3: \quad \textbf{while } $i < |\text{corners}|$ \textbf{ do} \\
+4: \quad \quad // Greedy: farthest directly reachable corner \\
+5: \quad \quad $\text{farthest} \gets \max\{\, j > i : \textsc{IsLineFree}(\text{corners}(i), \text{corners}(j)) \,\}$ \\
+6: \quad \quad // Intermediate exploration: skipped corner $k$ reaching a farther corner $j$ \\
+7: \quad \quad $(k^*, j^*) \gets \arg\max_{i<k<\text{farthest}<j \leq |\text{corners}|} \{\, j : \textsc{IsLineFree}(\text{corners}(k), \text{corners}(j)) \,\}$ \\
+8: \quad \quad \textbf{if } $k^*$ exists and $d(i,k^*) + d(k^*,j^*) < d(i,\text{farthest}) + d(\text{farthest},j^*)$ \textbf{ then} \\
+9: \quad \quad \quad $\text{simplePath} \gets [\text{simplePath};\; \text{corners}(k^*);\; \text{corners}(j^*)]$; \quad $i \gets j^*$ \\
+10: \quad \quad \textbf{else} \\
+11: \quad \quad \quad $\text{simplePath} \gets [\text{simplePath};\; \text{corners}(\text{farthest})]$; \quad $i \gets \text{farthest}$ \\
+12: \quad \quad \textbf{end if} \\
+13: \quad \textbf{end while} \\
+14: \quad \textbf{return } $\text{simplePath}$ \\
 \hline
 
 ---
@@ -127,7 +155,7 @@ The $\text{IsLineFree}$ subroutine (Algorithm 2) implements the dense sampling a
 
 ---
 
-**Role in the framework.** In the TSP cost matrix computation (Section 4.4), an `enableSimplify` flag controls whether pairwise costs derive from raw grid paths or simplified paths. Using simplified-path Euclidean costs produces a cost matrix closer to the true continuous-path length, improving the TSP solver's ability to discriminate between alternative visitation orders. For multi-robot scenarios, $d_{\text{safe}}$ is set to the robot radius plus $0.2$ grid units, tying the safety margin directly to the physical robot footprint.
+**Role in the framework.** In the TSP cost matrix computation (Section 4.4), an `enableSimplify` flag controls whether pairwise costs derive from raw grid paths or simplified paths. Using simplified-path Euclidean costs produces a cost matrix closer to the true continuous-path length, improving the TSP solver's ability to discriminate between alternative visitation orders. The corner extraction step (Step 1) is particularly effective when used with JPS output: JPS produces paths with fewer waypoints than standard A*, so the corner set is already small, and the greedy + intermediate exploration further reduces it to the minimal safe subset.
 
 ### 4.2.2 Arc-Length Parameterized Cubic Spline Smoothing
 
@@ -137,21 +165,19 @@ The $\text{IsLineFree}$ subroutine (Algorithm 2) implements the dense sampling a
 
 **Step 1 — Grid-to-continuous coordinate conversion.** Grid-indexed waypoints $[r, c]$ are mapped to continuous world coordinates by centering each cell at its geometric center:
 
-$$x = c - 0.5, \quad y = r - 0.5 \quad (7)$$
+$$x = c - 0.5, \quad y = r - 0.5 \quad (5)$$
 
-**Step 2 — Sparse segment densification.** Before fitting the spline, we scan the waypoint sequence for consecutive pairs whose Euclidean distance exceeds $2$ units. For each such pair, $\lfloor \text{dist} / 2 \rfloor$ intermediate points are linearly interpolated along the segment. This densification provides the spline with sufficient knots to stay close to the intended polyline, preventing oscillation artifacts without altering the geometric path. The threshold of $2$ grid units is chosen because it corresponds to the maximum segment length over which a cubic spline with not-a-knot end conditions remains well-behaved on grid paths.
+**Step 2 — Sparse segment densification.** Before fitting the spline, we scan the waypoint sequence for consecutive pairs whose Euclidean distance exceeds $2$ units. For each such pair, $\lfloor \text{dist} / 2 \rfloor$ intermediate points are linearly interpolated along the segment. This densification provides the spline with sufficient knots to stay close to the intended polyline, preventing oscillation artifacts without altering the geometric path.
 
 **Step 3 — Arc-length parameterized cubic spline.** The cumulative chordal distance along the (densified) waypoint sequence defines a monotonic parameter:
 
-$$t_1 = 0, \quad t_k = \sum_{i=2}^{k} \sqrt{(x_i - x_{i-1})^2 + (y_i - y_{i-1})^2} \quad (8)$$
+$$t_1 = 0, \quad t_k = \sum_{i=2}^{k} \sqrt{(x_i - x_{i-1})^2 + (y_i - y_{i-1})^2} \quad (6)$$
 
-Duplicate parameter values arising from coincident or near-coincident waypoints are removed via the `unique` operation to ensure strict monotonicity. If fewer than $3$ unique parameter values remain, the path is returned without spline fitting (linear interpolation serves as the fallback).
+Duplicate parameter values are removed via the `unique` operation to ensure strict monotonicity. A cubic spline with not-a-knot end conditions is then fitted separately to the $x$ and $y$ sequences:
 
-A cubic spline with not-a-knot end conditions is then fitted separately to the $x$ and $y$ sequences as functions of $t$:
+$$\hat{x}(t) = \text{spline}(t, \{x_i\}, t_{\text{interp}}), \quad \hat{y}(t) = \text{spline}(t, \{y_i\}, t_{\text{interp}}) \quad (7)$$
 
-$$\hat{x}(t) = \text{spline}(t, \{x_i\}, t_{\text{interp}}), \quad \hat{y}(t) = \text{spline}(t, \{y_i\}, t_{\text{interp}}) \quad (9)$$
-
-where $t_{\text{interp}}$ is a uniformly spaced array with density $\rho = 10$ points per original segment, i.e., $\text{length}(t_{\text{interp}}) = (K - 1) \cdot \rho + 1$ for $K$ unique waypoints. The arc-length parameterization ensures that the spline evolves at an approximately uniform spatial rate along the path, producing a physically meaningful reference trajectory where equal increments in $t$ correspond to equal distances along the path.
+where $t_{\text{interp}}$ is a uniformly spaced array with density $\rho = 10$ points per original segment. The arc-length parameterization ensures that the spline evolves at an approximately uniform spatial rate along the path.
 
 ---
 
@@ -189,16 +215,16 @@ where $t_{\text{interp}}$ is a uniformly spaced array with density $\rho = 10$ p
 
 ---
 
-**Role in the framework.** Smoothing is applied as the final stage of the path-processing pipeline, operating on the already-safe simplified polyline (or on the raw A* path when simplification is disabled). The resulting continuous trajectory serves directly as the reference path for local planners during robot execution. Since smoothing is a purely geometric operation that does not re-check obstacle clearance, the collision-free guarantee is inherited entirely from the simplification stage that precedes it. This separation of concerns—simplification handles safety, smoothing handles kinematics—keeps each stage focused and verifiable independently.
+**Role in the framework.** Smoothing is applied as the final stage of the path-processing pipeline, operating on the already-safe simplified polyline. The resulting continuous trajectory serves directly as the reference path for local planners during robot execution. Since smoothing is a purely geometric operation that does not re-check obstacle clearance, the collision-free guarantee is inherited entirely from the simplification stage that precedes it.
 
 ### 4.2.3 Pipeline Integration
 
 The complete path-processing pipeline follows a fixed order:
 
-1. **Global planning**: A* (or alternative planner) produces a raw grid path.
-2. **Simplification** (optional, enabled by default for TSP cost computation): reduces waypoints while preserving obstacle clearance with safety margin $d_{\text{safe}}$.
+1. **Global planning**: A* with JPS produces a raw grid path (or standard A* as fallback).
+2. **Simplification** (optional, enabled by default for TSP cost computation): corner extraction → greedy + intermediate exploration → minimal safe waypoint subset.
 3. **Smoothing** (optional): produces a $C^2$-continuous trajectory in continuous world coordinates.
 
-*[Figure 3: Three-panel comparison showing the same path through pipeline stages. Panel (a): raw A* grid path with staircase artifacts. Panel (b): after simplification—redundant waypoints removed, line-of-sight connections visible. Panel (c): after smoothing—the final continuous $C^2$ curve ready for robot execution.]*
+*[Figure 2: Three-panel comparison showing the same path through pipeline stages. Panel (a): raw JPS grid path. Panel (b): after simplification—corners extracted, redundant waypoints removed. Panel (c): after smoothing—the final continuous $C^2$ curve.]*
 
-The ordering is deliberate and non-interchangeable: simplification must precede smoothing because it operates in grid space where the occupancy grid is defined, establishing the safety guarantee. Smoothing operates in continuous coordinates on the already-verified safe polyline. Reversing this order would require expensive continuous-space collision checking, as the spline might deviate from the safe polyline without additional constraints.
+The ordering is deliberate and non-interchangeable: simplification must precede smoothing because it operates in grid space where the occupancy grid is defined, establishing the safety guarantee. Smoothing operates in continuous coordinates on the already-verified safe polyline.

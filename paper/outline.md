@@ -36,10 +36,10 @@
    4.4 Collaborative Optimization Framework
 5. Experiments
    5.1 Experimental Setup
-   5.2 Global Path Planning Comparison
-   5.3 TSP Solver Comparison on TSPLIB Benchmarks
-   5.4 Ablation Study of ACO Components
-   5.5 End-to-End Validation on Obstacle-Rich Scenarios
+   5.2 Parameter Sensitivity Analysis
+   5.3 Ablation Study of ACO Components
+   5.4 Multi-Point Traversal Comparison with Different TSP Solvers
+   5.5 Global Path Planning Comparison
 6. Conclusion
 ```
 
@@ -55,8 +55,8 @@
 |------|-----|---------|
 | 1 | Context | Real-world multi-point traversal applications (autonomous shuttles, logistics, inspection robots). Fundamental challenge: robot must (a) find collision-free paths between points AND (b) decide the optimal visitation order. |
 | 2 | Gap | Traditional TSP assumes Euclidean/straight-line distances — no obstacle model. Pure path planning (A*, RRT) handles obstacles but solves only single-pair routing. No existing framework unifies both for general grid-map obstacle environments. |
-| 3 | Approach summary | We propose a two-layer framework: (i) an improved A* global planner with adaptive exponential heuristic + path simplification/smoothing pipeline encodes obstacle constraints into pairwise costs; (ii) an improved ACO solver integrating MMAS, candidate-list-accelerated VND, and S-curve progressive local search optimizes the open-TSP visitation order via a virtual node method that converts the open TSP into a closed TSP. |
-| 4 | Contributions | Three-layer contributions: (1) Problem-level: obstacle-aware unified framework; (2) Collaboration-level: path-simplification-aware cost matrix for accurate TSP costing; (3) Component-level: AEWH for A*, virtual node method + CL-VND + S-curve for ACO. |
+| 3 | Approach summary | We propose a two-layer framework: (i) an improved A* global planner based on Jump Point Search + path simplification/smoothing pipeline encodes obstacle constraints into pairwise costs; (ii) an improved ACO solver integrating MMAS, candidate-list-accelerated VND, and S-curve progressive local search optimizes the open-TSP visitation order via a virtual node method that converts the open TSP into a closed TSP. |
+| 4 | Contributions | Three-layer contributions: (1) Problem-level: obstacle-aware unified framework; (2) Collaboration-level: path-simplification-aware cost matrix for accurate TSP costing; (3) Component-level: JPS for A*, virtual node method + CL-VND + S-curve for ACO. |
 | 5 | Paper structure | Roadmap of sections 2–6. |
 
 ---
@@ -122,7 +122,7 @@
 - Design: w(d) = 1 + α · exp(−β · (1 − d/d₀)), f(n) = g(n) + w(d) · h(n)
   - d = Euclidean distance from node n to goal
   - d₀ = start-to-goal distance (normalization)
-  - α = 0.3 (max extra weight), β = 3.0 (decay rate)
+  - JPS: jump point pruning, forced neighbor detection, diagonal corner correction
 - Behavior: Far from goal → w ≈ 1+α (greedy exploration); Near goal → w → 1 (precise A*)
 - [FORMULA: w(d) function and f(n) evaluation]
 - [FIGURE: Weight function curve — w vs. normalized distance d/d₀]
@@ -220,65 +220,65 @@
 ### 5. Experiments
 
 **5.1 Experimental Setup**
-- Hardware: [TO FILL — CPU, RAM, MATLAB version]
-- Common parameters: [TABLE — AStar_v1 params, SimplifyPath params, SmoothPath params, ACO_v2_4 params]
-- Metrics: path length, expanded nodes, computation time, TSP cost, gap-to-optimal(%), iteration count
+- Hardware: Intel Core Ultra 5 125H CPU, 16 GB RAM, MATLAB R2025b
+- Maps: Map 1 (Map1.mat), Map 2 (Map2_kong.mat), Map 3 (kroB100 dataset)
+- Repetition: A* comparison 10 runs/map; TSP experiments 40 runs/map
+- Common parameters: [TABLE 1 — default parameters]
+- Metrics: path length, expanded nodes, computation time, optimal/median/mean cost, success rate, std
 
 **5.2 Global Path Planning Comparison**
-- Purpose: Validate AStar_v1 + post-processing superiority
-- Map 1 (Efficiency test): [DESCRIPTION — open area with sparse obstacles, designed to benchmark search efficiency]
-  - Baselines: Standard A*, Dijkstra, RRT, AStar_v1
-  - [TABLE: expanded nodes, path length, runtime]
-  - [FIGURE: path overlay comparison]
-- Map 2 (Simplification/Smoothing test): [DESCRIPTION — corridor with turns, designed to show zigzag reduction]
-  - Stages: Raw A* → +SimplifyPath → +SmoothPath
-  - [TABLE: waypoint count, path length, smoothness metric]
-  - [FIGURE: three-panel pipeline comparison]
+- Purpose: Validate AStar_v3_1 (JPS) + post-processing superiority
+- Baselines: AStar_v0 (traditional A*), Dijkstra, RRT
+- [TABLE 2: path length, time, expanded nodes across 3 maps]
+- [FIGURE 1: paths of 4 algorithms on 3 maps (4 panels a/b/c/d)]
+- [FIGURE 2: path length comparison line chart]
+- [FIGURE 3: time comparison line chart]
 
-**5.3 TSP Solver Comparison on TSPLIB Benchmarks**
-- Purpose: Validate ACO_v2_4 against state-of-the-practice
-- Dataset: TSPLIB kroA150 (150 cities, optimal = 26524)
-- Baselines: Standard ACO, GA, SA
-- N runs per algorithm: [TO FILL — suggested 30]
-- [TABLE: Best/Worst/Avg/Std/Median, gap%, avg runtime]
-- [FIGURE: convergence — cost vs. iteration, median + 95% CI]
-- [FIGURE: convergence — cost vs. time, median + 95% CI]
-- [FIGURE: cost distribution — histogram + boxplot]
+**5.3 Parameter Sensitivity Analysis**
+- Purpose: Analyze sensitivity of 5 ACO hyperparameters
+- Parameters: nAnts, q0, y_max (optRatio_end), r_elite (optEliteRatio), k (kCand)
+- 5 levels each, 25 configurations × 3 maps
+- [TABLE 3: parameter levels]
+- [TABLE 4: representative results (default + most degraded)]
+- [FIGURE 4: cost comparison line chart]
+- [FIGURE 5: time comparison line chart]
+- [FIGURE 6: paths under default params]
 
 **5.4 Ablation Study of ACO Components**
 - Purpose: Isolate each component's contribution
-- Dataset: kroA150 (same as 5.3)
 - 6 groups:
 
 | Group | Description | Disabled Component |
 |-------|-------------|-------------------|
-| Full | Complete ACO_v2_4 | None |
-| A | No pseudo-random | enablePseudoRandom = 0 (pure roulette) |
-| B | No VND | VND removed (pure ACO construction) |
-| C | No S-curve | Fixed optRatio = 0.3 (no progressive scheduling) |
-| D | No candidate list | kCand = inf (full O(n²) VND) |
-| E | No MMAS bounds | Pheromone unconstrained |
+| 1 | Complete | None |
+| 2 | No pseudo-random | ACS pseudo-random rule |
+| 3 | No VND | VND local search |
+| 4 | No S-curve | Progressive LS scheduling |
+| 5 | No candidate list | Candidate list acceleration |
+| 6 | No MMAS | MMAS pheromone bounds |
 
-- [TABLE: per-group Best/Worst/Avg/Std, iterations, time]
-- [FIGURE: overlaid convergence curves (6 groups)]
-- [FIGURE: bar chart of final cost with error bars]
-- [TABLE: pairwise statistical test (Wilcoxon) vs. Full]
+- [TABLE 5: per-group results across 3 maps]
+- [FIGURE 7: time-cost convergence curves]
+- [FIGURE 8: cost distribution boxplot]
+- [FIGURE 9: mean cost bar chart]
+- [FIGURE 10: mean time bar chart]
 
-**5.5 End-to-End Validation on Obstacle-Rich Scenarios**
-- Purpose: Demonstrate full system on realistic obstacle maps
-- Scenario: [TO DESIGN — self-built map, K target points, distinct start/end]
-  - [DESCRIPTION: Map size, obstacle layout mimicking buildings/walls, application narrative]
-- Method: Full pipeline (AStar_v1 + SimplifyPath-cost + ACO_v2_4 + SmoothPath)
-- [TABLE: ordered visitation sequence, per-segment path lengths, total cost]
-- [FIGURE: Full map — obstacles, numbered targets, visit order arrows, smoothed paths]
-- [TABLE: computation time breakdown — cost matrix vs. TSP solve vs. post-processing]
+**5.5 Multi-Point Traversal Comparison with Different TSP Solvers**
+- Purpose: Compare MMAS-VND-CL vs. ACO/GA/SA combined with improved A*
+- [TABLE 6: solver parameters]
+- [TABLE 7: comparison results across 3 maps]
+- [FIGURE 11: time-cost convergence curves]
+- [FIGURE 12: cost distribution boxplot]
+- [FIGURE 13: mean cost bar chart]
+- [FIGURE 14: mean time bar chart]
+- [FIGURE 15: optimal-cost paths]
 
 ---
 
 ### 6. Conclusion
 
 - Summary of three-layer framework and key mechanisms
-- Recap of experimental findings: (1) AEWH reduces expanded nodes; (2) safety-aware simplification + spline smoothing produces safe, smooth paths; (3) CL-VND + S-curve + MMAS synergy achieves near-optimal TSP solutions efficiently
+- Recap of experimental findings: (1) JPS reduces expanded nodes by exploiting grid symmetry; (2) safety-aware simplification with corner extraction + spline smoothing produces safe, smooth paths; (3) CL-VND + S-curve + MMAS synergy achieves near-optimal TSP solutions efficiently
 - Practical implications for real-world multi-point navigation
 - Limitations: static known obstacles, 2D grid, fixed candidate-list size
 - Future work: dynamic obstacles + online replanning, multi-robot extension, learning-based parameter adaptation
@@ -307,7 +307,7 @@
 | Fig-03 | Three-stage path pipeline (raw → simplified → smoothed) | 4.2.2 |
 | Fig-04 | S-curve optRatio plot | 4.3.5 |
 | Fig-05 | System architecture overview | 4.4 |
-| Fig-06 | Path comparison on Map 1 (A*/Dijkstra/RRT/AStar_v1) | 5.2 |
+| Fig-06 | Path comparison on Map 1 (A*/Dijkstra/RRT/AStar_v3_1) | 5.2 |
 | Fig-07 | Three-panel pipeline comparison on Map 2 | 5.2 |
 | Fig-08 | TSP convergence curves (cost vs. iteration) | 5.3 |
 | Fig-09 | TSP convergence curves (cost vs. time) | 5.3 |
@@ -327,10 +327,6 @@
 ## User Action Items
 
 - [ ] Review and approve this outline
-- [ ] Prepare Map 1 (efficiency comparison) for Section 5.2
-- [ ] Prepare Map 2 (simplification/smoothing validation) for Section 5.2
-- [ ] Run kroA150 comparison experiments (ACO_v2_4 vs baseline ACO/GA/SA, N≥30 runs)
-- [ ] Run all 6 ablation groups on kroA150
-- [ ] Design and build obstacle-rich end-to-end scenario map for Section 5.5
-- [ ] Provide hardware/software specs for Section 5.1
-- [ ] Confirm parameter values for the full parameters table
+- [x] Experiments completed (A* comparison, sensitivity analysis, ablation, multi-point traversal comparison) — data recorded in `实验.txt`
+- [ ] Insert the 15 experiment figures at their marked locations in Section 5
+- [ ] Review the updated Section 5 with real experimental data

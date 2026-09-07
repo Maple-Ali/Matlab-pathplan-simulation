@@ -1,11 +1,16 @@
 function simplePath = SimplifyPath(path, occGrid, n, safetyMargin)
-%SIMPLIFYPATH 拐角裁剪路径简化（带安全距离检测）
+%SIMPLIFYPATH 路径简化（拐点提取 + 贪心 + 中间点探索优化）
 %   simplePath = SimplifyPath(path, occGrid, n, safetyMargin)
 %   path: N×2 [row, col] 原始路径
 %   occGrid: 占用栅格矩阵
 %   n: 地图尺寸
-%   safetyMargin: 可选，路径与障碍物栅格的最小安全距离（栅格单位），默认 0.4
-%                 线段上任意一点到障碍物栅格边界的距离不得小于此值
+%   safetyMargin: 可选，路径与障碍物栅格的最小安全距离（栅格单位），默认 0.3
+%
+%   算法流程：
+%     Step 1: 提取拐点（方向改变处），减少路径点数
+%     Step 2: 贪心——从当前点找最远可达节点
+%     Step 3: 中间点探索——检查被跳过的节点能否连接更远的节点
+%     Step 4: 路径对比——保留更短的路径方案
 
 if nargin < 4
     safetyMargin = 0.3;
@@ -16,18 +21,93 @@ if size(path, 1) <= 2
     return;
 end
 
-simplePath = path(1, :);
+% Step 1: 提取拐点（方向改变处）+ 起终点
+corners = extractCorners(path);
+if size(corners, 1) <= 2
+    simplePath = corners;
+    return;
+end
+
+% Step 2-4: 贪心 + 中间点探索优化
+simplePath = corners(1, :);
 i = 1;
 
-while i < size(path, 1)
-    for j = size(path, 1):-1:(i + 1)
-        if isLineFree(path(i, :), path(j, :), occGrid, n, safetyMargin)
-            simplePath(end + 1, :) = path(j, :);
-            i = j;
-            break;
+while i < size(corners, 1)
+    % Step 2: 从当前点找最远可达节点
+    farthest = i;
+    for j = (i + 1):size(corners, 1)
+        if isLineFree(corners(i, :), corners(j, :), occGrid, n, safetyMargin)
+            farthest = j;
         end
     end
+
+    % 到达终点
+    if farthest == size(corners, 1)
+        simplePath(end + 1, :) = corners(end, :); %#ok<AGROW>
+        break;
+    end
+
+    % 无法前进（不应出现）
+    if farthest == i
+        simplePath(end + 1, :) = corners(i + 1, :); %#ok<AGROW>
+        i = i + 1;
+        continue;
+    end
+
+    % Step 3: 中间点探索——检查被跳过的节点能否连接更远
+    bestMid = 0;
+    bestFarMid = 0;
+    for k = (i + 1):(farthest - 1)
+        for j = (farthest + 1):size(corners, 1)
+            if isLineFree(corners(k, :), corners(j, :), occGrid, n, safetyMargin)
+                if j > bestFarMid
+                    bestMid = k;
+                    bestFarMid = j;
+                end
+            end
+        end
+    end
+
+    % Step 4: 对比路径代价，选择更优方案
+    if bestMid > 0 && bestFarMid > farthest
+        % 路径 A: cur → farthest → farMid（贪心 + 直连）
+        dA = norm(corners(i, :) - corners(farthest, :)) + ...
+             norm(corners(farthest, :) - corners(bestFarMid, :));
+        % 路径 B: cur → mid → farMid（经过中间点）
+        dB = norm(corners(i, :) - corners(bestMid, :)) + ...
+             norm(corners(bestMid, :) - corners(bestFarMid, :));
+
+        if dB < dA
+            % 保留中间点
+            simplePath(end + 1, :) = corners(bestMid, :); %#ok<AGROW>
+            simplePath(end + 1, :) = corners(bestFarMid, :); %#ok<AGROW>
+            i = bestFarMid;
+        else
+            simplePath(end + 1, :) = corners(farthest, :); %#ok<AGROW>
+            i = farthest;
+        end
+    else
+        simplePath(end + 1, :) = corners(farthest, :); %#ok<AGROW>
+        i = farthest;
+    end
 end
+end
+
+function corners = extractCorners(path)
+%EXTRACTCORNERS 从路径中提取拐点（方向改变处）+ 起终点
+%   栅格路径每步移动方向为8邻域之一，当连续两步方向不同时即为拐点
+    corners = path(1, :);
+    for i = 2:(size(path, 1) - 1)
+        dr1 = path(i, 1) - path(i-1, 1);
+        dc1 = path(i, 2) - path(i-1, 2);
+        dr2 = path(i+1, 1) - path(i, 1);
+        dc2 = path(i+1, 2) - path(i, 2);
+        % 方向改变（包括直线→对角、对角→直线、对角→不同对角）
+        if dr1 ~= dr2 || dc1 ~= dc2
+            corners(end + 1, :) = path(i, :); %#ok<AGROW>
+        end
+    end
+    corners(end + 1, :) = path(end, :);
 end
 
 function free = isLineFree(p1, p2, occGrid, n, safetyMargin)

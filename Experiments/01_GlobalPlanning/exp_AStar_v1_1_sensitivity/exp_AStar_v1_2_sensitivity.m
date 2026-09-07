@@ -1,8 +1,14 @@
-%% exp_AStar_v1_1_sensitivity — AStar_v1_1 障碍物距离自适应权重 alpha/d_ref 参数敏感性分析
+%% exp_AStar_v1_2_sensitivity — AStar_v1_2 障碍物距离自适应权重 alpha/d_ref 参数敏感性分析
 %  地图: Map1, Map2_kong, 迷宫
 %  alpha: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8] — 最大额外权重
 %  d_ref: [0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.15] — 障碍物距离阈值(对角距离百分比)
 %  共 3 地图 x 8 x 7 = 168 组实验
+%
+%  路径后处理（可选）:
+%    enableSimplify — 启用 SimplifyPath 拐角裁剪
+%    enableSmooth   — 启用 SmoothPath 样条平滑（需先 SimplifyPath）
+%    两者均启用时: 原始路径 → SimplifyPath → SmoothPath
+%    热力图使用处理后路径代价，输出同时显示原始代价与处理后代价
 %
 %  输出:
 %    results/ — .mat 数据文件 + .txt 日志
@@ -13,12 +19,18 @@ rootDir = fileparts(fileparts(fileparts(mfilename('fullpath'))));
 addpath(genpath(rootDir));
 
 %% ======================== 参数配置（在此修改） ========================
-mapNames = {'Map1', 'Map2_kong', '迷宫'};   % 地图列表
+% mapNames = {'Map1', 'Map2_kong', '迷宫'};   % 地图列表
+% mapNames = {'Map1','迷宫x80_2'};
+mapNames = {'杂乱不规则','Map2_kong','迷宫x80','迷宫x80_2','迷宫','Map1'};
 
-alphaVals = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8];  % alpha 参数范围
-d_refVals = [0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.15];  % d_ref 参数范围
+alphaVals = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7];  % alpha 参数范围
+d_refVals = [0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.14];  % d_ref 参数范围
 
-nRepeats = 1;   % 每组参数重复次数（取平均，减少随机波动）
+nRepeats = 5;   % 每组参数重复次数（取平均，减少随机波动）
+
+enableSimplify = true;   % true=启用 SimplifyPath 拐角裁剪
+enableSmooth   = true;   % true=启用 SmoothPath 样条平滑（需先 SimplifyPath）
+%  两者均启用时: 原始路径 → SimplifyPath → SmoothPath → 计算处理后代价
 % =======================================================================
 
 nAlpha = length(alphaVals);
@@ -26,11 +38,13 @@ nDref  = length(d_refVals);
 nMaps  = length(mapNames);
 totalRuns = nMaps * nAlpha * nDref * nRepeats;
 
-fprintf('=== AStar_v1_1 alpha/d_ref 参数敏感性分析 ===\n');
+fprintf('=== AStar_v1_2 alpha/d_ref 参数敏感性分析 ===\n');
 fprintf('地图: %s\n', strjoin(mapNames, ', '));
 fprintf('alpha: [%.1f, ..., %.1f] (%d 级)\n', alphaVals(1), alphaVals(end), nAlpha);
 fprintf('d_ref: [%.2f, ..., %.2f] (%d 级)\n', d_refVals(1), d_refVals(end), nDref);
-fprintf('重复: %d 次 | 总实验数: %d\n\n', nRepeats, totalRuns);
+fprintf('重复: %d 次 | 总实验数: %d\n', nRepeats, totalRuns);
+fprintf('路径处理: SimplifyPath=%s, SmoothPath=%s\n', mat2str(enableSimplify), mat2str(enableSmooth));
+fprintf('热力图代价: %s\n\n', getHeatmapLabel(enableSimplify, enableSmooth));
 
 %% ======================== 加载地图 ========================
 maps = cell(1, nMaps);
@@ -51,7 +65,8 @@ allResults = cell(1, nMaps);
 for mi = 1:nMaps
     allResults{mi} = struct(...
         'expandedNodes', zeros(nAlpha, nDref), ...
-        'pathCost',      zeros(nAlpha, nDref), ...
+        'pathCost',      zeros(nAlpha, nDref), ...   % 处理后代价（热力图用）
+        'pathCostOrig',  zeros(nAlpha, nDref), ...   % 原始 A* 路径代价
         'elapsed',       zeros(nAlpha, nDref), ...
         'pathLength',    zeros(nAlpha, nDref), ...
         'openMaxSize',   zeros(nAlpha, nDref));
@@ -75,24 +90,38 @@ for mi = 1:nMaps
             d_ref = d_refVals(di);
 
             % 多次重复取平均
-            expAccum = 0; costAccum = 0; timeAccum = 0;
+            expAccum = 0; costAccum = 0; costOAccum = 0; timeAccum = 0;
             lenAccum = 0; openAccum = 0;
 
             for rep = 1:nRepeats
                 runCount = runCount + 1;
                 tStart = tic;
-                [path, info] = AStar_v1_1(map, startGrid, goalGrid, 0, [], alpha, d_ref);
+                [path, info] = AStar_v1_2(map, startGrid, goalGrid, 0, [], alpha, d_ref);
                 elapsed = toc(tStart);
 
-                expAccum  = expAccum  + info.expandedNodes;
-                costAccum = costAccum + info.pathCost;
-                timeAccum = timeAccum + elapsed;
-                lenAccum  = lenAccum  + info.pathLength;
-                openAccum = openAccum + info.openMaxSize;
+                origCost = info.pathCost;
+
+                % 路径后处理
+                procPath = path;
+                if enableSimplify && ~isempty(path)
+                    procPath = SimplifyPath(path, map.getOccupancyGrid(), map.mapSize);
+                end
+                if enableSmooth && ~isempty(procPath)
+                    procPath = SmoothPath(procPath);
+                end
+                procCost = computePathCostProcessed(procPath);
+
+                expAccum    = expAccum    + info.expandedNodes;
+                costAccum   = costAccum   + procCost;
+                costOAccum  = costOAccum  + origCost;
+                timeAccum   = timeAccum   + elapsed;
+                lenAccum    = lenAccum    + info.pathLength;
+                openAccum   = openAccum   + info.openMaxSize;
             end
 
             allResults{mi}.expandedNodes(ai, di) = expAccum / nRepeats;
-            allResults{mi}.pathCost(ai, di)      = costAccum / nRepeats;
+            allResults{mi}.pathCost(ai, di)      = costAccum / nRepeats;    % 处理后
+            allResults{mi}.pathCostOrig(ai, di)  = costOAccum / nRepeats;   % 原始
             allResults{mi}.elapsed(ai, di)       = timeAccum / nRepeats;
             allResults{mi}.pathLength(ai, di)    = lenAccum / nRepeats;
             allResults{mi}.openMaxSize(ai, di)   = openAccum / nRepeats;
@@ -111,15 +140,30 @@ fprintf('\n全部完成，总耗时: %.1f 秒\n', tElapsed);
 fprintf('\n=== 结果汇总 ===\n');
 for mi = 1:nMaps
     fprintf('\n--- %s ---\n', mapNames{mi});
-    fprintf('%8s %8s | %10s %10s %10s\n', 'alpha', 'd_ref', '扩展节点', '路径代价', '耗时(ms)');
-    fprintf('%s\n', repmat('-', 1, 55));
-    for ai = 1:nAlpha
-        for di = 1:nDref
-            fprintf('%8.1f %8.2f | %10.0f %10.2f %10.1f\n', ...
-                alphaVals(ai), d_refVals(di), ...
-                allResults{mi}.expandedNodes(ai, di), ...
-                allResults{mi}.pathCost(ai, di), ...
-                allResults{mi}.elapsed(ai, di) * 1000);
+    if enableSimplify || enableSmooth
+        fprintf('%8s %8s | %10s %10s %12s %10s\n', 'alpha', 'd_ref', '扩展节点', '原始代价', '处理后代价', '耗时(ms)');
+        fprintf('%s\n', repmat('-', 1, 68));
+        for ai = 1:nAlpha
+            for di = 1:nDref
+                fprintf('%8.1f %8.2f | %10.0f %10.2f %12.2f %10.1f\n', ...
+                    alphaVals(ai), d_refVals(di), ...
+                    allResults{mi}.expandedNodes(ai, di), ...
+                    allResults{mi}.pathCostOrig(ai, di), ...
+                    allResults{mi}.pathCost(ai, di), ...
+                    allResults{mi}.elapsed(ai, di) * 1000);
+            end
+        end
+    else
+        fprintf('%8s %8s | %10s %10s %10s\n', 'alpha', 'd_ref', '扩展节点', '路径代价', '耗时(ms)');
+        fprintf('%s\n', repmat('-', 1, 55));
+        for ai = 1:nAlpha
+            for di = 1:nDref
+                fprintf('%8.1f %8.2f | %10.0f %10.2f %10.1f\n', ...
+                    alphaVals(ai), d_refVals(di), ...
+                    allResults{mi}.expandedNodes(ai, di), ...
+                    allResults{mi}.pathCost(ai, di), ...
+                    allResults{mi}.elapsed(ai, di) * 1000);
+            end
         end
     end
 end
@@ -129,13 +173,13 @@ ts = datestr(now, 'yyyymmdd_HHMMSS');
 saveDir = fullfile(fileparts(mfilename('fullpath')), 'results');
 if ~exist(saveDir, 'dir'), mkdir(saveDir); end
 
-matFile = fullfile(saveDir, ['AStar_v1_1_sensitivity_' ts '.mat']);
-save(matFile, 'allResults', 'mapNames', 'alphaVals', 'd_refVals', 'nRepeats');
+matFile = fullfile(saveDir, 'AStar_v1_2_sensitivity_results.mat');
+save(matFile, 'allResults', 'mapNames', 'alphaVals', 'd_refVals', 'nRepeats', 'enableSimplify', 'enableSmooth');
 
 % 写日志
-logFile = fullfile(saveDir, ['AStar_v1_1_sensitivity_' ts '_log.txt']);
+logFile = fullfile(saveDir, 'AStar_v1_2_sensitivity_results_log.txt');
 fid = fopen(logFile, 'w');
-fprintf(fid, '=== AStar_v1_1 alpha/d_ref 参数敏感性分析 ===\n');
+fprintf(fid, '=== AStar_v1_2 alpha/d_ref 参数敏感性分析 ===\n');
 fprintf(fid, '时间: %s\n', ts);
 fprintf(fid, '总耗时: %.1f 秒\n\n', tElapsed);
 
@@ -143,7 +187,10 @@ fprintf(fid, '--- 实验配置 ---\n');
 fprintf(fid, '地图: %s\n', strjoin(mapNames, ', '));
 fprintf(fid, 'alpha: [%.1f, ..., %.1f] (%d 级)\n', alphaVals(1), alphaVals(end), nAlpha);
 fprintf(fid, 'd_ref: [%.2f, ..., %.2f] (%d 级)\n', d_refVals(1), d_refVals(end), nDref);
-fprintf(fid, '重复: %d 次\n\n', nRepeats);
+fprintf(fid, '重复: %d 次\n', nRepeats);
+fprintf(fid, 'SimplifyPath: %s\n', mat2str(enableSimplify));
+fprintf(fid, 'SmoothPath: %s\n', mat2str(enableSmooth));
+fprintf(fid, '热力图路径代价: %s\n\n', getHeatmapLabel(enableSimplify, enableSmooth));
 
 fprintf(fid, '--- 参数说明 ---\n');
 fprintf(fid, 'alpha: 最大额外权重 [0.1, 0.8]\n');
@@ -158,14 +205,15 @@ for mi = 1:nMaps
     fprintf(fid, '地图大小: %d, 起点: [%d,%d], 终点: [%d,%d], 障碍物: %d\n', ...
         mapInfos{mi}.mapSize, mapInfos{mi}.startPoint, mapInfos{mi}.goalPoint, ...
         size(mapInfos{mi}.staticObstacles, 1));
-    fprintf(fid, '%8s %8s | %10s %10s %10s %10s %10s\n', ...
-        'alpha', 'd_ref', '扩展节点', '路径代价', '路径长度', '最大Open', '耗时(ms)');
-    fprintf(fid, '%s\n', repmat('-', 1, 70));
+    fprintf(fid, '%8s %8s | %10s %10s %10s %10s %10s %10s\n', ...
+        'alpha', 'd_ref', '扩展节点', '原始代价', '处理后代价', '路径长度', '最大Open', '耗时(ms)');
+    fprintf(fid, '%s\n', repmat('-', 1, 82));
     for ai = 1:nAlpha
         for di = 1:nDref
-            fprintf(fid, '%8.1f %8.2f | %10.0f %10.2f %10.0f %10.0f %10.1f\n', ...
+            fprintf(fid, '%8.1f %8.2f | %10.0f %10.2f %10.2f %10.0f %10.0f %10.1f\n', ...
                 alphaVals(ai), d_refVals(di), ...
                 allResults{mi}.expandedNodes(ai, di), ...
+                allResults{mi}.pathCostOrig(ai, di), ...
                 allResults{mi}.pathCost(ai, di), ...
                 allResults{mi}.pathLength(ai, di), ...
                 allResults{mi}.openMaxSize(ai, di), ...
@@ -213,7 +261,7 @@ for mi = 1:nMaps
     colorbar; colormap(gca, customCMap);
     set(gca, 'YDir', 'normal', 'XTick', d_refVals, 'YTick', alphaVals);
     xlabel('d_{ref}'); ylabel('\alpha');
-    title(sprintf('路径代价 — %s', mapName));
+    title(sprintf('路径代价(%s) — %s', getHeatmapLabel(enableSimplify, enableSmooth), mapName));
     for ai = 1:nAlpha
         for di = 1:nDref
             text(d_refVals(di), alphaVals(ai), sprintf('%.1f', R.pathCost(ai,di)), ...
@@ -239,3 +287,29 @@ for mi = 1:nMaps
 end
 
 fprintf('\n=== 实验完成 ===\n');
+
+%% ======================== 局部函数 ========================
+function c = computePathCostProcessed(path)
+%COMPUTEPATHCOSTPROCESSED 计算处理后路径代价
+%   栅格路径 [row,col]: 8 邻域代价（1/sqrt(2)）
+%   连续路径 [x,y]: 欧氏距离累加
+    if isempty(path) || size(path, 1) < 2
+        c = inf;
+        return;
+    end
+    d = diff(path, 1, 1);
+    dists = sqrt(sum(d.^2, 2));
+    c = sum(dists);
+end
+
+function label = getHeatmapLabel(enableSimplify, enableSmooth)
+    if enableSimplify && enableSmooth
+        label = 'Simplify+Smooth';
+    elseif enableSimplify
+        label = 'Simplify';
+    elseif enableSmooth
+        label = 'Smooth';
+    else
+        label = '原始';
+    end
+end

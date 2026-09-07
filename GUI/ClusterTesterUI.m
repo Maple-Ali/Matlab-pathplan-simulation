@@ -76,7 +76,7 @@ clusterList = uilistbox(ctrlPanel, ...
 % 路径规划器下拉框
 uilabel(ctrlPanel, 'Text', '路径规划器:', 'Position', [155, 148, 80, 20]);
 plannerDD = uidropdown(ctrlPanel, ...
-    'Items', {'AStar', 'AStar_v0', 'AStar_v1', 'AStar_v2', 'AStar_v3', 'Dijkstra', 'Dijkstra_v1', 'RRT'}, ...
+    'Items', {'AStar', 'AStar_v0', 'AStar_v1', 'AStar_v1_2', 'AStar_v2', 'AStar_v3', 'AStar_v4', 'Dijkstra', 'Dijkstra_v1', 'RRT'}, ...
     'Value', 'AStar', 'Position', [240, 146, 120, 22]);
 
 % 地图大小
@@ -790,6 +790,10 @@ function path = callPlanner(algoName, map, startGrid, goalGrid)
             path = AStar_v2(map, startGrid, goalGrid, 0);
         case 'AStar_v3'
             path = AStar_v3(map, startGrid, goalGrid, 0);
+        case 'AStar_v4'
+            path = AStar_v4(map, startGrid, goalGrid, 0);
+        case 'AStar_v1_2'
+            path = AStar_v1_2(map, startGrid, goalGrid, 0);
         case 'Dijkstra'
             path = Dijkstra(map, startGrid, goalGrid, 0);
         case 'Dijkstra_v1'
