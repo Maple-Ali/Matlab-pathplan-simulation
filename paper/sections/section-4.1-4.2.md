@@ -2,11 +2,11 @@
 
 ## 4.1 Improved A* Global Path Planner
 
-The first layer of our framework computes pairwise obstacle-aware path costs between every pair of points in the visitation set. We adopt A* as the base planner and introduce Jump Point Search (JPS) as the core algorithmic improvement. JPS exploits the symmetry inherent in uniform-cost grid maps to prune large portions of the search tree, expanding only "jump points"—nodes where the optimal path changes direction or encounters a forced choice—while skipping all intermediate nodes that can be reached by a straight-line traversal. The open set is implemented as a binary min-heap with a tie-breaking strategy that biases expansion toward the goal direction.
+The first layer of our framework computes pairwise obstacle-aware path costs between every pair of points in the visitation set. We adopt A* as the base planner and introduce Jump Point Search (JPS) as the core algorithmic improvement [11], [12]. JPS exploits the symmetry inherent in uniform-cost grid maps to prune large portions of the search tree, expanding only "jump points" (nodes where the optimal path changes direction or encounters a forced choice) while skipping all intermediate nodes that can be reached by a straight-line traversal. The open set is implemented as a binary min-heap with a tie-breaking strategy that biases expansion toward the goal direction.
 
 ### 4.1.1 Jump Point Search
 
-**Motivation.** Standard A* expands every node in the open set uniformly, examining all 8 neighbors at each expansion step. On uniform-cost grid maps, many of these expansions are redundant: when moving in a straight line (horizontally, vertically, or diagonally) through open space, every intermediate node along the line leads to the same successor. Standard A* expands each of these intermediate nodes individually, wasting computation. Jump Point Search identifies this symmetry and "jumps" along straight lines until it encounters a point where the path must make a decision—either because an obstacle creates a forced neighbor, or because the goal is reached.
+**Motivation.** Standard A* expands every node in the open set uniformly, examining all 8 neighbors at each expansion step. On uniform-cost grid maps, many of these expansions are redundant: when moving in a straight line (horizontally, vertically, or diagonally) through open space, every intermediate node along the line leads to the same successor. Standard A* expands each of these intermediate nodes individually, wasting computation. Jump Point Search identifies this symmetry and "jumps" along straight lines until it encounters a point where the path must make a decision, either because an obstacle creates a forced neighbor, or because the goal is reached.
 
 **Mechanism.** The JPS algorithm modifies the standard A* expansion step. Instead of examining all 8 neighbors, each node is expanded by examining a set of pruned search directions, then "jumping" along each direction until a jump point is found.
 
@@ -60,26 +60,26 @@ The raw grid path produced by the global planner contains two artifacts inherite
 
 ### 4.2.1 Safety-Distance-Aware Path Simplification
 
-**Motivation.** Grid-constrained paths contain intermediate waypoints at every grid cell transition. Many of these waypoints are colinear with their neighbors and can be removed without altering the geometric trace of the path. More importantly, corridors and open areas produce staircase patterns—sequences of orthogonal segments that a single straight line could replace, potentially shortening the effective path. However, naive line-of-sight pruning that does not consult the obstacle map risks connecting two waypoints through an obstacle corner, violating the collision-free guarantee. A robust simplification must verify obstacle clearance for every pruned segment.
+**Motivation.** Grid-constrained paths contain intermediate waypoints at every grid cell transition. Many of these waypoints are colinear with their neighbors and can be removed without altering the geometric trace of the path. More importantly, corridors and open areas produce staircase patterns (sequences of orthogonal segments that a single straight line could replace), potentially shortening the effective path. However, naive line-of-sight pruning that does not consult the obstacle map risks connecting two waypoints through an obstacle corner, violating the collision-free guarantee. A robust simplification must verify obstacle clearance for every pruned segment, as emphasized in visibility-aware path simplification methods [16].
 
 **Mechanism.** The simplification algorithm operates in four steps:
 
-**Step 1 — Corner extraction.** The raw path is first reduced to its turning points (corners), defined as grid cells where the movement direction changes. For a grid path where each step moves to an adjacent cell, the direction of step $i$ is $(r_{i+1} - r_i, c_{i+1} - c_i)$. A cell $i$ (for $2 \leq i \leq N-1$) is classified as a corner if its incoming direction differs from its outgoing direction:
+**Step 1: Corner extraction.** The raw path is first reduced to its turning points (corners), defined as grid cells where the movement direction changes. For a grid path where each step moves to an adjacent cell, the direction of step $i$ is $(r_{i+1} - r_i, c_{i+1} - c_i)$. A cell $i$ (for $2 \leq i \leq N-1$) is classified as a corner if its incoming direction differs from its outgoing direction:
 
 $$(r_i - r_{i-1}, c_i - c_{i-1}) \neq (r_{i+1} - r_i, c_{i+1} - c_i)$$
 
 The start and end points are always included. This preprocessing step dramatically reduces the number of candidate waypoints (often by $80$--$90\%$ on grid paths), making the subsequent greedy search far more efficient.
 
-**Step 2 — Greedy forward scan.** Starting from the first corner as the current anchor, the algorithm scans all subsequent corners $j$ in forward order and selects the **farthest** corner that is directly reachable (i.e., the line-of-sight segment passes the safety check). The selected corner becomes the new anchor, and the process repeats. This is a forward scan (not the back-to-front scan used in the previous version), which is more natural when operating on the pre-filtered corner set.
+**Step 2: Greedy forward scan.** Starting from the first corner as the current anchor, the algorithm scans all subsequent corners $j$ in forward order and selects the **farthest** corner that is directly reachable (i.e., the line-of-sight segment passes the safety check). The selected corner becomes the new anchor, and the process repeats. This is a forward scan (not the back-to-front scan used in the previous version), which is more natural when operating on the pre-filtered corner set.
 
-**Step 3 — Intermediate point exploration.** After the greedy step identifies the farthest directly reachable corner $j$ from the current anchor $i$, the algorithm checks whether any skipped corner $k$ (between $i$ and $j$) can reach an even farther corner $j'$ (beyond $j$) via a direct line-of-sight connection. For each such pair $(k, j')$ that passes the safety check, the algorithm computes and compares two path costs:
+**Step 3: Intermediate point exploration.** After the greedy step identifies the farthest directly reachable corner $j$ from the current anchor $i$, the algorithm checks whether any skipped corner $k$ (between $i$ and $j$) can reach an even farther corner $j'$ (beyond $j$) via a direct line-of-sight connection. For each such pair $(k, j')$ that passes the safety check, the algorithm computes and compares two path costs:
 
-- **Path A** (greedy): $d(i, j) + d(j, j')$ — reach $j$ first, then continue to $j'$.
-- **Path B** (via intermediate): $d(i, k) + d(k, j')$ — skip $j$ entirely and route through $k$.
+- **Path A** (greedy): $d(i, j) + d(j, j')$ (reach $j$ first, then continue to $j'$).
+- **Path B** (via intermediate): $d(i, k) + d(k, j')$ (skip $j$ entirely and route through $k$).
 
 If Path B is shorter, the intermediate corner $k$ is retained in the output, potentially producing a shorter overall simplified path than pure greedy selection.
 
-**Step 4 — Path comparison and selection.** The algorithm selects the shorter of the two paths (greedy vs. intermediate) and advances the anchor accordingly. This 4-step process produces a simplified path that is at most as long as the pure greedy result, and often shorter in environments where the greedy scan overshoots a useful intermediate waypoint.
+**Step 4: Path comparison and selection.** The algorithm selects the shorter of the two paths (greedy vs. intermediate) and advances the anchor accordingly. This 4-step process produces a simplified path that is at most as long as the pure greedy result, and often shorter in environments where the greedy scan overshoots a useful intermediate waypoint.
 
 **Safety check.** The core $\text{IsLineFree}$ check verifies that every point along a segment maintains at least a safety margin $d_{\text{safe}}$ from all obstacle cells. For a segment spanning $\ell = \max(|r_1 - r_2|, |c_1 - c_2|)$ grid units, we sample $N_s = \max(\lceil 10\ell \rceil, 30)$ equally spaced points. At each sample point $\mathbf{p} = (r, c)$ in continuous coordinates, all grid cells within a search radius of $d_{\max} = \lceil d_{\text{safe}} + 0.5 \rceil$ are examined.
 
@@ -159,17 +159,17 @@ The $\text{IsLineFree}$ subroutine (Algorithm 2) implements the dense sampling a
 
 ### 4.2.2 Arc-Length Parameterized Cubic Spline Smoothing
 
-**Motivation.** The simplified path, while obstacle-safe and waypoint-minimal, remains piecewise-linear with discontinuous first derivatives at waypoint transitions. A physical robot following such a trajectory must decelerate and re-accelerate at each corner, increasing energy consumption and travel time. Cubic spline interpolation produces a $C^2$-continuous curve suitable for smooth trajectory tracking by local planners. However, directly fitting a cubic spline to sparsely distributed waypoints can cause the spline to overshoot between distant points—an artifact of the Runge phenomenon in polynomial interpolation—potentially clipping obstacle corners even when all waypoints are safe.
+**Motivation.** The simplified path, while obstacle-safe and waypoint-minimal, remains piecewise-linear with discontinuous first derivatives at waypoint transitions. A physical robot following such a trajectory must decelerate and re-accelerate at each corner, increasing energy consumption and travel time. Cubic spline interpolation produces a $C^2$-continuous curve suitable for smooth trajectory tracking by local planners [17], [18]. However, directly fitting a cubic spline to sparsely distributed waypoints can cause the spline to overshoot between distant points (an artifact of the Runge phenomenon in polynomial interpolation), potentially clipping obstacle corners even when all waypoints are safe.
 
 **Mechanism.** The smoothing procedure operates in three steps.
 
-**Step 1 — Grid-to-continuous coordinate conversion.** Grid-indexed waypoints $[r, c]$ are mapped to continuous world coordinates by centering each cell at its geometric center:
+**Step 1: Grid-to-continuous coordinate conversion.** Grid-indexed waypoints $[r, c]$ are mapped to continuous world coordinates by centering each cell at its geometric center:
 
 $$x = c - 0.5, \quad y = r - 0.5 \quad (5)$$
 
-**Step 2 — Sparse segment densification.** Before fitting the spline, we scan the waypoint sequence for consecutive pairs whose Euclidean distance exceeds $2$ units. For each such pair, $\lfloor \text{dist} / 2 \rfloor$ intermediate points are linearly interpolated along the segment. This densification provides the spline with sufficient knots to stay close to the intended polyline, preventing oscillation artifacts without altering the geometric path.
+**Step 2: Sparse segment densification.** Before fitting the spline, we scan the waypoint sequence for consecutive pairs whose Euclidean distance exceeds $2$ units. For each such pair, $\lfloor \text{dist} / 2 \rfloor$ intermediate points are linearly interpolated along the segment. This densification provides the spline with sufficient knots to stay close to the intended polyline, preventing oscillation artifacts without altering the geometric path.
 
-**Step 3 — Arc-length parameterized cubic spline.** The cumulative chordal distance along the (densified) waypoint sequence defines a monotonic parameter:
+**Step 3: Arc-length parameterized cubic spline.** The cumulative chordal distance along the (densified) waypoint sequence defines a monotonic parameter:
 
 $$t_1 = 0, \quad t_k = \sum_{i=2}^{k} \sqrt{(x_i - x_{i-1})^2 + (y_i - y_{i-1})^2} \quad (6)$$
 
@@ -225,6 +225,6 @@ The complete path-processing pipeline follows a fixed order:
 2. **Simplification** (optional, enabled by default for TSP cost computation): corner extraction → greedy + intermediate exploration → minimal safe waypoint subset.
 3. **Smoothing** (optional): produces a $C^2$-continuous trajectory in continuous world coordinates.
 
-*[Figure 2: Three-panel comparison showing the same path through pipeline stages. Panel (a): raw JPS grid path. Panel (b): after simplification—corners extracted, redundant waypoints removed. Panel (c): after smoothing—the final continuous $C^2$ curve.]*
+*[Figure 2: Three-panel comparison showing the same path through pipeline stages. Panel (a): raw JPS grid path. Panel (b): after simplification, with corners extracted and redundant waypoints removed. Panel (c): after smoothing, the final continuous $C^2$ curve.]*
 
 The ordering is deliberate and non-interchangeable: simplification must precede smoothing because it operates in grid space where the occupancy grid is defined, establishing the safety guarantee. Smoothing operates in continuous coordinates on the already-verified safe polyline.

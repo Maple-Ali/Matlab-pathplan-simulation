@@ -40,7 +40,7 @@ A valid tour is defined by a visit order $\boldsymbol{\pi} = (\pi_1, \pi_2, \dot
 
 $$\pi_1 = 1 \quad \text{(start)}, \qquad \pi_N = N \quad \text{(goal)} \quad (5)$$
 
-The $K = N - 2$ intermediate indices $\{\pi_2, \dots, \pi_{N-1}\}$ form a permutation of $\{2, \dots, N-1\}$, representing the ordered visitation of the target points. The total number of feasible tours is $K!$, corresponding to all permutations of the intermediate targets with fixed endpoints. This is the **open TSP** formulation, in contrast to the classical closed TSP where the tour forms a cycle and the start node is arbitrary.
+The $K = N - 2$ intermediate indices $\{\pi_2, \dots, \pi_{N-1}\}$ form a permutation of $\{2, \dots, N-1\}$, representing the ordered visitation of the target points. The total number of feasible tours is $K!$, corresponding to all permutations of the intermediate targets with fixed endpoints. This is the **open TSP** formulation, in contrast to the classical closed TSP where the tour forms a cycle and the start node is arbitrary [3], [4].
 
 ## 3.3 Optimization Objective
 

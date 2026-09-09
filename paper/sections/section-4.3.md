@@ -4,9 +4,9 @@ The second layer of our framework solves the open Traveling Salesman Problem on 
 
 ### 4.3.1 Virtual Node Method for Open TSP Encoding
 
-**Motivation.** In a standard closed TSP, the solution is a Hamiltonian cycle and any city can serve as the starting point. In our problem, the start $S$ and goal $G$ are physically distinct locations determined by the mission specification—for instance, a shuttle's departure depot and its final destination. These two points must appear at fixed positions (first and last) in every candidate solution. A direct encoding that treats all $N$ points as symmetrically permutable would generate invalid tours mixing start/goal into the middle sequence, while a boundary-fixed encoding that restricts start and goal to the ends of the tour excludes them from the pheromone model and local search, limiting the algorithm's ability to optimize the full solution.
+**Motivation.** In a standard closed TSP, the solution is a Hamiltonian cycle and any city can serve as the starting point. In our problem, the start $S$ and goal $G$ are physically distinct locations determined by the mission specification, for instance, a shuttle's departure depot and its final destination. These two points must appear at fixed positions (first and last) in every candidate solution. A direct encoding that treats all $N$ points as symmetrically permutable would generate invalid tours mixing start/goal into the middle sequence, while a boundary-fixed encoding that restricts start and goal to the ends of the tour excludes them from the pheromone model and local search, limiting the algorithm's ability to optimize the full solution.
 
-**Mechanism.** We adopt the virtual node (dummy node) method to convert the open TSP into a standard closed TSP. We introduce a virtual node $V = N + 1$ and construct an extended cost matrix $\mathbf{D}_{\text{ext}}$ of size $(N+1) \times (N+1)$:
+**Mechanism.** We adopt the virtual node (dummy node) method to convert the open TSP into a standard closed TSP, a technique commonly employed in open vehicle routing problems [31], [32]. We introduce a virtual node $V = N + 1$ and construct an extended cost matrix $\mathbf{D}_{\text{ext}}$ of size $(N+1) \times (N+1)$:
 
 $$\mathbf{D}_{\text{ext}}(i, j) = \begin{cases}
     0, & \{i, j\} = \{V, 1\} \text{ (virtual node ↔ start)} \\
@@ -38,7 +38,7 @@ $$C(\boldsymbol{\sigma}) = \sum_{k=1}^{N} \mathbf{D}_{\text{ext}}(\sigma_k, \sig
 
 ### 4.3.2 MMAS Pheromone Update with Dynamic Bounds
 
-**Motivation.** In the basic Ant System, all ants deposit pheromone on their complete tours, which can cause the search to prematurely concentrate on suboptimal solutions when a few ants happen to find moderately good paths early. Conversely, excessive evaporation without bounds can cause pheromone values to approach zero on all but the dominant edges, trapping the colony in local optima. The Max-Min Ant System (MMAS) addresses both issues by (a) limiting pheromone to an explicit interval $[\tau_{\min}, \tau_{\max}]$, preventing both domination and extinction, and (b) focusing deposit on the best-performing solutions.
+**Motivation.** In the basic Ant System, all ants deposit pheromone on their complete tours, which can cause the search to prematurely concentrate on suboptimal solutions when a few ants happen to find moderately good paths early. Conversely, excessive evaporation without bounds can cause pheromone values to approach zero on all but the dominant edges, trapping the colony in local optima. The Max-Min Ant System (MMAS) [23] addresses both issues by (a) limiting pheromone to an explicit interval $[\tau_{\min}, \tau_{\max}]$, preventing both domination and extinction, and (b) focusing deposit on the best-performing solutions.
 
 **Mechanism.** At each iteration, all pheromone values first undergo evaporation:
 
@@ -68,7 +68,7 @@ The initial pheromone matrix is set to a uniform value $\tau_0 = 0.1$, represent
 
 ### 4.3.3 ACS-Style Pseudo-Random Transition Rule
 
-**Motivation.** In the standard Ant System, each ant selects its next node through pure probabilistic roulette-wheel selection over all unvisited candidates. This method is exploration-heavy and can be slow to converge on structured problems where the distance heuristic provides reliable guidance. The Ant Colony System (ACS) addresses this with a pseudo-random proportional rule: with a controlled probability, the ant exploits greedily by selecting the best candidate; otherwise, it explores via the standard probabilistic mechanism. This balances the need for convergence (exploitation) with the need to avoid local optima (exploration).
+**Motivation.** In the standard Ant System, each ant selects its next node through pure probabilistic roulette-wheel selection over all unvisited candidates. This method is exploration-heavy and can be slow to converge on structured problems where the distance heuristic provides reliable guidance. The Ant Colony System (ACS) [22] addresses this with a pseudo-random proportional rule: with a controlled probability, the ant exploits greedily by selecting the best candidate; otherwise, it explores via the standard probabilistic mechanism. This balances the need for convergence (exploitation) with the need to avoid local optima (exploration).
 
 **Mechanism.** When an ant at its current node $u$ selects the next node among the set of unvisited candidates $\mathcal{U}$, it first computes a score for each candidate:
 
@@ -81,13 +81,13 @@ $$v_{\text{next}} = \begin{cases}
     \text{roulette}(\mathcal{U}, \text{score}), & \text{with probability } 1 - q_0
 \end{cases} \quad (19)$$
 
-where $q_0 = 0.45$ is the exploitation probability. In the exploitation case, the ant deterministically chooses the candidate with the highest score—equivalent to a greedy best-first step. In the exploration case, the ant performs roulette-wheel selection, where each candidate $v$ is selected with probability $\text{score}(v) / \sum_{u \in \mathcal{U}} \text{score}(u)$. If all scores are zero (all remaining nodes are unreachable), a random unvisited candidate is selected as a fallback.
+where $q_0 = 0.45$ is the exploitation probability. In the exploitation case, the ant deterministically chooses the candidate with the highest score, equivalent to a greedy best-first step. In the exploration case, the ant performs roulette-wheel selection, where each candidate $v$ is selected with probability $\text{score}(v) / \sum_{u \in \mathcal{U}} \text{score}(u)$. If all scores are zero (all remaining nodes are unreachable), a random unvisited candidate is selected as a fallback.
 
 The value $q_0 = 0.45$ means that on average, $45\%$ of construction steps use greedy selection, accelerating convergence, while $55\%$ maintain diversity through random exploration. This ratio is motivated by the structured nature of obstacle-constrained cost matrices, where pairwise distances often exhibit spatial locality and the heuristic $\eta$ carries reliable information.
 
 ### 4.3.4 VND Local Search with Candidate List Acceleration
 
-**Motivation.** The cycles constructed by individual ants, while guided by pheromone and heuristic information, are not guaranteed to be locally optimal. Applying local search to the best ants of each generation refines solutions by systematically exploring neighboring permutations. Variable Neighborhood Descent (VND) applies multiple neighborhood structures in sequence, each capturing a different type of cycle transformation, and cycles until no structure yields further improvement. However, standard VND examines the full $\mathcal{O}(K^2)$ neighborhood for each operator, which becomes a computational bottleneck for large problem instances. Furthermore, most of these examined moves are fruitless—a candidate pair of distant nodes is unlikely to produce an improving 2-opt swap.
+**Motivation.** The cycles constructed by individual ants, while guided by pheromone and heuristic information, are not guaranteed to be locally optimal. Applying local search to the best ants of each generation refines solutions by systematically exploring neighboring permutations. Variable Neighborhood Descent (VND) [24] applies multiple neighborhood structures in sequence, each capturing a different type of cycle transformation, and cycles until no structure yields further improvement. Hybrid MMAS-VND and ACS-VND schemes have demonstrated strong performance in vehicle routing [25]. However, standard VND examines the full $\mathcal{O}(K^2)$ neighborhood for each operator, which becomes a computational bottleneck for large problem instances. Furthermore, most of these examined moves are fruitless, since a candidate pair of distant nodes is unlikely to produce an improving 2-opt swap.
 
 **Mechanism.** Our VND operates on closed cycles over all $N+1$ nodes (including the virtual node) and employs three neighborhood operators applied in fixed order:
 
@@ -99,13 +99,13 @@ The value $q_0 = 0.45$ means that on average, $45\%$ of construction steps use g
 
 The three operators are applied in a First-Improvement (FI) strategy within a VND loop: 2-opt is applied until no improvement remains, then Relocate, then Swap. If any operator produces an improvement, the loop resets to 2-opt and repeats. The search terminates when all three operators consecutively fail to improve the solution.
 
-**Candidate list acceleration.** The key efficiency improvement is the use of a precomputed candidate list to prune unpromising neighborhood evaluations. For each of the $N+1$ nodes in the extended problem, we precompute the $k = 9$ nearest neighbors based on the extended cost matrix $\mathbf{D}_{\text{ext}}$ and store them as a boolean matrix $\mathbf{C}$ where $\mathbf{C}(i, j) = \text{true}$ if node $j$ is among the $k$ nearest neighbors of node $i$. The three VND operators are then pruned as follows:
+**Candidate list acceleration.** The key efficiency improvement is the use of a precomputed candidate list to prune unpromising neighborhood evaluations, following the candidate-list acceleration strategy widely used in TSP local search [26]. For each of the $N+1$ nodes in the extended problem, we precompute the $k = 9$ nearest neighbors based on the extended cost matrix $\mathbf{D}_{\text{ext}}$ and store them as a boolean matrix $\mathbf{C}$ where $\mathbf{C}(i, j) = \text{true}$ if node $j$ is among the $k$ nearest neighbors of node $i$. The three VND operators are then pruned as follows:
 
-- **2-opt pruning**: A candidate 2-opt move replacing edges $(u, u^+)$ and $(v, v^+)$ with $(u, v)$ and $(u^+, v^+)$ is evaluated only if $\mathbf{C}(u, v) = \text{true}$ or $\mathbf{C}(u^+, v^+) = \text{true}$—that is, at least one of the proposed new edges connects a pair of candidate neighbors.
+- **2-opt pruning**: A candidate 2-opt move replacing edges $(u, u^+)$ and $(v, v^+)$ with $(u, v)$ and $(u^+, v^+)$ is evaluated only if $\mathbf{C}(u, v) = \text{true}$ or $\mathbf{C}(u^+, v^+) = \text{true}$; that is, at least one of the proposed new edges connects a pair of candidate neighbors.
 
-- **Relocate pruning**: Moving node $v$ to insert after node $p$ (between $p$ and $p^+$) is evaluated only if $\mathbf{C}(p, v) = \text{true}$ or $\mathbf{C}(v, p^+) = \text{true}$—the relocated node must be a candidate neighbor of at least one of its new adjacent nodes.
+- **Relocate pruning**: Moving node $v$ to insert after node $p$ (between $p$ and $p^+$) is evaluated only if $\mathbf{C}(p, v) = \text{true}$ or $\mathbf{C}(v, p^+) = \text{true}$; the relocated node must be a candidate neighbor of at least one of its new adjacent nodes.
 
-- **Swap pruning**: Swapping nodes $a$ and $b$ is evaluated only if $\mathbf{C}(a, b) = \text{true}$—the two swapped nodes must be mutual candidate neighbors.
+- **Swap pruning**: Swapping nodes $a$ and $b$ is evaluated only if $\mathbf{C}(a, b) = \text{true}$; the two swapped nodes must be mutual candidate neighbors.
 
 The pruning is conservative by design: a move is skipped only when neither of its new edges involves a candidate pair, which is a strong but not absolute signal that the move is unlikely to improve the cycle. The small candidate list size ($k = 9$) is chosen to aggressively filter evaluations while retaining the most promising local moves; this is effective because the extended cost matrix exhibits strong spatial structure, and only nearby nodes are likely to participate in improving edge swaps.
 
@@ -134,9 +134,9 @@ The pruning is conservative by design: a move is skipped only when neither of it
 
 ---
 
-The neighborhood operators themselves (TwoOptClosed, RelocateClosed, SwapClosed) each use a First-Improvement strategy—the first move found that reduces the cycle cost is immediately accepted, and the operator returns. The closed-cycle topology requires special handling for the swap operator: when swapping two adjacent nodes across the cycle-closing edge (i.e., the last and first elements of the cycle), the standard linear adjacency logic must account for the wrap-around connection.
+The neighborhood operators themselves (TwoOptClosed, RelocateClosed, SwapClosed) each use a First-Improvement strategy, where the first move found that reduces the cycle cost is immediately accepted, and the operator returns. The closed-cycle topology requires special handling for the swap operator: when swapping two adjacent nodes across the cycle-closing edge (i.e., the last and first elements of the cycle), the standard linear adjacency logic must account for the wrap-around connection.
 
-*[Flowchart: VND neighborhood search sequence — showing the 2-opt → Relocate → Swap → cycle loop with candidate list pruning at each operator.]*
+*[Flowchart: VND neighborhood search sequence: showing the 2-opt → Relocate → Swap → cycle loop with candidate list pruning at each operator.]*
 
 ```mermaid
 flowchart TB
@@ -177,13 +177,13 @@ where $r_{\text{elite}} = 0.7$ (the top $70\%$ of the LS budget goes to the best
 
 **Mechanism.** Two complementary convergence indicators are monitored:
 
-**Condition 1 — Population homogeneity.** When the ant colony has converged to a narrow region of the search space, the cost variance across ants becomes very small. We measure this via the coefficient of variation (CV) of ant costs at each iteration:
+**Condition 1: Population homogeneity.** When the ant colony has converged to a narrow region of the search space, the cost variance across ants becomes very small. We measure this via the coefficient of variation (CV) of ant costs at each iteration:
 
 $$\text{CV} = \frac{\sigma_{\text{costs}}}{\mu_{\text{costs}}} \quad (23)$$
 
-where $\sigma_{\text{costs}}$ and $\mu_{\text{costs}}$ are the standard deviation and mean of all ant cycle costs in the current generation. If $\text{CV} < 0.001$, the population is considered homogeneous—all ants are producing cycles of nearly identical quality, and further iterations are unlikely to discover new solutions.
+where $\sigma_{\text{costs}}$ and $\mu_{\text{costs}}$ are the standard deviation and mean of all ant cycle costs in the current generation. If $\text{CV} < 0.001$, the population is considered homogeneous, since all ants are producing cycles of nearly identical quality, and further iterations are unlikely to discover new solutions.
 
-**Condition 2 — Best-solution stagnation.** Even when the population remains diverse, the global-best cycle may be trapped in a local optimum. We track the number of consecutive iterations without improvement to the global-best cost. If this stagnation counter reaches $70$ generations, the search is terminated.
+**Condition 2: Best-solution stagnation.** Even when the population remains diverse, the global-best cycle may be trapped in a local optimum. We track the number of consecutive iterations without improvement to the global-best cost. If this stagnation counter reaches $70$ generations, the search is terminated.
 
 **Minimum guard.** Both conditions are active only after $\text{minIter} = 30$ iterations, ensuring that the colony has had sufficient time to develop meaningful pheromone structures before convergence monitoring begins. This prevents premature termination during the initial exploration phase when cost variance is naturally high and the global best is still improving rapidly.
 
