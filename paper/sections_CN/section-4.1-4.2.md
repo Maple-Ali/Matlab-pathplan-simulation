@@ -1,230 +1,203 @@
 # 4 方法论
 
-## 4.1 改进的A*全局路径规划器
+本节介绍所提出的障碍物感知多点遍历路径规划框架。该框架由两个协同工作的模块组成：改进型 A* 全局路径规划器（AStar_v3_1）和改进型蚁群优化求解器（TSP_ACO_v2_4）。前者负责在栅格地图上搜索从起点到目标点的无碰撞最短路径，并通过安全距离感知的路径简化与三次样条平滑生成高质量的连续路径；后者则基于全局规划器构建的成本矩阵，求解多目标点的最优访问序列。两个模块通过成本矩阵的构建实现协同，共同完成从路径规划到序列优化的完整流程。4.1 节和 4.2 节介绍全局路径规划及后处理方法，4.3 节详述 TSP 求解算法，4.4 节阐述两层协同框架的整体设计。
 
-本框架的第一层计算访问集中所有点对之间的障碍感知路径代价。我们采用A*作为基础规划器，并引入跳点搜索（JPS）作为核心算法改进 [11], [12]。JPS利用均匀代价栅格地图中固有的对称性，通过剪枝大幅缩减搜索树，仅扩展"跳点"——即最优路径改变方向或遇到强制选择的节点——同时跳过所有可通过直线遍历到达的中间节点。开放集采用二叉最小堆实现，配合将扩展偏向目标方向的打破平局策略。
+## 4.1 改进型 A* 全局路径规划
 
-### 4.1.1 跳点搜索
+### 4.1.1 基于跳跃点搜索的 A* 算法
 
-**动机。** 标准A*在每个扩展步中均匀地扩展开放集中的每个节点，检查所有8个邻居。在均匀代价栅格地图中，许多此类扩展是冗余的：当沿直线（水平、垂直或对角线）穿越开阔空间时，直线上的每个中间节点都导向相同的后继节点。标准A*逐个扩展这些中间节点，造成计算浪费。跳点搜索识别这种对称性并沿直线"跳跃"，直至遇到路径必须做出决策的点——要么因为障碍物产生了强制邻居，要么因为到达了目标。
+传统 A* 算法在搜索过程中需要扩展大量节点，尤其在大规模开阔区域中，节点扩展数量与地图面积成正比，计算效率受到严重制约。为解决这一问题，AStar_v3_1 引入了跳跃点搜索（Jump Point Search, JPS）策略 [11], [12]。JPS 的核心思想是利用栅格地图的对称性，在搜索过程中跳过大量冗余的中间节点，仅保留具有"跳跃意义"的关键节点作为扩展候选。
 
-**机制。** JPS算法修改了标准A*的扩展步骤。每个节点的扩展不再检查所有8个邻居，而是检查一组经过剪枝的搜索方向，然后沿每个方向"跳跃"直至找到跳点。
+**邻居剪枝规则。** 在传统 A* 中，当前节点的所有邻居均需加入 open set 进行评估。JPS 则通过邻居剪枝规则大幅减少需要考虑的邻居数量。剪枝策略取决于当前节点的扩展方向：
 
-**邻居剪枝。** 当扩展一个从其父节点沿方向$(p_{dr}, p_{dc})$到达的节点$(r, c)$时，后继方向集根据父方向进行剪枝：
+1. **直线移动（水平或垂直）**：仅保留自然邻居（移动方向前方的节点）和被迫邻居（因障碍物阻挡而被迫改变方向的节点）。对于直线移动方向两侧的节点，除非被障碍物阻挡产生被迫邻居，否则均被剪枝。
 
-- **起始节点**（$p_{dr} = 0, p_{dc} = 0$）：考虑所有8个方向。
-- **直线移动**（$p_{dr}$或$p_{dc}$之一为零）：自然后继为延续方向。此外，若障碍物阻挡了侧面栅格且其对角方向栅格空闲，则该对角方向成为强制方向。
-- **对角线移动**（$p_{dr}$和$p_{dc}$均非零）：三个自然后继（对角线延续及其两个直线分量方向）。此外，若障碍物阻挡了对角线后方的侧面栅格，则反射对角方向成为强制方向。
+2. **对角线移动**：保留自然邻居（对角方向前方）、直线方向的自然邻居（水平和垂直分量方向），以及因障碍物产生的被迫邻居。
 
-剪枝规则确保仅探索可能导向最优路径的方向，而所有其他方向均可被证明地支配。
+被迫邻居的判定条件为：当前节点沿移动方向的相邻位置被障碍物阻挡，但沿另一方向可达。图 X 给出了剪枝规则的示意图。
 
-**跳跃函数。** 对每个剪枝方向$(dr, dc)$，`jump`函数从当前节点沿该方向逐步前进：
+> **[图 X]** JPS 邻居剪枝规则示意图。(a) 直线移动的剪枝：自然邻居 N 和被迫邻居 F；(b) 对角线移动的剪枝：自然邻居 N1（对角）、N2（水平）、N3（垂直）和被迫邻居 F。
 
-1. 若下一栅格为障碍物或越界，返回空（死路）。
-2. 若下一栅格为目标点，将其作为跳点返回。
-3. 若下一栅格存在强制邻居（即障碍物产生了强制方向选择），将其作为跳点返回。
-4. 对于对角线移动，递归检查两个分量直线方向是否存在跳点。若任一产生跳点，则将当前栅格作为跳点返回。
+**跳跃函数。** JPS 的跳跃函数 `jump(r, c, dr, dc)` 从当前节点 $(r, c)$ 出发，沿方向 $(dr, dc)$ 逐步前进，直到满足以下三个终止条件之一：(1) 到达目标节点；(2) 遇到障碍物或地图边界（该方向不可通行）；(3) 发现被迫邻居（当前位置因障碍物阻挡而需要强制转向）。跳跃过程中经过的中间节点不会被加入 open set，从而显著减少了节点扩展数量。当遇到被迫邻居时，当前节点即为跳跃点，需要加入 open set 进行后续评估。
 
-若以上条件均不满足，跳跃沿同一方向继续。此过程每次跳跃最多$O(n)$步（受限于地图尺寸），通常在远少于此的步数内找到跳点。
+对于对角线方向的跳跃，算法会先沿对角线前进一步，然后分别沿水平和垂直分量方向执行直线跳跃。若任一方向的直线跳跃发现了被迫邻居或到达目标，则返回当前对角线位置作为跳跃点。
 
-**路径代价计算。** 从$(r, c)$沿方向$(dr, dc)$到$(r_j, c_j)$的跳跃代价逐步累积：每一直线步代价为$1$，每一对角步代价为$\sqrt{2}$。这保留了精确的栅格移动代价，确保路径最优性。
+**路径成本计算。** 在 `jump` 函数返回可达的下一个节点后，AStar_v3_1 需要计算从当前节点到该跳跃点的实际移动成本。对于直线跳跃，成本等于跳跃的曼哈顿距离；对于对角线跳跃，成本等于对角线距离（每步对角线移动成本为 √2）。算法 1 给出了 JPS 搜索过程的伪代码。
 
-**路径重建。** 由于JPS跳过中间节点，父指针仅记录跳点链。通过在连续跳点之间线性插值重建完整栅格路径：对每对跳点，沿方向向量符号逐步填充。后处理步骤修正对角线拐角穿越伪影：当对角线步穿越障碍物角点时，路径被重新引导通过相邻自由栅格形成L形绕行。
+---
 
-**回退机制。** 在JPS未能找到路径的罕见情况下（如在狭窄迷宫环境中对称性假设失效时），算法回退到使用二叉堆的标准A*，以保证在存在解时总能找到路径。
+**Algorithm 1: JPS-based A\* search**
 
-**复杂度。** 在开阔栅格地图上，JPS比标准A*扩展更少的节点，因为它跳过了沿直线遍历的所有中间节点。在最佳情况下（从起点到目标的清晰直线），JPS通过一次跳跃即可找到路径。在最差情况下（无直线对称性的迷宫），JPS退化到标准A*的性能。二叉堆操作保持每次扩展$O(\log m)$的复杂度，其中$m$为开放集大小。
+**Input:** occupancy grid map, start grid $S$, goal grid $G$
+
+**Output:** grid path $P = [S, \ldots, G]$, or failure
+
+1.  initialize $g(S) = 0$, $f(S) = h(S, G)$, and insert $S$ into the open set (a binary min-heap);
+2.  **while** the open set is not empty **do**
+3.  $\quad n \gets$ the node in the open set with the smallest $f$-value, breaking ties by the smaller $h$;
+4.  $\quad$ **if** $n = G$ **then** reconstruct and return the grid path $P$;
+5.  $\quad$ move $n$ into the closed set, and record its parent direction $\mathbf{d}_n$;
+6.  $\quad D \gets$ the pruned successor directions of $n$ determined by $\mathbf{d}_n$ (all eight directions if $n = S$);
+7.  $\quad$ **for each** direction $\mathbf{d} \in D$ **do**
+8.  $\quad\quad s \gets \text{Jump}(n, \mathbf{d})$, the first jump point encountered along $\mathbf{d}$, or null;
+9.  $\quad\quad$ **if** $s = \text{null}$ **or** $s$ is closed **then** continue;
+10. $\quad\quad \text{tent\_g} \gets g(n) + \text{Cost}(n, s)$, where straight steps cost $1$ and diagonal steps cost $\sqrt{2}$;
+11. $\quad\quad$ **if** $\text{tent\_g} < g(s)$ **then**
+12. $\quad\quad\quad$ set the parent of $s$ to $n$, $g(s) \gets \text{tent\_g}$, $f(s) \gets \text{tent\_g} + h(s, G)$;
+13. $\quad\quad\quad$ insert $s$ into the open set, or update its heap position if already present;
+14. $\quad\quad$ **end**
+15. $\quad$ **end**
+16. **end**
+17. **if** the open set is exhausted without reaching $G$ **then** fall back to standard A\* (AStar\_v0);
+
+---
+
+**路径重建与对角拐点修正。** JPS 搜索完成后，通过父节点指针从目标节点回溯至起点，并在相邻跳跃点之间沿直线插值补充被跳过的中间栅格，即可得到完整路径。然而，由于 JPS 的跳跃特性，重建路径中的对角线移动可能穿越障碍物拐角。为此，AStar_v3_1 在路径重建阶段引入了对角拐点修正机制：当检测到对角线移动穿越障碍物角时，将其替换为沿栅格边界行走的 L 形路径（先走行再走列，或先走列再走行），从而避免与障碍物发生碰撞。修正后的路径严格沿栅格边界行进，保证了路径的可行性。
+
+**算法降级机制。** JPS 的剪枝规则依赖于均匀的栅格地图结构。在包含复杂障碍物分布的地图中，被迫邻居的产生频率增加，JPS 的优势会被削弱，个别情况下对称性假设失效可能导致 JPS 搜索失败。为此，AStar_v3_1 在 JPS 搜索耗尽开放集仍未找到路径时，自动回退至标准 A* 模式（AStar_v0）重新搜索，以确保在存在可行解时总能找到路径。这一降级机制保证了算法的鲁棒性，使其能够适应不同复杂度的环境。
 
 ### 4.1.2 打破平局策略
 
-**动机。** 当开放集中的多个跳点具有相同的$f$值时，标准A*的选择顺序取决于实现相关的迭代顺序，本质上是任意的。然而，在$f$值相同的节点中，$h$值较小的节点已产生较大的实际代价$g = f - h$，且更接近目标。优先选择此类节点可将搜索偏向目标方向，而不影响最优性保证。
+当开放集中的多个节点具有相同的 $f$ 值时，标准 A* 的选择顺序取决于具体实现（通常是先入先出或随机），本质上是任意的。然而，在 $f$ 值相同的节点中，$h$ 值较小的节点意味着其实际代价 $g = f - h$ 较大，即该节点距起点更远、更接近目标。优先扩展此类节点可将搜索方向导向目标，且不影响最优性保证。为此，AStar_v3_1 采用"$f$ 值相同时优先选择 $h$ 值更小的节点"的打破平局策略，二叉堆中的节点比较规则定义为：
 
-**机制。** 当两个节点$n_1$和$n_2$具有相同的$f$值时，$h$值较小的节点被优先扩展。堆排序的比较规则定义为：
+$$
+\text{compare}(n_1, n_2) = \begin{cases}
+n_1, & f(n_1) < f(n_2) \\
+n_2, & f(n_1) > f(n_2) \\
+n_1, & f(n_1) = f(n_2) \land h(n_1) < h(n_2) \\
+n_2, & f(n_1) = f(n_2) \land h(n_1) > h(n_2)
+\end{cases}
+\tag{1}
+$$
 
-$$\text{compare}(n_1, n_2) = \begin{cases}
-    n_1, & f(n_1) < f(n_2) \\
-    n_2, & f(n_1) > f(n_2) \\
-    n_1, & f(n_1) = f(n_2) \land h(n_1) < h(n_2) \\
-    n_2, & f(n_1) = f(n_2) \land h(n_1) > h(n_2)
-\end{cases} \quad (1)$$
+该比较规则直接嵌入二叉堆的上浮（`bubbleUp`）与下沉（`bubbleDown`）操作中。
 
-该比较直接嵌入二叉堆的上浮和下浮操作中。
+**物理意义。** 由评估函数 $f(n) = g(n) + h(n)$ 可知，当两个节点的 $f$ 值相同时，$g$ 值较大者 $h$ 值较小。$g$ 值较大表示该节点距起点更远，而 $h$ 值较小表示其更接近目标。优先扩展此类节点使搜索偏向目标方向，减少了远离目标区域的无效探索。由于 $h$ 值在节点扩展时已经计算，此打破平局策略不产生额外计算开销。
 
-**物理意义。** 由评估函数$f(n) = g(n) + h(n)$可知，当两个节点具有相同的$f$值时，较大的$g$意味着较小的$h$。较大的$g$表示该节点距起点更远，而较小的$h$表示其更接近目标。优先扩展此类节点使搜索偏向目标方向，减少在远离目标区域的无效探索。由于$h$在节点扩展时已经计算，此打破平局策略不产生额外计算开销。
+## 4.2 路径后处理
 
----
+JPS 搜索得到的路径由栅格中心点序列组成，存在两个主要问题：路径包含冗余的中间点，且由离散的水平和垂直段组成导致平滑性不足。本节提出一种两阶段后处理流水线来解决这些问题。
 
-## 4.2 路径后处理管线
+### 4.2.1 安全距离感知的路径简化
 
-全局规划器产生的原始栅格路径继承了栅格离散化的两类伪影：（1）冗余的共线航点和阶梯状锯齿段，它们膨胀了航点数量但未减少路径长度；（2）由尖锐转角连接的分段线性段，对物理机器人的运动学不友好。我们通过两阶段后处理管线解决这些问题：安全感知的路径简化，随后是弧长参数化三次样条平滑。
+传统的路径简化方法（如拐角裁剪）直接连接路径上的非相邻节点，跳过中间点以减少路径点数量。然而，这类方法通常仅检查连接线段是否穿越障碍物，忽略了路径点与障碍物之间的安全裕度，在障碍物密集区域可能导致路径过于贴近障碍物。为此，本节提出一种安全距离感知的路径简化算法，其核心思想是在简化过程中保持路径与障碍物之间的最小安全距离。
 
-### 4.2.1 安全感知路径简化
+该算法采用四步流程处理输入路径：
 
-**动机。** 栅格约束路径在每个栅格单元转换处都包含中间航点。其中许多航点与其邻居共线，可在不改变路径几何轨迹的情况下移除。更重要的是，走廊和开阔区域产生的阶梯模式——正交段序列——可用单条直线替代，从而有效缩短路径长度。然而，不查询障碍地图的朴素视线裁剪可能通过障碍物角点连接两个航点，违反无碰撞保证。鲁棒的简化必须对每个裁剪段验证障碍物间隙，这在可见性感知路径简化方法中已被强调 [32]。
+**第一步：拐点提取。** 从路径中识别方向发生变化的节点（即拐点）。对于路径中的每个中间节点，计算其与前后节点的连接方向。若前向连接方向与后向连接方向不同，则该节点标记为拐点。路径的起点和终点始终保留。
 
-**机制。** 简化算法按四个步骤操作：
+**第二步：贪心前向扫描。** 从当前拐点 $C_i$ 出发，正向扫描所有后续拐点 $C_j$（$j > i$），调用 `IsLineFree` 逐一验证线段 $C_i \to C_j$ 是否满足安全距离约束，并记录**最远的**可达拐点 $j^{*}$。该拐点成为新的锚点，其间的所有拐点被跳过。这种贪心策略在保证安全性的前提下最大化了单步简化程度。
 
-**步骤1——拐点提取。** 原始路径首先被缩减为其拐点（转向点），定义为移动方向改变的栅格单元。对于每步移动到相邻栅格的路径，第$i$步的方向为$(r_{i+1} - r_i, c_{i+1} - c_i)$。若第$i$个栅格（$2 \leq i \leq N-1$）的入方向与出方向不同，则被分类为拐点：
+**第三步：中间点探索。** 贪心步骤确定最远可达拐点 $j^{*}$ 后，算法检查被跳过的拐点 $k$（$i < k < j^{*}$）能否通过安全线段直达更远处的拐点 $j'$（$j' > j^{*}$）。对每一对满足安全约束的 $(k, j')$，算法计算并比较两条路径的代价。若存在这样的中间拐点，则可能得到比纯贪心更短的简化路径。
 
-$$(r_i - r_{i-1}, c_i - c_{i-1}) \neq (r_{i+1} - r_i, c_{i+1} - c_i)$$
+**第四步：路径比较。** 比较两条路径的长度：路径 A（贪心）为 $d(C_i, C_{j^{*}}) + d(C_{j^{*}}, C_{j'})$，即先到达 $j^{*}$ 再继续到 $j'$；路径 B（经中间点）为 $d(C_i, C_k) + d(C_k, C_{j'})$，即跳过 $j^{*}$ 改经 $k$ 路由。若路径 B 更短，则保留中间拐点 $C_k$；否则仅保留贪心结果 $C_{j^{*}}$。这一比较确保中间点探索不会以牺牲路径效率为代价。
 
-起点和终点始终包含在内。此预处理步骤大幅减少了候选航点数量（通常减少80%—90%），使后续贪心搜索更加高效。
+安全性检查函数 `IsLineFree(p1, p2, map, dSafe)` 的实现基于逐栅格采样：从 $p_1$ 到 $p_2$ 沿线段密集采样，对每个采样点计算其与最近障碍物栅格边界的距离。只要任意采样点的距离小于安全阈值 $d_{\text{safe}}$，即判定该连接不安全。点到栅格边界的距离计算公式为：
 
-**步骤2——贪心正向扫描。** 从第一个拐点作为当前锚点开始，算法正向扫描所有后续拐点$j$，选择**最远的**直接可达拐点（即通过安全检查的视线段）。被选中的拐点成为新锚点，过程重复。这是正向扫描（非旧版中使用的反向扫描），在预过滤的拐点集上操作更为自然。
+$$
+d_x = \max\left(0,\; |p_r - c_r| - 0.5\right), \quad
+d_y = \max\left(0,\; |p_c - c_c| - 0.5\right)
+\tag{2}
+$$
 
-**步骤3——中间点探索。** 贪心步骤确定从当前锚点$i$可达的最远拐点$j$后，算法检查被跳过的拐点$k$（位于$i$和$j$之间）能否通过直接视线连接到达更远的拐点$j'$（$j$之后）。对每对通过安全检查的$(k, j')$，算法计算并比较两条路径代价：
+$$
+d(p, \text{cell}) = \sqrt{d_x^2 + d_y^2}
+\tag{3}
+$$
 
-- **路径A**（贪心）：$d(i, j) + d(j, j')$——先到达$j$，再继续到$j'$。
-- **路径B**（经中间点）：$d(i, k) + d(k, j')$——跳过$j$，通过$k$路由。
-
-若路径B更短，则保留中间拐点$k$，可能产生比纯贪心选择更短的简化路径。
-
-**步骤4——路径比较与选择。** 算法选择两条路径（贪心与经中间点）中的较短者，并相应推进锚点。此四步流程产生的简化路径长度至多等于纯贪心结果，在贪心扫描过冲了有用中间航点的环境中通常更短。
-
-**安全检查。** 核心`IsLineFree`检查验证线段上的每一点与所有障碍栅格之间至少保持安全距离$d_{\text{safe}}$。对于跨越$\ell = \max(|r_1 - r_2|, |c_1 - c_2|)$个栅格单位的线段，我们以$N_s = \max(\lceil 10\ell \rceil, 30)$个等间距点进行采样。在每个采样点$\mathbf{p} = (r, c)$（连续坐标）处，检查搜索半径$d_{\max} = \lceil d_{\text{safe}} + 0.5 \rceil$内的所有栅格单元。
-
-精确的点到栅格边界距离计算如图1所示。位于$(r_{\text{cell}}, c_{\text{cell}})$的栅格单元占据矩形区域$[r_{\text{cell}} - 0.5, r_{\text{cell}} + 0.5] \times [c_{\text{cell}} - 0.5, c_{\text{cell}} + 0.5]$。连续采样点到该矩形边界的距离为：
-
-$$d_x = \max\left(0,\; |r - r_{\text{cell}}| - 0.5\right) \quad (2)$$
-
-$$d_y = \max\left(0,\; |c - c_{\text{cell}}| - 0.5\right) \quad (3)$$
-
-$$d(\mathbf{p}, \text{cell}) = \sqrt{d_x^2 + d_y^2} \quad (4)$$
-
-$\max(0, \cdot)$算子处理采样点在某一轴上位于栅格水平或垂直范围内的特殊情况。若任何采样点与任何被占栅格之间的距离小于$d_{\text{safe}}$，则拒绝该线段。
-
-*[图1：精确点到栅格边界距离计算示意图。图中展示了采样点$\mathbf{p}$在栅格单元附近的情况，标注了水平和垂直距离$d_x$和$d_y$。阴影区域表示线段周围的安全距离$d_{\text{safe}}$。]*
-
-简化算法的伪代码见算法1。
+其中，$p = (p_r, p_c)$ 为连续坐标下的采样点，$c = (c_r, c_c)$ 为障碍物栅格的中心坐标，栅格占据矩形区域 $[c_r - 0.5, c_r + 0.5] \times [c_c - 0.5, c_c + 0.5]$。$\max(0, \cdot)$ 算子处理采样点在某坐标轴上已落入栅格水平或垂直范围内的情况。当 $d(p, \text{cell}) < d_{\text{safe}}$ 时，表示采样点已进入障碍物栅格的安全禁区。安全距离阈值 $d_{\text{safe}}$ 设置为机器人半径 $r_{\text{robot}} = 0.2$ 加上 $0.2$ 的裕度（即 $d_{\text{safe}} = 0.4$），保证路径中心线到障碍物的距离不小于机器人半径，从而保证无碰撞。算法 2 给出了路径简化算法的伪代码。
 
 ---
 
-**算法1：安全感知路径简化** \\
-\hline
-**输入：** $\text{path}[N \times 2]$ 原始栅格路径 $[r, c]$，$\text{occGrid}$ 占用栅格（$n \times n$），$n$ 地图尺寸，$d_{\text{safe}}$ 安全距离 \\
-**输出：** $\text{simplePath}[M \times 2]$ 简化路径（$M \leq N$） \\
-\hline
-1: \quad $\text{corners} \gets \textsc{提取拐点}(\text{path})$ \quad // 转向点 + 端点 \\
-2: \quad $\text{simplePath} \gets [\text{corners}(1)]$; \quad $i \gets 1$ \\
-3: \quad **当** $i < |\text{corners}|$ **时执行** \\
-4: \quad \quad // 贪心：最远直接可达拐点 \\
-5: \quad \quad $\text{farthest} \gets \max\{\, j > i : \textsc{IsLineFree}(\text{corners}(i), \text{corners}(j)) \,\}$ \\
-6: \quad \quad // 中间点探索：被跳过的拐点$k$能否到达更远的拐点$j$ \\
-7: \quad \quad $(k^*, j^*) \gets \arg\max_{i<k<\text{farthest}<j \leq |\text{corners}|} \{\, j : \textsc{IsLineFree}(\text{corners}(k), \text{corners}(j)) \,\}$ \\
-8: \quad \quad **若** $k^*$ 存在 且 $d(i,k^*) + d(k^*,j^*) < d(i,\text{farthest}) + d(\text{farthest},j^*)$ **则** \\
-9: \quad \quad \quad $\text{simplePath} \gets [\text{simplePath};\; \text{corners}(k^*);\; \text{corners}(j^*)]$; \quad $i \gets j^*$ \\
-10: \quad \quad **否则** \\
-11: \quad \quad \quad $\text{simplePath} \gets [\text{simplePath};\; \text{corners}(\text{farthest})]$; \quad $i \gets \text{farthest}$ \\
-12: \quad \quad **结束若** \\
-13: \quad **结束当** \\
-14: \quad **返回** $\text{simplePath}$ \\
-\hline
+**Algorithm 2: Safety-distance-aware path simplification**
+
+**Input:** grid path $P = [P_1, \ldots, P_N]$, occupancy grid, safety margin $d_{\text{safe}}$
+
+**Output:** simplified path $P_s$ ($|P_s| \leq N$)
+
+1.  $C \gets$ the corner points of $P$ where the direction changes, plus the two endpoints;
+2.  $P_s \gets [C_1]$; $\; i \gets 1$;
+3.  **while** $i < |C|$ **do**
+4.  $\quad j^{*} \gets$ the farthest corner reachable from $C_i$ by a collision-free segment; $\;$ *(greedy forward scan)*
+5.  $\quad$ **if** $j^{*} = |C|$ **then** append $C_{|C|}$ to $P_s$ and break;
+6.  $\quad (k^{*}, j') \gets$ among all skipped corners $k$ ($i < k < j^{*}$) and farther corners $j$ ($j^{*} < j \leq |C|$), the pair with the largest $j$ such that the segment $C_k \to C_j$ is collision-free;
+7.  $\quad$ **if** $k^{*}$ exists and $d(C_i, C_{k^{*}}) + d(C_{k^{*}}, C_{j'}) < d(C_i, C_{j^{*}}) + d(C_{j^{*}}, C_{j'})$ **then**
+8.  $\quad\quad$ append $C_{k^{*}}$ and $C_{j'}$ to $P_s$, and set $i \gets j'$; $\;$ *(route through the intermediate corner)*
+9.  $\quad$ **else**
+10. $\quad\quad$ append $C_{j^{*}}$ to $P_s$, and set $i \gets j^{*}$;
+11. $\quad$ **end**
+12. **end**
+13. **return** $P_s$;
 
 ---
 
-`IsLineFree`子程序（算法2）实现了上述密集采样和精确距离检查。搜索半径$d_{\max}$设为$\lceil d_{\text{safe}} + 0.5 \rceil$，因为更远的栅格单元不可能在其边界位于任何采样点的安全距离内。
+安全性检查函数 $\textsc{IsLineFree}$ 的伪代码如算法 3 所示。搜索半径 $d_{\max}$ 设置为 $\lceil d_{\text{safe}} + 0.5 \rceil$，因为超出此距离的栅格不可能与采样点的安全距离产生交集。
 
 ---
 
-**算法2：IsLineFree** \\
-\hline
-**输入：** $p_1, p_2$ 线段端点 $[r, c]$，$\text{occGrid}$，$n$，$d_{\text{safe}}$ \\
-**输出：** $\text{free}$（布尔值） \\
-\hline
-1: \quad $\ell \gets \max(|p_1.r - p_2.r|, |p_1.c - p_2.c|)$ \\
-2: \quad $N_s \gets \max(\lceil 10 \cdot \ell \rceil, 30)$ \quad // 密集采样 \\
-3: \quad $d_{\max} \gets \lceil d_{\text{safe}} + 0.5 \rceil$ \\
-4: \quad **对** $k = 0$ **至** $N_s$ **执行** \\
-5: \quad \quad $\alpha \gets k / N_s$; \quad $r \gets p_1.r + \alpha(p_2.r - p_1.r)$; \quad $c \gets p_1.c + \alpha(p_2.c - p_1.c)$ \\
-6: \quad \quad $r_0 \gets \text{round}(r)$; \quad $c_0 \gets \text{round}(c)$ \\
-7: \quad \quad **对** $dr = -d_{\max}$ **至** $d_{\max}$ **执行** \\
-8: \quad \quad \quad $r_{\text{cell}} \gets r_0 + dr$ \\
-9: \quad \quad \quad **若** $r_{\text{cell}} < 1$ **或** $r_{\text{cell}} > n$ **则继续** \\
-10: \quad \quad \quad **对** $dc = -d_{\max}$ **至** $d_{\max}$ **执行** \\
-11: \quad \quad \quad \quad $c_{\text{cell}} \gets c_0 + dc$ \\
-12: \quad \quad \quad \quad **若** $c_{\text{cell}} < 1$ **或** $c_{\text{cell}} > n$ **则继续** \\
-13: \quad \quad \quad \quad **若** $\neg \text{occGrid}(r_{\text{cell}}, c_{\text{cell}})$ **则继续** \\
-14: \quad \quad \quad \quad $d_x \gets \max(0, |r - r_{\text{cell}}| - 0.5)$ \\
-15: \quad \quad \quad \quad $d_y \gets \max(0, |c - c_{\text{cell}}| - 0.5)$ \\
-16: \quad \quad \quad \quad **若** $\sqrt{d_x^2 + d_y^2} < d_{\text{safe}}$ **则返回 false** \\
-17: \quad \quad \quad **结束对** \\
-18: \quad \quad **结束对** \\
-19: \quad **结束对** \\
-20: \quad **返回 true** \\
-\hline
+**Algorithm 3: IsLineFree** (collision check with safety margin)
+
+**Input:** segment endpoints $p_1$, $p_2$ (grid coordinates), occupancy grid, safety margin $d_{\text{safe}}$
+
+**Output:** true if the segment keeps distance $\geq d_{\text{safe}}$ from every obstacle, false otherwise
+
+1.  $\ell \gets \max(|p_1.r - p_2.r|,\; |p_1.c - p_2.c|)$;
+2.  $N_s \gets \max(\lceil 10 \cdot \ell \rceil, 30)$; $\;$ *(number of dense sample points)*
+3.  $d_{\max} \gets \lceil d_{\text{safe}} + 0.5 \rceil$; $\;$ *(search radius in cells)*
+4.  **for** $k = 0$ **to** $N_s$ **do**
+5.  $\quad p \gets p_1 + (k / N_s) \cdot (p_2 - p_1)$; $\;$ *(sample point in continuous coordinates)*
+6.  $\quad$ **for each** cell $(r, c)$ within Chebyshev distance $d_{\max}$ of $p$ **do**
+7.  $\quad\quad$ **if** $(r, c)$ is occupied **then**
+8.  $\quad\quad\quad d \gets$ the distance from $p$ to the boundary of cell $(r, c)$; $\;$ *(see Eq. (2)–(3))*
+9.  $\quad\quad\quad$ **if** $d < d_{\text{safe}}$ **then return** false;
+10. $\quad\quad$ **end**
+11. $\quad$ **end**
+12. **end**
+13. **return** true;
 
 ---
-
-**在框架中的作用。** 在旅行商代价矩阵计算（第4.4节）中，`enableSimplify`标志控制点对代价是源自原始栅格路径还是简化路径。使用简化路径的欧氏长度作为代价能产生更接近真实连续路径长度的代价矩阵，提升旅行商求解器对不同访问顺序方案的区分能力。拐点提取步骤（步骤1）在与JPS输出配合使用时尤为有效：JPS产生的路径航点少于标准A*，因此拐点集已经很小，贪心+中间点探索进一步将其缩减为最小安全子集。
 
 ### 4.2.2 弧长参数化三次样条平滑
 
-**动机。** 简化路径虽然安全且航点最少，但仍是分段线性的，在航点处存在一阶导数不连续。沿此类轨迹运行的物理机器人必须在每个拐角处减速后重新加速，增加能耗和行驶时间。三次样条插值产生$C^2$连续曲线，适合平滑轨迹跟踪 [17], [18]。然而，直接对稀疏分布的航点拟合三次样条可能导致样条在远距点之间过冲——这是多项式插值中龙格现象的产物——即使所有航点安全也可能裁剪障碍物角点。
+路径简化后的路径虽已去除冗余点，但仍由直线段连接组成，在拐点处存在曲率突变，不适合全向机器人的平滑运动。本节采用三次样条插值对简化路径进行平滑处理。
 
-**机制。** 平滑流程按三个步骤操作。
+传统的三次样条插值直接以路径点的索引作为参数进行拟合，当路径点间距不均匀时会导致曲线形状失真。为解决这一问题，本节采用弧长参数化方法，以路径点之间的累积欧氏距离作为参数，使参数空间与实际几何空间保持一致。平滑过程分为三个步骤：
 
-**步骤1——栅格到连续坐标转换。** 栅格索引航点$[r, c]$通过将每个栅格中心映射到其几何中心处转换为连续世界坐标：
+**步骤一：稀疏段致密化。** 首先检测路径中相邻点间距超过 2 个栅格单位的线段。对于这些稀疏段，在两端点之间沿线段线性插值 $\lfloor \ell / 2 \rfloor$ 个中间点。致密化的目的是为样条曲线提供足够的控制点，防止曲线在长直段处因控制点不足而产生的过冲（Runge 现象），避免曲线偏离预期折线甚至裁剪障碍物角点。
 
-$$x = c - 0.5, \quad y = r - 0.5 \quad (5)$$
+**步骤二：弧长参数化。** 设致密化后的路径点序列为 $\{P_0, P_1, \ldots, P_M\}$，其中 $P_i = (x_i, y_i)$ 为连续坐标。计算各点的累积弦长（弧长）参数：
 
-**步骤2——稀疏段加密。** 拟合样条之前，扫描航点序列中欧氏距离超过$2$个单位的连续点对。对每对点，沿线段线性插值$\lfloor \text{dist} / 2 \rfloor$个中间点。此加密为样条提供足够的节点以贴近预期折线，防止振荡伪影而不改变几何路径。
+$$
+s_0 = 0, \quad s_i = s_{i-1} + \|P_i - P_{i-1}\|_2, \quad i = 1, 2, \ldots, M
+\tag{4}
+$$
 
-**步骤3——弧长参数化三次样条。** 沿（加密后的）航点序列的累积弦长定义单调参数：
+然后分别以 $s$ 为自变量对 $x(s)$ 和 $y(s)$ 进行三次样条插值，得到参数化曲线 $(x(s), y(s))$。三次样条在每个子区间 $[s_i, s_{i+1}]$ 上为三次多项式，保证一阶和二阶导数连续，从而确保曲线的曲率连续性。
 
-$$t_1 = 0, \quad t_k = \sum_{i=2}^{k} \sqrt{(x_i - x_{i-1})^2 + (y_i - y_{i-1})^2} \quad (6)$$
-
-通过`unique`操作去除由重合或近重合航点产生的重复参数值，确保严格单调性。然后分别对$x$和$y$序列关于$t$拟合具有非扭结端点条件的三次样条：
-
-$$\hat{x}(t) = \text{spline}(t, \{x_i\}, t_{\text{interp}}), \quad \hat{y}(t) = \text{spline}(t, \{y_i\}, t_{\text{interp}}) \quad (7)$$
-
-其中$t_{\text{interp}}$为均匀间距数组，密度$\rho = 10$（即每原始段10个点）。弧长参数化确保样条沿路径以近似均匀的空间速率演化，产生物理上有意义的参考轨迹——$t$的等增量对应路径上的等距离。
+**步骤三：等弧长重采样。** 以密度 $\rho = 10$（每段插入 10 个点）沿弧长参数 $s$ 均匀采样，生成最终的平滑路径点序列。由于 $s$ 与实际几何距离近似线性关系，等弧长采样保证了路径点在空间中的均匀分布，避免了传统等参数采样在曲率大处点密、曲率小处点疏的问题。算法 4 给出了平滑算法的伪代码。
 
 ---
 
-**算法3：弧长参数化三次样条平滑** \\
-\hline
-**输入：** $\text{path}[N \times 2]$ 输入路径 $[r, c]$，$\rho$ 插值密度（默认$10$） \\
-**输出：** $\text{smoothPath}[M \times 2]$ 平滑连续路径 $[x, y]$ \\
-\hline
-1: \quad // 步骤1：栅格到连续坐标 \\
-2: \quad $x \gets \text{path}(:,2) - 0.5$; \quad $y \gets \text{path}(:,1) - 0.5$ \\
-3: \quad // 步骤2：稀疏段加密 \\
-4: \quad $\text{newX} \gets [x(1)]$; \quad $\text{newY} \gets [y(1)]$ \\
-5: \quad **对** $i = 2$ **至** $\text{length}(x)$ **执行** \\
-6: \quad \quad $\Delta x \gets x(i) - x(i-1)$; \quad $\Delta y \gets y(i) - y(i-1)$ \\
-7: \quad \quad $\ell \gets \sqrt{\Delta x^2 + \Delta y^2}$ \\
-8: \quad \quad **若** $\ell > 2$ **则** \\
-9: \quad \quad \quad $n \gets \lfloor \ell / 2 \rfloor$ \\
-10: \quad \quad \quad **对** $k = 1$ **至** $n$ **执行** \\
-11: \quad \quad \quad \quad $\alpha \gets k / (n + 1)$ \\
-12: \quad \quad \quad \quad $\text{newX} \gets [\text{newX}, \; x(i-1) + \alpha \cdot \Delta x]$ \\
-13: \quad \quad \quad \quad $\text{newY} \gets [\text{newY}, \; y(i-1) + \alpha \cdot \Delta y]$ \\
-14: \quad \quad \quad **结束对** \\
-15: \quad \quad **结束若** \\
-16: \quad \quad $\text{newX} \gets [\text{newX}, \; x(i)]$; \quad $\text{newY} \gets [\text{newY}, \; y(i)]$ \\
-17: \quad **结束对** \\
-18: \quad // 步骤3：弧长参数化与样条拟合 \\
-19: \quad $t \gets [0; \text{cumsum}(\sqrt{\Delta\text{newX}^2 + \Delta\text{newY}^2})]$ \\
-20: \quad 去除重复$t$值（保留首次出现） \\
-21: \quad **若** $\text{length}(t_{\text{unique}}) < 3$ **则返回** $[\text{newX}', \text{newY}']$ \\
-22: \quad $t_{\text{interp}} \gets \text{linspace}(t_{\text{unique}}(1), t_{\text{unique}}(\text{end}), (K-1) \cdot \rho + 1)$ \\
-23: \quad $\hat{x} \gets \text{spline}(t_{\text{unique}}, x_{\text{unique}}, t_{\text{interp}})$ \\
-24: \quad $\hat{y} \gets \text{spline}(t_{\text{unique}}, y_{\text{unique}}, t_{\text{interp}})$ \\
-25: \quad **返回** $[\hat{x}', \hat{y}']$ \\
-\hline
+**Algorithm 4: Arc-length parameterized cubic spline smoothing**
+
+**Input:** grid path $P = [P_1, \ldots, P_N]$, density $\rho$ (default $10$)
+
+**Output:** smoothed continuous path $Q = [Q_1, \ldots, Q_M]$ in $[x, y]$
+
+1.  convert each grid point $P_i = (r_i, c_i)$ to continuous coordinates $(x_i, y_i) = (c_i - 0.5,\; r_i - 0.5)$;
+2.  **for each** consecutive pair whose segment length exceeds $2$ **do**
+3.  $\quad$ insert $\lfloor \text{length} / 2 \rfloor$ equally spaced intermediate points along the segment; $\;$ *(densification to prevent spline overshoot)*
+4.  **end**
+5.  compute the cumulative chord length $t_1 = 0$, $t_i = t_{i-1} + \|P_i - P_{i-1}\|_2$; $\;$ *(arc-length parameter)*
+6.  remove duplicate $t$ values to keep strict monotonicity;
+7.  fit cubic splines $x(t)$ and $y(t)$ through the densified points;
+8.  sample $x(t)$ and $y(t)$ at $\rho$ points per segment to obtain $Q$;
+9.  **return** $Q$;
 
 ---
 
-**在框架中的作用。** 平滑作为路径处理管线的最后阶段，作用于已安全的简化折线（或在简化禁用时作用于原始A*路径）。所得连续轨迹直接作为机器人执行期间局部规划器的参考路径。由于平滑是纯几何操作，不重新检查障碍物间隙，无碰撞保证完全继承自其前的简化阶段。
+### 4.2.3 流水线集成
 
-### 4.2.3 管线集成
+上述后处理操作以流水线方式集成：JPS 搜索（算法 1）输出原始栅格路径 → SimplifyPath（算法 2）去除冗余点 → SmoothPath（算法 4）生成平滑的连续坐标路径。整个流水线在 SimulationManager 中一次性完成，输出的路径既满足安全性约束，又具有良好的平滑性，可直接用于机器人的运动跟踪。
 
-完整路径处理管线按固定顺序执行：
-
-1. **全局规划**：基于JPS的A*产生原始栅格路径（或以标准A*作为回退）。
-2. **简化**（可选，默认为旅行商代价计算启用）：拐点提取→贪心+中间点探索→最小安全航点子集。
-3. **平滑**（可选）：在连续世界坐标中产生$C^2$连续轨迹。
-
-*[图2：路径通过管线各阶段的三面板对比。面板（a）：原始JPS栅格路径。面板（b）：简化后——拐点提取，冗余航点移除。面板（c）：平滑后——最终连续$C^2$曲线。]*
-
-顺序是刻意且不可互换的：简化必须先于平滑，因为它在定义了占用栅格的栅格空间中操作，建立安全保证。平滑在已验证安全的折线上于连续坐标中操作。
+这种两阶段设计的合理性在于：路径简化和样条平滑分别解决了路径质量的两个不同维度。简化减少了路径点数量（降低了后续计算的复杂度），同时通过安全距离约束保证了路径的安全裕度；平滑则将离散的栅格路径转化为连续曲线，使机器人能够以平滑的运动轨迹跟踪路径。若跳过简化直接进行平滑，样条曲线需要处理大量冗余的控制点，不仅计算成本更高，还可能因控制点过于密集而产生不稳定的曲线形状。消融实验（表 6）的结果也验证了这一设计的有效性。
