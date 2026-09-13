@@ -24,3 +24,19 @@ Desktop.ini
 
 # Claude local settings
 .claude/settings.local.json
+
+# Python
+.venv*/
+__pycache__/
+*.pyc
+
+# LaTeX intermediate files
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+
+# Word
+*.docx

@@ -111,24 +111,24 @@ $q_0 = 0.45$意味着平均而言，45%的构建步使用贪心选择加速收�
 
 ---
 
-**算法4：候选列表加速的可变邻域下降局部搜索** \\
-\hline
-**输入：** $\boldsymbol{\sigma}[1 \dots N+1]$ 闭合回路，$\mathbf{D}_{\text{ext}}[(N+1) \times (N+1)]$ 扩展代价矩阵，$\mathbf{C}$ 候选布尔矩阵 \\
-**输出：** 改进后的$\boldsymbol{\sigma}$ 及其代价 \\
-\hline
-1: \quad $\text{cost} \gets \textsc{回路代价}(\boldsymbol{\sigma}, \mathbf{D}_{\text{ext}})$ \\
-2: \quad **重复** \\
-3: \quad \quad $\text{improved} \gets \text{false}$ \\
-4: \quad \quad $[\boldsymbol{\sigma}, \text{cost}, \text{ok}] \gets \textsc{TwoOptClosed}(\boldsymbol{\sigma}, \text{cost}, \mathbf{C})$ \quad // 候选剪枝2-opt \\
-5: \quad \quad $\text{improved} \gets \text{improved} \lor \text{ok}$ \\
-6: \quad \quad $[\boldsymbol{\sigma}, \text{cost}, \text{ok}] \gets \textsc{RelocateClosed}(\boldsymbol{\sigma}, \text{cost}, \mathbf{C})$ \quad // 候选剪枝重定位 \\
-7: \quad \quad $\text{improved} \gets \text{improved} \lor \text{ok}$ \\
-8: \quad \quad $[\boldsymbol{\sigma}, \text{cost}, \text{ok}] \gets \textsc{SwapClosed}(\boldsymbol{\sigma}, \text{cost}, \mathbf{C})$ \quad // 候选剪枝交换 \\
-9: \quad \quad $\text{improved} \gets \text{improved} \lor \text{ok}$ \\
-10: \quad **直至** $\neg \text{improved}$ \\
-11: \quad $\text{cost} \gets \textsc{回路代价}(\boldsymbol{\sigma}, \mathbf{D}_{\text{ext}})$ \quad // 最终精确重算 \\
-12: \quad **返回** $\boldsymbol{\sigma}, \text{cost}$ \\
-\hline
+**Algorithm 5: Candidate-list-accelerated variable neighborhood descent**
+
+**Input:** closed tour $\boldsymbol{\sigma} = [\sigma_1, \dots, \sigma_{N+1}]$, extended cost matrix $\mathbf{D}_{\text{ext}}$, candidate boolean matrix $\mathbf{C}$
+
+**Output:** improved tour $\boldsymbol{\sigma}$ and its cost
+
+1:  $\text{cost} \gets$ the cost of tour $\boldsymbol{\sigma}$ under $\mathbf{D}_{\text{ext}}$;
+2:  **repeat**
+3:  $\quad$ improved $\gets$ false;
+4:  $\quad$ $[\boldsymbol{\sigma}, \text{cost}, \text{ok}] \gets$ apply the 2-opt operator with candidate-list pruning (first-improvement);
+5:  $\quad$ improved $\gets$ improved or ok;
+6:  $\quad$ $[\boldsymbol{\sigma}, \text{cost}, \text{ok}] \gets$ apply the relocate operator with candidate-list pruning;
+7:  $\quad$ improved $\gets$ improved or ok;
+8:  $\quad$ $[\boldsymbol{\sigma}, \text{cost}, \text{ok}] \gets$ apply the swap operator with candidate-list pruning;
+9:  $\quad$ improved $\gets$ improved or ok;
+10: **until** improved = false;
+11: $\text{cost} \gets$ the exact cost of the final tour $\boldsymbol{\sigma}$;
+12: **return** $\boldsymbol{\sigma}$, $\text{cost}$;
 
 ---
 
@@ -193,7 +193,7 @@ $$\text{CV} = \frac{\sigma_{\text{costs}}}{\mu_{\text{costs}}} \quad (23)$$
 
 1. S形曲线（式20）确定接收局部搜索的蚂蚁比例。
 2. 所有$40$只蚂蚁使用ACS风格的伪随机转移规则（式18-19）构建完整的$N+1$节点哈密顿回路。
-3. 精英-随机混合选择（式21-22）选择哪些蚂蚁接收具有候选列表加速的VND局部搜索（算法4）。
+3. 精英-随机混合选择（式21-22）选择哪些蚂蚁接收具有候选列表加速的VND局部搜索（算法5）。
 4. 更新全局最优回路并检查自适应停止准则（式23）。
 5. 信息素蒸发（式13）并在迭代最优和全局最优回路上沉积（式14-15），随后进行动态MMAS边界限幅（式16-17）。
 
@@ -208,7 +208,7 @@ flowchart TB
     C --> D["计算 S 形 optRatio"]
     D --> E["40 只蚂蚁构建回路\n(ACS 伪随机规则, 式19)"]
     E --> F["选择局部搜索蚂蚁\n(精英 70% + 随机 30%)"]
-    F --> G["闭合回路上 VND\n含候选列表 (算法4)"]
+    F --> G["闭合回路上 VND\n含候选列表 (算法5)"]
     G --> H["更新全局最优"]
     H --> I{"自适应停止?\n(CV<0.001 或 停滞≥70)"}
     I -->|"是"| J["从回路提取路径\n(移除虚拟节点 V)"]

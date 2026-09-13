@@ -32,23 +32,23 @@
 
 **Output:** grid path $P = [S, \ldots, G]$, or failure
 
-1.  initialize $g(S) = 0$, $f(S) = h(S, G)$, and insert $S$ into the open set (a binary min-heap);
-2.  **while** the open set is not empty **do**
-3.  $\quad n \gets$ the node in the open set with the smallest $f$-value, breaking ties by the smaller $h$;
-4.  $\quad$ **if** $n = G$ **then** reconstruct and return the grid path $P$;
-5.  $\quad$ move $n$ into the closed set, and record its parent direction $\mathbf{d}_n$;
-6.  $\quad D \gets$ the pruned successor directions of $n$ determined by $\mathbf{d}_n$ (all eight directions if $n = S$);
-7.  $\quad$ **for each** direction $\mathbf{d} \in D$ **do**
-8.  $\quad\quad s \gets \text{Jump}(n, \mathbf{d})$, the first jump point encountered along $\mathbf{d}$, or null;
-9.  $\quad\quad$ **if** $s = \text{null}$ **or** $s$ is closed **then** continue;
-10. $\quad\quad \text{tent\_g} \gets g(n) + \text{Cost}(n, s)$, where straight steps cost $1$ and diagonal steps cost $\sqrt{2}$;
-11. $\quad\quad$ **if** $\text{tent\_g} < g(s)$ **then**
-12. $\quad\quad\quad$ set the parent of $s$ to $n$, $g(s) \gets \text{tent\_g}$, $f(s) \gets \text{tent\_g} + h(s, G)$;
-13. $\quad\quad\quad$ insert $s$ into the open set, or update its heap position if already present;
-14. $\quad\quad$ **end**
-15. $\quad$ **end**
-16. **end**
-17. **if** the open set is exhausted without reaching $G$ **then** fall back to standard A\* (AStar\_v0);
+1:  initialize $g(S) = 0$, $f(S) = h(S, G)$, and insert $S$ into the open set (a binary min-heap);
+2:  **while** the open set is not empty **do**
+3:  $\quad n \gets$ the node in the open set with the smallest $f$-value, breaking ties by the smaller $h$;
+4:  $\quad$ **if** $n = G$ **then** reconstruct and return the grid path $P$;
+5:  $\quad$ move $n$ into the closed set, and record its parent direction $\mathbf{d}_n$;
+6:  $\quad D \gets$ the pruned successor directions of $n$ determined by $\mathbf{d}_n$ (all eight directions if $n = S$);
+7:  $\quad$ **for each** direction $\mathbf{d} \in D$ **do**
+8:  $\quad\quad s \gets \text{Jump}(n, \mathbf{d})$, the first jump point encountered along $\mathbf{d}$, or null;
+9:  $\quad\quad$ **if** $s = \text{null}$ **or** $s$ is closed **then** continue;
+10: $\quad\quad \text{tent\_g} \gets g(n) + \text{Cost}(n, s)$, where straight steps cost $1$ and diagonal steps cost $\sqrt{2}$;
+11: $\quad\quad$ **if** $\text{tent\_g} < g(s)$ **then**
+12: $\quad\quad\quad$ set the parent of $s$ to $n$, $g(s) \gets \text{tent\_g}$, $f(s) \gets \text{tent\_g} + h(s, G)$;
+13: $\quad\quad\quad$ insert $s$ into the open set, or update its heap position if already present;
+14: $\quad\quad$ **end**
+15: $\quad$ **end**
+16: **end**
+17: **if** the open set is exhausted without reaching $G$ **then** fall back to standard A\* (AStar\_v0);
 
 ---
 
@@ -115,19 +115,19 @@ $$
 
 **Output:** simplified path $P_s$ ($|P_s| \leq N$)
 
-1.  $C \gets$ the corner points of $P$ where the direction changes, plus the two endpoints;
-2.  $P_s \gets [C_1]$; $\; i \gets 1$;
-3.  **while** $i < |C|$ **do**
-4.  $\quad j^{*} \gets$ the farthest corner reachable from $C_i$ by a collision-free segment; $\;$ *(greedy forward scan)*
-5.  $\quad$ **if** $j^{*} = |C|$ **then** append $C_{|C|}$ to $P_s$ and break;
-6.  $\quad (k^{*}, j') \gets$ among all skipped corners $k$ ($i < k < j^{*}$) and farther corners $j$ ($j^{*} < j \leq |C|$), the pair with the largest $j$ such that the segment $C_k \to C_j$ is collision-free;
-7.  $\quad$ **if** $k^{*}$ exists and $d(C_i, C_{k^{*}}) + d(C_{k^{*}}, C_{j'}) < d(C_i, C_{j^{*}}) + d(C_{j^{*}}, C_{j'})$ **then**
-8.  $\quad\quad$ append $C_{k^{*}}$ and $C_{j'}$ to $P_s$, and set $i \gets j'$; $\;$ *(route through the intermediate corner)*
-9.  $\quad$ **else**
-10. $\quad\quad$ append $C_{j^{*}}$ to $P_s$, and set $i \gets j^{*}$;
-11. $\quad$ **end**
-12. **end**
-13. **return** $P_s$;
+1:  $C \gets$ the corner points of $P$ where the direction changes, plus the two endpoints;
+2:  $P_s \gets [C_1]$; $\; i \gets 1$;
+3:  **while** $i < |C|$ **do**
+4:  $\quad j^{*} \gets$ the farthest corner reachable from $C_i$ by a collision-free segment; $\;$ *(greedy forward scan)*
+5:  $\quad$ **if** $j^{*} = |C|$ **then** append $C_{|C|}$ to $P_s$ and break;
+6:  $\quad (k^{*}, j') \gets$ among all skipped corners $k$ ($i < k < j^{*}$) and farther corners $j$ ($j^{*} < j \leq |C|$), the pair with the largest $j$ such that the segment $C_k \to C_j$ is collision-free;
+7:  $\quad$ **if** $k^{*}$ exists and $d(C_i, C_{k^{*}}) + d(C_{k^{*}}, C_{j'}) < d(C_i, C_{j^{*}}) + d(C_{j^{*}}, C_{j'})$ **then**
+8:  $\quad\quad$ append $C_{k^{*}}$ and $C_{j'}$ to $P_s$, and set $i \gets j'$; $\;$ *(route through the intermediate corner)*
+9:  $\quad$ **else**
+10: $\quad\quad$ append $C_{j^{*}}$ to $P_s$, and set $i \gets j^{*}$;
+11: $\quad$ **end**
+12: **end**
+13: **return** $P_s$;
 
 ---
 
@@ -141,19 +141,19 @@ $$
 
 **Output:** true if the segment keeps distance $\geq d_{\text{safe}}$ from every obstacle, false otherwise
 
-1.  $\ell \gets \max(|p_1.r - p_2.r|,\; |p_1.c - p_2.c|)$;
-2.  $N_s \gets \max(\lceil 10 \cdot \ell \rceil, 30)$; $\;$ *(number of dense sample points)*
-3.  $d_{\max} \gets \lceil d_{\text{safe}} + 0.5 \rceil$; $\;$ *(search radius in cells)*
-4.  **for** $k = 0$ **to** $N_s$ **do**
-5.  $\quad p \gets p_1 + (k / N_s) \cdot (p_2 - p_1)$; $\;$ *(sample point in continuous coordinates)*
-6.  $\quad$ **for each** cell $(r, c)$ within Chebyshev distance $d_{\max}$ of $p$ **do**
-7.  $\quad\quad$ **if** $(r, c)$ is occupied **then**
-8.  $\quad\quad\quad d \gets$ the distance from $p$ to the boundary of cell $(r, c)$; $\;$ *(see Eq. (2)–(3))*
-9.  $\quad\quad\quad$ **if** $d < d_{\text{safe}}$ **then return** false;
-10. $\quad\quad$ **end**
-11. $\quad$ **end**
-12. **end**
-13. **return** true;
+1:  $\ell \gets \max(|p_1.r - p_2.r|,\; |p_1.c - p_2.c|)$;
+2:  $N_s \gets \max(\lceil 10 \cdot \ell \rceil, 30)$; $\;$ *(number of dense sample points)*
+3:  $d_{\max} \gets \lceil d_{\text{safe}} + 0.5 \rceil$; $\;$ *(search radius in cells)*
+4:  **for** $k = 0$ **to** $N_s$ **do**
+5:  $\quad p \gets p_1 + (k / N_s) \cdot (p_2 - p_1)$; $\;$ *(sample point in continuous coordinates)*
+6:  $\quad$ **for each** cell $(r, c)$ within Chebyshev distance $d_{\max}$ of $p$ **do**
+7:  $\quad\quad$ **if** $(r, c)$ is occupied **then**
+8:  $\quad\quad\quad d \gets$ the distance from $p$ to the boundary of cell $(r, c)$; $\;$ *(see Eq. (2)–(3))*
+9:  $\quad\quad\quad$ **if** $d < d_{\text{safe}}$ **then return** false;
+10: $\quad\quad$ **end**
+11: $\quad$ **end**
+12: **end**
+13: **return** true;
 
 ---
 
@@ -184,15 +184,15 @@ $$
 
 **Output:** smoothed continuous path $Q = [Q_1, \ldots, Q_M]$ in $[x, y]$
 
-1.  convert each grid point $P_i = (r_i, c_i)$ to continuous coordinates $(x_i, y_i) = (c_i - 0.5,\; r_i - 0.5)$;
-2.  **for each** consecutive pair whose segment length exceeds $2$ **do**
-3.  $\quad$ insert $\lfloor \text{length} / 2 \rfloor$ equally spaced intermediate points along the segment; $\;$ *(densification to prevent spline overshoot)*
-4.  **end**
-5.  compute the cumulative chord length $t_1 = 0$, $t_i = t_{i-1} + \|P_i - P_{i-1}\|_2$; $\;$ *(arc-length parameter)*
-6.  remove duplicate $t$ values to keep strict monotonicity;
-7.  fit cubic splines $x(t)$ and $y(t)$ through the densified points;
-8.  sample $x(t)$ and $y(t)$ at $\rho$ points per segment to obtain $Q$;
-9.  **return** $Q$;
+1:  convert each grid point $P_i = (r_i, c_i)$ to continuous coordinates $(x_i, y_i) = (c_i - 0.5,\; r_i - 0.5)$;
+2:  **for each** consecutive pair whose segment length exceeds $2$ **do**
+3:  $\quad$ insert $\lfloor \text{length} / 2 \rfloor$ equally spaced intermediate points along the segment; $\;$ *(densification to prevent spline overshoot)*
+4:  **end**
+5:  compute the cumulative chord length $t_1 = 0$, $t_i = t_{i-1} + \|P_i - P_{i-1}\|_2$; $\;$ *(arc-length parameter)*
+6:  remove duplicate $t$ values to keep strict monotonicity;
+7:  fit cubic splines $x(t)$ and $y(t)$ through the densified points;
+8:  sample $x(t)$ and $y(t)$ at $\rho$ points per segment to obtain $Q$;
+9:  **return** $Q$;
 
 ---
 

@@ -61,7 +61,7 @@ $$\mathbf{D}_{\text{simplified}}(i, j) = L_{\text{Euclidean}}\big(\textsc{Simpli
 flowchart LR
     A["任务规格\n(起点, 目标点, 终点, 地图)"] --> B["第一层：代价矩阵\nA* + SimplifyPath\n(式24-25)"]
     B --> C["代价矩阵\nD[N×N]"]
-    C --> D["第二层：开放旅行商\n改进蚁群优化\n(算法5)"]
+    C --> D["第二层：开放旅行商\n改进蚁群优化\n(第4.3节)"]
     D --> E["访问顺序\nπ*"]
     E --> F["路径检索\n+ 平滑"]
     F --> G["连续\n参考轨迹"]

@@ -7,7 +7,7 @@ rootDir = fileparts(fileparts(fileparts(mfilename('fullpath'))));
 addpath(genpath(rootDir));
 
 %% 加载地图
-[map, mapData] = loadPresetMap('杂乱不规则');
+[map, mapData] = loadPresetMap('简化路径测试');
 startGrid = mapData.startPoint;
 goalGrid  = mapData.goalPoint;
 n = map.mapSize;
@@ -15,9 +15,9 @@ occGrid = map.getOccupancyGrid();
 
 fprintf('地图: 简化路径测试 | 起点=[%d,%d] | 终点=[%d,%d]\n', startGrid, goalGrid);
 
-%% AStar_v1 规划原始路径
-fprintf('运行 AStar_v1 (alpha=0.3, beta=3) ...\n');
-[path, info] = AStar_v1(map, startGrid, goalGrid, 0, [], 0.3, 3);
+%% AStar_v3_1 规划原始路径
+fprintf('运行 AStar_v3_1 (JPS) ...\n');
+path = AStar_v3_1(map, startGrid, goalGrid, 0, []);
 
 %% SimplifyPath 拐角裁剪
 fprintf('运行 SimplifyPath ...\n');

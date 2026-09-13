@@ -1,4 +1,4 @@
-%% exp_simplify_path — AStar_v1 + SimplifyPath 拐角裁剪效果测试
+%% exp_simplify_path — AStar_v3_1 + SimplifyPath 拐角裁剪效果测试
 %  地图: 简化路径测试
 %  对比原始路径与简化路径的代价和可视化
 
@@ -15,12 +15,12 @@ occGrid = map.getOccupancyGrid();
 
 fprintf('地图: 简化路径测试 | 起点=[%d,%d] | 终点=[%d,%d]\n', startGrid, goalGrid);
 
-%% AStar_v1 规划原始路径
-fprintf('运行 AStar_v1 (alpha=0.3, beta=3) ...\n');
+%% AStar_v3_1 规划原始路径
+fprintf('运行 AStar_v3_1 (JPS) ...\n');
 tic;
-[path, info] = AStar_v1(map, startGrid, goalGrid, 0, [], 0.3, 3);
+path = AStar_v3_1(map, startGrid, goalGrid, 0, []);
 tAstar = toc;
-fprintf('  扩展节点: %d | 路径点数: %d | 耗时: %.4fs\n', info.expandedNodes, size(path,1), tAstar);
+fprintf('  路径点数: %d | 耗时: %.4fs\n', size(path,1), tAstar);
 
 %% 路径代价计算函数
 calcCost = @(p) sum(sqrt(sum(diff(p).^2, 2)));
