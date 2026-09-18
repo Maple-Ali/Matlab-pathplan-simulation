@@ -1,7 +1,7 @@
 """JPS neighbor-pruning schematic for manuscript Fig. X.
 
-Panel (a): cardinal (straight) expansion keeps natural N and forced F.
-Panel (b): diagonal expansion keeps natural N1 (diag), N2 (horiz), N3 (vert) and forced F.
+Left panel: cardinal (straight) expansion keeps natural N and forced F.
+Right panel: diagonal expansion keeps natural N1 (diag), N2 (horiz), N3 (vert) and forced F.
 """
 
 from __future__ import annotations
@@ -43,8 +43,6 @@ mpl.rcParams.update(
     {
         "font.family": "sans-serif",
         "font.sans-serif": [
-            "Microsoft YaHei",
-            "SimHei",
             "Arial",
             "Helvetica",
             "DejaVu Sans",
@@ -121,25 +119,14 @@ def draw_obstacle_marks(ax, r: int, c: int):
         )
 
 
-def setup_panel(ax, panel_tag: str, panel_title: str):
-    ax.set_xlim(-0.3, 3.3)
-    ax.set_ylim(-0.25, 3.95)
+def setup_panel(ax, panel_title: str):
+    ax.set_xlim(-0.05, 3.05)
+    ax.set_ylim(-0.12, 3.72)
     ax.set_aspect("equal")
     ax.axis("off")
     ax.text(
-        -0.3,
-        3.85,
-        panel_tag,
-        ha="left",
-        va="top",
-        fontsize=8.5,
-        fontweight="bold",
-        color=C_TEXT,
-        zorder=8,
-    )
-    ax.text(
-        -0.3,
-        3.45,
+        -0.05,
+        3.62,
         panel_title,
         ha="left",
         va="top",
@@ -212,7 +199,7 @@ def draw_frame(ax):
 
 
 def draw_cardinal_panel(ax):
-    setup_panel(ax, "(a)", "直线移动")
+    setup_panel(ax, "Cardinal expansion")
 
     layout = {
         (0, 0): ("pruned", None),
@@ -242,7 +229,7 @@ def draw_cardinal_panel(ax):
 
 
 def draw_diagonal_panel(ax):
-    setup_panel(ax, "(b)", "对角线移动")
+    setup_panel(ax, "Diagonal expansion")
 
     layout = {
         (0, 0): ("forced", "F"),
@@ -275,13 +262,13 @@ def draw_diagonal_panel(ax):
 
 def add_shared_legend(fig):
     handles = [
-        Rectangle((0, 0), 1, 1, facecolor=C_CURRENT, edgecolor="none", label="当前节点 x"),
-        Rectangle((0, 0), 1, 1, facecolor=C_NATURAL, edgecolor="none", label="自然邻居 N"),
-        Rectangle((0, 0), 1, 1, facecolor=C_FORCED, edgecolor="none", label="被迫邻居 F"),
-        Rectangle((0, 0), 1, 1, facecolor=C_OBSTACLE, edgecolor="none", label="障碍物"),
-        Rectangle((0, 0), 1, 1, facecolor=C_PRUNED, edgecolor="none", label="剪枝邻居"),
-        Rectangle((0, 0), 1, 1, facecolor=C_PARENT_FACE, edgecolor="none", label="父节点"),
-        Line2D([0], [0], color=C_ARROW, lw=1.3, marker=">", markersize=5, label="扩展方向"),
+        Rectangle((0, 0), 1, 1, facecolor=C_CURRENT, edgecolor="none", label="Current node $x$"),
+        Rectangle((0, 0), 1, 1, facecolor=C_NATURAL, edgecolor="none", label="Natural neighbor $N$"),
+        Rectangle((0, 0), 1, 1, facecolor=C_FORCED, edgecolor="none", label="Forced neighbor $F$"),
+        Rectangle((0, 0), 1, 1, facecolor=C_OBSTACLE, edgecolor="none", label="Obstacle"),
+        Rectangle((0, 0), 1, 1, facecolor=C_PRUNED, edgecolor="none", label="Pruned"),
+        Rectangle((0, 0), 1, 1, facecolor=C_PARENT_FACE, edgecolor="none", label="Parent"),
+        Line2D([0], [0], color=C_ARROW, lw=1.3, marker=">", markersize=5, label="Expansion"),
     ]
     fig.legend(
         handles=handles,
@@ -290,23 +277,23 @@ def add_shared_legend(fig):
         ncol=7,
         frameon=False,
         fontsize=7.5,
-        handlelength=1.3,
-        handleheight=0.85,
-        columnspacing=1.05,
-        handletextpad=0.4,
+        handlelength=1.2,
+        handleheight=0.8,
+        columnspacing=0.9,
+        handletextpad=0.35,
     )
 
 
 def main():
-    fig = plt.figure(figsize=(7.1, 2.95))
+    fig = plt.figure(figsize=(4.85, 3.15))
     gs = fig.add_gridspec(
         1,
         2,
-        left=0.05,
+        left=0.04,
         right=0.98,
-        top=0.97,
-        bottom=0.28,
-        wspace=0.18,
+        top=0.98,
+        bottom=0.14,
+        wspace=0.05,
     )
     ax_a = fig.add_subplot(gs[0, 0])
     ax_b = fig.add_subplot(gs[0, 1])
@@ -314,16 +301,6 @@ def main():
     draw_cardinal_panel(ax_a)
     draw_diagonal_panel(ax_b)
     add_shared_legend(fig)
-
-    fig.text(
-        0.5,
-        0.18,
-        "仅保留自然邻居与因障碍物产生的被迫邻居，其余邻居被剪枝",
-        ha="center",
-        va="center",
-        fontsize=7.5,
-        color=C_NOTE,
-    )
 
     require_matplotlib_panel_alignment(
         fig,
