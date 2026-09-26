@@ -15,15 +15,17 @@
 % 每行格式：{'x轴名称', 值1, 值2, 值3, 值4, 值5}
 % 每一列对应一条折线，不需要的折线用 [] 占位
 lineData = {
-    % '本文A*',    72.93,  108.17,  113.33;
-    % '传统A*',    76.53,  111.44,  119.64;
-    % 'Dijkstra',  76.53,  111.44,  119.64;
-    % 'RRT',      100.80,  135.40,  144.07;
+    % 不同路径规划算法在不同地图中规划代价对比
+    'Improved A*',    72.93,  108.17,  113.33;
+    'A*',    76.53,  111.44,  119.64;
+    'Dijkstra',  76.53,  111.44,  119.64;
+    'RRT',      100.80,  135.40,  144.07;
 
-    '本文A*',    2.45,  11.85,  4.31;
-    '传统A*',    6.14,  29.19,  17.88;
-    'Dijkstra',  24.26,  202.29,  204.46;
-    'RRT',      7.42,  19.33,  3.69;
+    % 不同路径规划算法在不同地图中规划耗时对比
+    % 'Improved A*',    2.45,  11.85,  4.31;
+    % 'A*',    6.14,  29.19,  17.88;
+    % 'Dijkstra',  24.26,  202.29,  204.46;
+    % 'RRT',      7.42,  19.33,  3.69;
 };
 
 % ---- 颜色定义 ----
@@ -44,10 +46,15 @@ lineWidth  = 2.0;    % 折线宽度
 markerSize = 8;      % 数据点标记大小
 
 % ---- Y轴标尺 ----
-useLogScale = true;  % true = 对数坐标, false = 线性坐标
+useLogScale = false;  % true = 对数坐标, false = 线性坐标
 
 % ---- 标记形状（每条折线不同，循环使用） ----
 markers = {'o', 's', 'd', '^', 'v'};
+
+% ---- 全局字体大小默认值 ----
+set(groot, 'defaultAxesFontSize',   14);   % 坐标轴刻度数字
+set(groot, 'defaultTextFontSize',   14);   % title / xlabel / ylabel / text
+set(groot, 'defaultLegendFontSize', 14);   % 图例
 
 %% ==================== 绘图部分（无需修改） ====================
 
@@ -103,7 +110,7 @@ for k = 1:numLines
             text(i, yData(i) + max(dataMat(:), [], 'omitnan') * 0.02, ...
                 num2str(yData(i), '%.2f'), ...
                 'HorizontalAlignment', 'center', ...
-                'FontSize', 9, 'Color', 'k');
+                'Color', 'k');
         end
     end
 end
@@ -111,11 +118,11 @@ end
 hold off;
 
 % 坐标轴设置
-set(gca, 'XTick', xPos, 'XTickLabel', xLabels, 'FontSize', 11);
+set(gca, 'XTick', xPos, 'XTickLabel', xLabels);
 xlim([0.5, numGroups + 0.5]);
-xlabel(' ', 'FontSize', 12);
-ylabel('Value', 'FontSize', 12);
-title('Comparison', 'FontSize', 14);
+xlabel(' ');
+ylabel('Coast');
+% title('Comparison');
 grid on;
 box on;
 
@@ -125,4 +132,4 @@ if useLogScale
 end
 
 % 图例
-legend(legend_h, legendEntries(1:numLines), 'Location', 'best', 'FontSize', 9);
+legend(legend_h, legendEntries(1:numLines), 'Location', 'best');

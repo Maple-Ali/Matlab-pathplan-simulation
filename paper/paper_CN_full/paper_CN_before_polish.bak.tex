@@ -235,7 +235,7 @@ C(\bm{\pi}) = \sum_{k=1}^{N-1} L\big(\mathcal{P}(p_{\pi_k}, p_{\pi_{k+1}})\big)
 
 \label{sec:method}
 
-为克服单一路径规划器无法优化访问顺序、以及无约束旅行商模型忽略障碍代价的局限，本节提出一种由两个阶段组成的启发式协同框架。本章算法中的超参数均以符号给出，除特别说明外默认取值统一列于表~\ref{tab:params}。具体而言，第一阶段采用本文提出的改进A*全局规划器在栅格地图上搜索点对点无碰撞最短路径，并通过安全距离感知的路径简化与三次样条平滑生成高质量连续路径；第二阶段以该阶段输出的代价矩阵为输入，由本文提出的MMAS-VND-CL蚁群优化求解器求解多目标点的最优访问序列。两阶段通过代价矩阵实现耦合，共同完成从几何寻径到组合排序的完整流程。第~\ref{subsec:jps} 节和第~\ref{subsec:post} 节介绍全局路径规划及后处理，第~\ref{subsec:aco} 节详述开放旅行商求解算法，第~\ref{subsec:coop} 节阐述两层协同框架的整体设计。
+为克服单一路径规划器无法优化访问顺序、以及无约束旅行商模型忽略障碍代价的局限，本节提出一种由两个阶段组成的启发式协同框架：第一阶段采用本文提出的改进A*全局规划器在栅格地图上搜索点对点无碰撞最短路径，并通过安全距离感知的路径简化与三次样条平滑生成高质量连续路径；第二阶段以该阶段输出的代价矩阵为输入，由本文提出的MMAS-VND-CL蚁群优化求解器求解多目标点的最优访问序列。两阶段通过代价矩阵实现耦合，共同完成从几何寻径到组合排序的完整流程。第~\ref{subsec:jps} 节和第~\ref{subsec:post} 节介绍全局路径规划及后处理，第~\ref{subsec:aco} 节详述开放旅行商求解算法，第~\ref{subsec:coop} 节阐述两层协同框架的整体设计。
 
 \subsection{改进的A*全局路径规划器}
 
@@ -336,7 +336,7 @@ d_y &= \max\left(0,\; |p_c - c_c| - 0.5\right)
 d(p, \mathrm{cell}) = \sqrt{d_x^2 + d_y^2}
 \label{eq:dist}
 \end{equation}
-其中，$p = (p_r, p_c)$为连续坐标下的采样点，$c = (c_r, c_c)$为障碍物栅格的中心坐标，栅格占据矩形区域$[c_r - 0.5, c_r + 0.5] \times [c_c - 0.5, c_c + 0.5]$。$\max(0, \cdot)$算子处理采样点在某坐标轴上已落入栅格水平或垂直范围内的情况。当$d(p, \mathrm{cell}) < d_{\mathrm{safe}}$时，表示采样点已进入障碍物栅格的安全禁区。安全距离阈值$d_{\mathrm{safe}}$取为机器人半径$r_{\mathrm{robot}}$与附加安全裕度之和，从而保证路径中心线到障碍物的间距不小于机器人半径，避免碰撞（默认配置见表~\ref{tab:params}）。算法~\ref{alg:simplify}给出了路径简化算法的伪代码。
+其中，$p = (p_r, p_c)$为连续坐标下的采样点，$c = (c_r, c_c)$为障碍物栅格的中心坐标，栅格占据矩形区域$[c_r - 0.5, c_r + 0.5] \times [c_c - 0.5, c_c + 0.5]$。$\max(0, \cdot)$算子处理采样点在某坐标轴上已落入栅格水平或垂直范围内的情况。当$d(p, \mathrm{cell}) < d_{\mathrm{safe}}$时，表示采样点已进入障碍物栅格的安全禁区。安全距离阈值$d_{\mathrm{safe}}$设置为机器人半径$r_{\mathrm{robot}} = 0.2$加上$0.2$的裕度，即$d_{\mathrm{safe}} = 0.4$，保证路径中心线到障碍物的距离不小于机器人半径，从而保证无碰撞。算法~\ref{alg:simplify}给出了路径简化算法的伪代码。
 \begin{algorithm}[!t]
 \caption{Safety-distance-aware path simplification}
 \label{alg:simplify}
@@ -394,7 +394,7 @@ s_0 = 0, \quad s_i = s_{i-1} + \|P_i - P_{i-1}\|_2, \quad i = 1, 2, \ldots, M
 \label{eq:arclen}
 \end{equation}
 然后分别以$s$为自变量对$x(s)$和$y(s)$进行三次样条插值，得到参数化曲线$(x(s), y(s))$。三次样条在每个子区间$[s_i, s_{i+1}]$上为三次多项式，保证一阶和二阶导数连续，从而确保曲线的曲率连续性。
-第三步进行等弧长重采样。以插值密度$\rho$（每段等弧长插入的采样点数，见表~\ref{tab:params}）沿弧长参数$s$均匀采样，生成最终的平滑路径点序列。由于$s$与实际几何距离近似线性关系，等弧长采样保证了路径点在空间中的均匀分布，避免了传统等参数采样在曲率大处点密、曲率小处点疏的问题。算法~\ref{alg:smooth}给出了平滑算法的伪代码。
+第三步进行等弧长重采样。以密度$\rho = 10$（每段插入10个点）沿弧长参数$s$均匀采样，生成最终的平滑路径点序列。由于$s$与实际几何距离近似线性关系，等弧长采样保证了路径点在空间中的均匀分布，避免了传统等参数采样在曲率大处点密、曲率小处点疏的问题。算法~\ref{alg:smooth}给出了平滑算法的伪代码。
 \begin{algorithm}[!t]
 \caption{Arc-length parameterized cubic spline smoothing}
 \label{alg:smooth}
@@ -512,7 +512,7 @@ v_{\mathrm{next}} =
 \label{eq:trans}
 \end{equation}
 其中$q_0$为利用概率。在利用情形中，蚂蚁确定性地选择得分最高的候选——等价于贪心最优步。在探索情形中，蚂蚁执行轮盘选择，每个候选$v$以$\mathrm{score}(v) / \sum_{u \in \mathcal{U}} \mathrm{score}(u)$的概率被选中。若所有得分为零即所有剩余节点不可达，则随机选择一个未访问候选作为回退。
-可以看出，$q_0$越大，越多的构建步采用贪心选择以加速收敛；$q_0$越小，则随机探索的比重越高。障碍约束代价矩阵中的点对距离通常具有空间局部性，因而启发式$\bm{\eta}$能够提供较可靠的引导，这使得中等偏上的贪心概率在保证多样性的前提下仍有利于收敛（默认取值见表~\ref{tab:params}）。
+例如，当$q_0 = 0.45$时，平均有45\%的构建步使用贪心选择加速收敛，其余55\%通过随机探索维持多样性。此比率的设定基于障碍约束代价矩阵的结构化特性——点对间距离通常表现出空间局部性，因而启发式$\bm{\eta}$能够提供可靠的引导信息。
 \subsubsection{具有候选列表加速的可变邻域下降局部搜索}
 \label{subsec:vnd}
 蚂蚁所构建的路径虽受信息素与启发式信息引导，但仍未必达到局部最优。一个自然的改进思路是：在每一代对当前最优解施加局部搜索，通过系统考察邻域排列来进一步精化解的质量。可变邻域下降（Variable Neighborhood Descent, VND）\cite{ref24}正是这样一类方法，它依次调用多种邻域结构，每种结构对应一类路径变换，并在当前结构无法继续改进时切换到下一种，直至所有邻域均无法产生更优解。已有研究表明，将MMAS或ACS与VND混合在车辆路径问题中效果显著\cite{ref25}。不过，标准VND在每个算子上需考察$O(K^2)$个邻域，当目标点规模增大时计算开销会迅速上升，成为主要瓶颈。进一步观察可以发现，这类考察中大量尝试并不奏效：相距较远的节点对参与2-opt交换时，往往很难带来回路代价的改善。
@@ -525,9 +525,9 @@ v_{\mathrm{next}} =
 \end{enumerate}
 上述算子在VND循环中采用“首次改进”（first-improvement）策略：先反复进行2-opt，直至无法再降低代价；若仍无改进则转为重定位，最后尝试交换。只要任一算子产生改进，便重新从2-opt开始下一轮循环；当三种算子均无法进一步改进时，局部搜索终止。
 
-在计算效率方面，本文引入预计算的候选列表，以过滤上述各类评估中明显缺乏前景的情形，这一思路在旅行商问题的局部搜索中已有广泛应用\cite{ref26}。具体而言，对扩展问题中的每一个节点（共$N+1$个），根据扩展代价矩阵$\mathbf{D}_{\mathrm{ext}}$预先筛选其$k$个最近邻，并以布尔矩阵$\mathbf{C}$加以存储，其中$\mathbf{C}(i,j)=\mathrm{true}$表示节点$j$属于节点$i$的候选近邻；上文各算子中所提到的“候选近邻”均指该列表中的节点。需要说明的是，上述剪枝在设计上偏于保守：只有当移动所涉及的新边均不在候选近邻集合中时，才跳过评估。这种情形通常意味着该移动难以改善回路，但并不能视为绝对保证。候选列表规模$k$宜取得较小（默认取值见表~\ref{tab:params}），既可过滤掉大量无效计算，又保留最有可能带来改进的局部结构；当扩展代价矩阵呈现较强的空间聚集特性时，改进边交换几乎只可能发生在邻近节点之间，因此该设置尤为有效。
+在计算效率方面，本文引入预计算的候选列表，以过滤上述各类评估中明显缺乏前景的情形，这一思路在旅行商问题的局部搜索中已有广泛应用\cite{ref26}。具体而言，对扩展问题中的每一个节点（共$N+1$个），根据扩展代价矩阵$\mathbf{D}_{\mathrm{ext}}$预先筛选其$k=9$个最近邻，并以布尔矩阵$\mathbf{C}$加以存储，其中$\mathbf{C}(i,j)=\mathrm{true}$表示节点$j$属于节点$i$的候选近邻；上文各算子中所提到的“候选近邻”均指该列表中的节点。需要说明的是，上述剪枝在设计上偏于保守：只有当移动所涉及的新边均不在候选近邻集合中时，才跳过评估。这种情形通常意味着该移动难以改善回路，但并不能视为绝对保证。候选列表规模$k=9$取值相对较小，既可过滤掉大量无效计算，又保留了最有可能带来改进的局部结构；当扩展代价矩阵呈现较强的空间聚集特性时，改进边交换几乎只可能发生在邻近节点之间，因此该设置尤为有效。
 
-从复杂度来看，若不采用剪枝，每个VND算子需考察$O((N+1)^2)$个候选移动；引入候选列表后，每个节点仅需参与约$O(k)$次邻域检查，单算子复杂度降为$O((N+1)\cdot k)$。当$k$取个位数量级时，相对全邻域考察约可降低一个数量级的计算量；随着$N$增大，加速效果会更加明显。
+从复杂度来看，若不采用剪枝，每个VND算子需考察$O((N+1)^2)$个候选移动；引入候选列表后，每个节点仅需参与约$O(k)$次邻域检查，单算子复杂度降为$O((N+1)\cdot k)$。以典型规模$N\approx 100$、$k=9$为例，计算量约可降低一个数量级，且随着$N$增大，加速效果会更加明显。
 
 算法~\ref{alg:vnd}给出了候选列表加速VND的完整伪代码。需要补充的是，上述三个邻域算子均按首次改进原则运行，即一旦发现能够降低回路代价的移动便立即接受并返回；由于问题定义在闭合回路上，当交换操作跨越回路的首尾相邻节点时，还需额外考虑环绕邻接关系，而不能简单沿用线性路径下的邻接判断。VND邻域搜索的完整流程如图~\ref{fig:vnd_flow}所示。
 \begin{algorithm}[!t]
@@ -550,10 +550,10 @@ v_{\mathrm{next}} =
 \STATE \RETURN $\bm{\sigma}$, $\mathrm{cost}$;
 \end{algorithmic}
 \end{algorithm}
-如前所述，三个邻域算子均按首次改进原则运行，即一旦发现能够降低回路代价的移动便立即接受并返回；由于问题定义在闭合回路上，当交换操作跨越回路的首尾相邻节点时，还需额外考虑环绕邻接关系，而不能简单沿用线性路径下的邻接判断。VND邻域搜索的完整流程如图~\ref{fig:vnd_flow}所示。
+邻域算子（TwoOptClosed、RelocateClosed、SwapClosed）各自采用首次改进策略——首个发现降低回路代价的移动被立即接受，算子返回。闭合回路拓扑要求交换算子特殊处理：当交换跨越回路闭合边的两个相邻节点（即回路最后一个和第一个元素）时，标准线性邻接逻辑必须考虑环绕连接。VND邻域搜索序列如图~\ref{fig:vnd_flow}所示。
 \begin{figure}[!t]
 \centering
-\includegraphics[width=2.2in]{figures/fig03_vnd_flow.pdf}
+\includegraphics[width=2.2in]{figures/fig03_vnd_flow}
 \caption{VND邻域搜索序列流程图。}
 \label{fig:vnd_flow}
 \end{figure}
@@ -564,9 +564,9 @@ v_{\mathrm{next}} =
 \mathrm{optRatio}(t) = y_{\min} + (y_{\max} - y_{\min}) \cdot \frac{t^{a}}{t^{a} + (1 - t)^{a}}
 \label{eq:sigmoid}
 \end{equation}
-式中，$t = (\mathrm{iter} - x_L) / (x_R - x_L)$为当前迭代在转换区间$[x_L, x_R]$内的归一化位置；$y_{\min}$与$y_{\max}$分别表示搜索初期与后期接受局部搜索的蚂蚁比例上下限，$a$用于控制S形曲线的陡峭程度（默认取值见表~\ref{tab:params}）。当$t$位于$x_L$之前时，$\mathrm{optRatio}$取$y_{\min}$；超过$x_R$之后则保持为$y_{\max}$；在区间内部，比例沿S形曲线平滑过渡。
+式中，$t = (\mathrm{iter} - x_L) / (x_R - x_L)$为当前迭代在转换区间$[x_L, x_R]$内的归一化位置；$y_{\min}$表示初期进行局部搜索的蚂蚁数量百分比，$y_{\max}$表示后期蚂蚁实施局部搜索的最大百分百，$a$用于控制S形曲线的陡峭程度，本文取值$a=0$。当$t$对应于$x_L$之前时，$\mathrm{optRatio}$取$y_{\min}$，本文取$y_{\min}=0$；超过$x_R$之后则保持为$y_{\max}$；在区间内部，比例沿S形曲线平滑上升。
 
-这一调度方式使搜索过程自然形成三个阶段。早期$\mathrm{optRatio} \approx y_{\min}$，种群主要依赖路径构建阶段的随机性来广泛探索，而不必承担局部搜索开销；在过渡阶段，接受优化的蚂蚁逐步增多，使信息素能够吸收由局部搜索得到的改进解；后期$\mathrm{optRatio}$稳定在$y_{\max}$，在继续由部分蚂蚁维持构建多样性的同时，以足够多的算力精化当前优质解。转换区间之所以取得较短的$[0, 30]$，是为了让比例尽早达到上限：实验表明，基本信息素结构往往在约30代内形成，此后加密局部搜索即可获得明显收益。S形$\mathrm{optRatio}(t)$曲线如图~\ref{fig:sigmoid}所示。
+这一调度方式使搜索过程自然形成三个阶段。早期$\mathrm{optRatio} \approx 0$，种群主要依赖路径构建阶段的随机性来广泛探索，而不必承担局部搜索开销；在过渡阶段，接受优化的蚂蚁逐步增多，使信息素能够吸收由局部搜索得到的改进解；后期$\mathrm{optRatio}$稳定在$y_{\max}$，在继续由部分蚂蚁维持构建多样性的同时，以足够多的算力精化当前优质解。转换区间之所以取得较短的$[0, 30]$，是为了让比例尽早达到上限：实验表明，基本信息素结构往往在约30代内形成，此后加密局部搜索即可获得明显收益。S形$\mathrm{optRatio}(t)$曲线如图~\ref{fig:sigmoid}所示。
 \begin{figure}[!t]
 \centering
 \includegraphics[width=2.5in]{figures/fig04_sigmoid}
@@ -580,95 +580,78 @@ n_{\mathrm{elite}} &= \lceil n_{\mathrm{opt}} \cdot r_{\mathrm{elite}} \rceil
 n_{\mathrm{random}} &= n_{\mathrm{opt}} - n_{\mathrm{elite}}
 \label{eq:nrandom}
 \end{align}
-其中$r_{\mathrm{elite}}$为精英占比参数（见表~\ref{tab:params}），即优先把较多的局部搜索预算用于当前排名靠前的蚂蚁，以强化对优质解的精细打磨；其余$n_{\mathrm{random}}$只蚂蚁则从非精英个体中随机抽取并同样接受优化，从而有机会发现精英之外的其他有潜力区域，在利用与探索之间保持平衡。
+其中$r_{\mathrm{elite}} = 0.7$，即优先把约70\%的局部搜索预算用于当前排名靠前的蚂蚁，以强化对优质解的精细打磨；其余$n_{\mathrm{random}}$只蚂蚁则从非精英个体中随机抽取并同样接受优化，从而有机会发现精英之外的其他有潜力区域，在利用与探索之间保持平衡。
 \subsubsection{自适应停止准则}
-算法将最大迭代次数$n_{\mathrm{iter}}$作为迭代预算上限（默认取值见表~\ref{tab:params}），以免在困难实例上因预算不足而无法收敛。但在较易实例中，种群往往远在此之前就已收敛，继续迭代只会增加计算开销，而难以带来解质量的提升。反过来，若过早停止，又可能错过更优解。因此，停止准则需要在“已充分收敛”与“暂时尚未改进”之间加以区分，既识别真正的收敛，也避免因短暂停滞而误停。
-
-具体而言，算法同时监测两个互补的指标。
-
-第一个指标是种群同质性。当蚁群收敛到搜索空间中某个较窄的区域时，不同蚂蚁给出的回路代价会彼此接近，方差随之变小。本文用每代蚂蚁回路代价的变异系数（coefficient of variation, CV）对此加以刻画：
+最大迭代次数$n_{\mathrm{iter}} = 800$被保守地设定以适应困难问题实例。在较易实例上，种群可能远早于此收敛，继续运行浪费计算而不改进解。反之，过早终止有遗漏最优解的风险。自适应停止机制应检测真正的收敛，同时防止因暂时停滞导致的过早终止。
+在具体判据上，算法监测两个互补的收敛指标。
+一是种群同质性。当蚁群收敛至搜索空间的狭窄区域时，蚂蚁间的代价方差变得很小。我们通过每代蚂蚁代价的变异系数（CV）衡量：
 \begin{equation}
 \mathrm{CV} = \frac{\sigma_{\mathrm{costs}}}{\mu_{\mathrm{costs}}}
 \label{eq:cv}
 \end{equation}
-其中$\sigma_{\mathrm{costs}}$与$\mu_{\mathrm{costs}}$分别为当代全部蚂蚁回路代价的标准差与均值。当$\mathrm{CV}$低于预设阈值$\varepsilon_{\mathrm{CV}}$（见表~\ref{tab:params}）时，可认为种群已趋于同质，即各回路质量大体相当，继续搜索发现新解的可能性已经很低。
-
-第二个指标是最优解是否陷入停滞。即使种群内部仍有一定多样性，当前全局最优回路也可能长时间停留在某个局部最优附近。为此，算法记录全局最优代价连续未获改进的迭代次数，一旦达到预设上限$\mathrm{stagn}_{\max}$（见表~\ref{tab:params}），便终止搜索。
-
-为减少误停风险，上述两个判据仅在完成最少迭代次数$\mathrm{minIter}$（见表~\ref{tab:params}）之后才启用。这是因为在搜索初期，代价方差通常较大、全局最优仍在快速改善，此时若立即监测收敛，容易把正常波动误判为已收敛；经过一段最低限度的搜索后，信息素结构已相对成形，此时给出的停止判断才更为可靠。
+其中$\sigma_{\mathrm{costs}}$和$\mu_{\mathrm{costs}}$分别为当代所有蚂蚁回路代价的标准差和均值。若$\mathrm{CV} < 0.001$，种群被视为同质——所有蚂蚁产生几乎相同质量的回路，进一步迭代不太可能发现新解。
+二是最优解停滞。即使种群保持多样，全局最优回路也可能陷入局部最优。我们跟踪全局最优代价未改进的连续迭代次数。若停滞计数器达到$70$代，搜索终止。
+为避免过早判定收敛，上述两个条件仅在$\mathrm{minIter} = 30$次迭代后激活，确保种群在收敛监测开始前有足够时间建立有意义的信息素结构。这防止在初始探索阶段——代价方差自然较高且全局最优仍在快速改进时——的过早终止。
 \subsubsection{集成总结}
-综合上述设计，MMAS-VND-CL算法把六个机制组织进同一条迭代搜索流程：扩展代价矩阵$\mathbf{D}_{\mathrm{ext}}$定义在含虚拟节点的$N+1$个节点上，信息素模型与局部搜索均在该空间中进行。单次迭代的主要步骤如下：
+完整的蚁群优化程序将上述六个机制集成到单一迭代搜索循环中。算法在扩展代价矩阵$\mathbf{D}_{\mathrm{ext}}$上于$N+1$个节点（包括虚拟节点）的空间中运行。每次迭代按以下步骤进行：
 \begin{enumerate}
-\item 由S形曲线（式~\eqref{eq:sigmoid}）确定本轮接受局部搜索的蚂蚁比例；
-\item 全部蚂蚁按照ACS风格的伪随机转移规则（式~\eqref{eq:score}--\eqref{eq:trans}）各自构造一条覆盖$N+1$个节点的哈密顿回路；
-\item 依据精英—随机混合策略（式~\eqref{eq:nelite}--\eqref{eq:nrandom}）选出部分蚂蚁，对其回路执行带候选列表加速的VND局部搜索（算法~\ref{alg:vnd}）；
-\item 更新当前全局最优回路，并依据自适应停止准则（式~\eqref{eq:cv}）判断是否终止；
-\item 若继续搜索，则先按式~\eqref{eq:evap}蒸发信息素，再在本轮最优回路与全局最优回路上沉积（式~\eqref{eq:deposititer}--\eqref{eq:depositglob}），最后按MMAS规则对信息素取值进行动态限幅（式~\eqref{eq:taumax}--\eqref{eq:taumin}）。
+\item S形曲线（式~\eqref{eq:sigmoid}）确定接收局部搜索的蚂蚁比例。
+\item 所有$40$只蚂蚁使用ACS风格的伪随机转移规则（式~\eqref{eq:score}--\eqref{eq:trans}）构建完整的$N+1$节点哈密顿回路。
+\item 精英-随机混合选择（式~\eqref{eq:nelite}--\eqref{eq:nrandom}）选择哪些蚂蚁接收具有候选列表加速的VND局部搜索（算法~\ref{alg:vnd}）。
+\item 更新全局最优回路并检查自适应停止准则（式~\eqref{eq:cv}）。
+\item 信息素蒸发（式~\eqref{eq:evap}）并在迭代最优和全局最优回路上沉积（式~\eqref{eq:deposititer}--\eqref{eq:depositglob}），随后进行动态MMAS边界限幅（式~\eqref{eq:taumax}--\eqref{eq:taumin}）。
 \end{enumerate}
-搜索在满足任一停止条件时结束，即种群代价的变异系数低于$\varepsilon_{\mathrm{CV}}$，或全局最优回路连续$\mathrm{stagn}_{\max}$代没有改进；为避免误停，这些条件在$\mathrm{minIter}$之前不参与判定。终止后，从最优回路中去掉虚拟节点$V$，再把剩余节点调整为起点在前、终点在后的顺序，便得到最终的开放路径访问序列。MMAS-VND-CL算法的总体流程如图~\ref{fig:aco_flow}所示。
-
+当种群代价变异系数降至$0.001$以下或全局最优回路连续$70$代停滞时搜索终止，两个检查均仅在最少$30$次迭代后激活。终止后，通过在最优回路中定位并移除虚拟节点$V$，然后调整剩余序列使起点（1）在前、终点（$N$）在后来组装最终的开放路径访问顺序。改进蚁群优化总体流程如图~\ref{fig:aco_flow}所示。
 \begin{figure}[!t]
 \centering
-\includegraphics[width=\columnwidth]{figures/fig05_aco_flow.pdf}
+\includegraphics[width=\columnwidth]{figures/fig05_aco_flow}
 \caption{改进蚁群优化总体流程图。}
 \label{fig:aco_flow}
 \end{figure}
 \subsection{协同优化框架}
 \label{subsec:coop}
-前述各节分别介绍了两个算法层：负责点对点寻径的改进A*规划器及其后处理（第~\ref{subsec:jps}--\ref{subsec:post} 节），以及面向开放旅行商问题的MMAS-VND-CL求解器（第~\ref{subsec:aco} 节）。本节说明如何将二者衔接为一个完整的多目标点遍历框架。
+前述各节分别描述了两个算法层：改进的A*规划器与路径后处理（第~\ref{subsec:jps}--\ref{subsec:post} 节），以及面向开放旅行商问题的改进蚁群优化求解器（第~\ref{subsec:aco} 节）。本节描述如何将这两个层集成为面向障碍环境多目标点遍历路径规划的统一框架。
 \subsubsection{两层架构}
-该框架在结构上分为两层，从而把几何层面的避障寻径与组合层面的访问顺序优化清晰地分开。
-
-第一层完成代价矩阵的构建。给定$N$个点（含一个起点、$K$个中间目标点和一个终点），对每一对点计算最短无碰撞路径，由此得到成对代价矩阵$\mathbf{D} \in \mathbb{R}^{N \times N}$：
+该框架遵循两层架构，清晰分离几何问题（障碍约束路径寻找）与组合问题（访问顺序优化）。
+第一层负责代价矩阵构建。给定$N$个点（一个起点、$K$个目标点、一个终点），通过计算每对点之间的最短无碰撞路径构建成对代价矩阵$\mathbf{D} \in \mathbb{R}^{N \times N}$：
 \begin{equation}
 \mathbf{D}(i, j) = L\big(\mathrm{A}^{*}(p_i, p_j, \mathbf{M})\big) \quad \forall i \neq j \in \{1, \dots, N\}
 \label{eq:dmatrix}
 \end{equation}
-其中$L(\cdot)$为路径长度函数，$\mathbf{M}$为占用栅格地图，对角元素取零。需要强调的是，$\mathbf{D}$并非欧氏距离矩阵：它的每一个元素都对应真实的障碍约束最短路径长度。当障碍物截断两点之间的直线通道时，该长度可能明显大于两点间的直线距离。
-
-若启用\texttt{enableSimplify}选项，则路径长度$L(\cdot)$依据简化后的折线而非原始栅格路径来计算：
+其中$L(\cdot)$为路径长度函数，$\mathbf{M}$为占用栅格地图。对角元素为零。关键的是，$\mathbf{D}$\textbf{不是}欧氏距离矩阵：每个元素编码了真实的障碍约束最短路径距离，当障碍物阻断两点之间的直接路径时，该距离可能显著大于直线距离。
+当\texttt{enableSimplify}标志激活时，路径长度$L(\cdot)$基于简化后的而非原始栅格路径计算：
 \begin{equation}
 \mathbf{D}_{\mathrm{simplified}}(i, j) = L_{\mathrm{Euclidean}}\big(\textsc{SimplifyPath}(\mathrm{A}^{*}(p_i, p_j, \mathbf{M}), \mathbf{M}, d_{\mathrm{safe}})\big)
 \label{eq:dsimp}
 \end{equation}
-这里$L_{\mathrm{Euclidean}}$表示简化折线的欧氏长度。与栅格上的曼哈顿加对角线度量相比，它更接近机器人实际行走的连续距离。构建完整代价矩阵共需调用$O(N^2)$次全局规划器；工程上还可选用以起止坐标对为键的路径缓存，保存已经算过的点对结果，从而避免在多次旅行商求解中重复进行A*搜索。
-
-第二层完成访问顺序的优化。将代价矩阵$\mathbf{D}$交给MMAS-VND-CL求解器（第~\ref{subsec:aco} 节）即可。该层只在数值矩阵上操作，并不感知地图、障碍物或路径几何；全部约束信息都已压缩在$\mathbf{D}$之中。求解器返回最优访问顺序$\bm{\pi}^{*} = (1, \pi_2, \dots, \pi_{K+1}, N)$及对应总代价$C(\bm{\pi}^{*})$。
+其中$L_{\mathrm{Euclidean}}$为简化折线的欧氏长度，其比栅格曼哈顿加对角线度量更接近真实连续路径长度。代价矩阵构建需要$O(N^2)$次全局规划器调用。可选的外部路径缓存（以起终坐标对为键的哈希映射）存储中间结果，避免在不同旅行商调用之间重复的A*计算。
+第二层负责旅行商排序。代价矩阵$\mathbf{D}$传递给改进的蚁群优化求解器（第~\ref{subsec:aco} 节），后者纯在数值矩阵上操作。蚁群优化返回最优访问顺序$\bm{\pi}^{*} = (1, \pi_2, \dots, \pi_{K+1}, N)$及其总代价$C(\bm{\pi}^{*})$。求解器不感知障碍物、地图或路径几何——所有障碍相关信息均编码在$\mathbf{D}$中。
 \subsubsection{管线集成}
-完整管线可分为如下四个阶段。
-
-\textbf{点集组装。} 将$N = K + 2$个点写入统一的坐标数组$\mathbf{P} = [p_{\mathrm{start}};\; \mathbf{T}_1; \dots; \mathbf{T}_K;\; p_{\mathrm{goal}}]$，并约定索引$1$为起点、索引$N$为终点。
-
-\textbf{代价矩阵构建。} 对每一对有序点$(i, j)$（$i \neq j$），由全局规划器求出从$\mathbf{P}(i,:)$到$\mathbf{P}(j,:)$的最短无碰撞路径，写入路径缓存，并按所选代价模式将路径长度记入$\mathbf{D}(i, j)$：
+集成流程按四个阶段进行：
+集成流程的第一阶段是点集组装：$N = K + 2$个点组装为单一坐标数组$\mathbf{P} = [p_{\mathrm{start}};\; \mathbf{T}_1; \dots; \mathbf{T}_K;\; p_{\mathrm{goal}}]$，约定索引$1$为起点、索引$N$为终点。
+第二阶段构建代价矩阵。对每对有序点$(i, j)$（$i \neq j$），全局规划器计算从$\mathbf{P}(i,:)$到$\mathbf{P}(j,:)$的最短无碰撞路径。所得路径存入路径缓存，其长度根据所选代价模式赋值给$\mathbf{D}(i, j)$：
 \begin{itemize}
-\item 若启用\texttt{enableSimplify}，则先对路径进行简化（第~\ref{subsec:post} 节），再按式~\eqref{eq:dsimp}取欧氏长度，所得代价更接近真实连续行程；
-\item 若不启用简化，则直接采用原始栅格路径在曼哈顿加对角线度量下的长度（式~\eqref{eq:dmatrix}）。
+\item 启用\texttt{enableSimplify}时，路径先经简化（第~\ref{subsec:post} 节）再取欧氏长度（式~\eqref{eq:dsimp}），产生更接近真实连续旅行距离的代价。
+\item 不启用简化时，使用原始栅格路径在曼哈顿加对角线度量下的长度（式~\eqref{eq:dmatrix}）。
 \end{itemize}
-若某对点之间不存在可行路径，则相应元素记为$\mathbf{D}(i, j) = \infty$。一旦有目标点从起点不可达，流程立即中止并报告失败。
-
-\textbf{旅行商求解。} 将$\mathbf{D}$与点数$N$交给MMAS-VND-CL，得到最优访问顺序$\mathrm{bestOrder} = (1, \dots, N)$及其总代价。当$K = 0$（无中间目标）时，问题退化为平凡情形：顺序为$[1, N]$，代价即$\mathbf{D}(1, N)$。
-
-\textbf{输出组装。} 按$\mathrm{bestOrder}$从坐标数组中取出有序点列$\mathbf{P}(\mathrm{bestOrder}, :)$，并在路径缓存中查回相邻点对之间的各段路径，拼成最终的无障碍参考路径集，供后续平滑与机器人执行使用。
+不可达对保留$\mathbf{D}(i, j) = \infty$。若任何目标点从起点不可达，流程提前终止并报告失败。
+第三阶段进行旅行商求解。代价矩阵$\mathbf{D}$和总点数$N$传递给改进的蚁群优化求解器（第~\ref{subsec:aco} 节），返回最优访问顺序$\mathrm{bestOrder} = (1, \dots, N)$及其总代价。在$K = 0$（无中间目标点）的平凡情况下，顺序为$[1, N]$，代价为$\mathbf{D}(1, N)$。
+第四阶段完成输出组装。有序点坐标提取为$\mathbf{P}(\mathrm{bestOrder}, :)$。对\texttt{bestOrder}中每对连续点从路径缓存检索段路径，生成最终的障碍安全参考路径集，供平滑和机器人执行使用。
 \subsubsection{设计原理}
-将两层分开设计，主要有三方面优点。
-
-首先，规划器与旅行商求解器可以独立开发、测试与改进。第一层可换成任意栅格规划器（A*、Dijkstra、RRT等），第二层也可换成任意排列优化算法（蚁群优化、遗传算法、模拟退火等）。这种模块化设计在第~\ref{subsec:exp_sens}--\ref{subsec:exp_cmp} 节的实验中得到检验：对比某一层的替代实现时，另一层保持不变。
-
-其次，代价矩阵$\mathbf{D}$充当了紧凑的接口。无论环境复杂程度如何，$N \times N$矩阵都完整记录了各点对之间的障碍约束距离关系。旅行商求解器因此无需接触栅格地图，却仍具备避障意义上的可行性保证。当然，这种压缩也有信息损失：求解器无法判断两段路径是否共用同一条狭窄走廊。但就“最小化总代价”这一目标而言，该表示是充分的。
-
-再次，\texttt{enableSimplify}选项体现了代价精度与计算开销之间的权衡。关闭该选项时，代价按原始栅格路径在栅格度量下统计（正交步代价为1，对角步为$\sqrt{2}$），由于阶梯效应，往往会高估连续路径的真实长度；开启该选项后，路径先经简化去掉锯齿状航点（第~\ref{subsec:post} 节），再以折线欧氏长度计价，得到的代价矩阵更接近物理行程，代价是每一对点都需要额外调用一次\textsc{SimplifyPath}。
+两层分离提供三个关键优势。首先，全局规划器与旅行商求解器可以解耦开发、测试和改进。任何基于栅格的规划器（A*、Dijkstra、RRT）都可替换到第一层，任何排列优化器（蚁群优化、遗传算法、模拟退火）都可替换到第二层。这种模块化在第~\ref{subsec:exp_sens}--\ref{subsec:exp_cmp} 节的实验中得到验证：每层针对替代实现进行基准测试，同时另一层保持固定。
+其次，代价矩阵$\mathbf{D}$以紧凑接口编码障碍信息：无论地图复杂度如何，它都将完整的障碍约束距离拓扑捕获在$N \times N$矩阵中。旅行商求解器因此继承了障碍感知——它从不直接查询占用栅格，但只要可行，每对点都保证存在无碰撞路径。应当指出，这种编码在求解器无法推理路径几何（例如两段路径是否共享走廊）的意义上是有损的，但对于代价最小化目标则是完备的。
+再次，\texttt{enableSimplify}标志控制着是否通过路径简化提升代价精度这一关键设计权衡。禁用时，代价基于原始栅格路径在栅格度量下计算（正交边代价1，对角边代价$\sqrt{2}$），因阶梯伪影而高估真实连续路径长度。启用时，路径先经简化（通过第~\ref{subsec:post} 节去除锯齿航点）再以简化折线的欧氏长度计算代价。这产生更接近物理旅行距离的代价矩阵，以每对点对调用\textsc{SimplifyPath}的适度额外计算代价为代价。
 \subsubsection{完整系统流程}
-端到端运行时，系统依次完成以下步骤：
+端到端系统按以下步骤运行：
 \begin{enumerate}
-\item \textbf{构建代价矩阵}：对全部$O(N^2)$个点对调用改进A*规划器，并可选地在计价前对路径作安全简化；
-\item \textbf{求解开放旅行商问题}：调用MMAS-VND-CL确定最优访问顺序；
-\item \textbf{回取各段路径}：依据访问顺序从路径缓存中拼接完整轨迹；
-\item \textbf{后处理}：对每段路径实施路径简化与三次样条平滑（第~\ref{subsec:post} 节），输出可供机器人跟踪的平滑无障碍连续轨迹。
+\item \textbf{构建代价矩阵}：对所有$O(N^2)$个点对调用改进的A*规划器，可选地在代价评估前简化路径。
+\item \textbf{求解开放旅行商问题}：使用改进的蚁群优化确定最优访问顺序。
+\item \textbf{检索段路径}：从路径缓存中组装完整有序轨迹。
+\item \textbf{应用后处理管线}：对每段路径应用SimplifyPath + SmoothPath（第~\ref{subsec:post} 节），生成供机器人执行使用的平滑、障碍安全的连续轨迹。系统架构总图如图~\ref{fig:system}所示。
 \end{enumerate}
-系统整体架构如图~\ref{fig:system}所示。
 \begin{figure}[!t]
 \centering
-\includegraphics[width=\columnwidth]{figures/fig06_system.pdf}
+\includegraphics[width=\columnwidth]{figures/fig06_system}
 \caption{系统架构总图}
 \label{fig:system}
 \end{figure}
@@ -687,13 +670,13 @@ n_{\mathrm{random}} &= n_{\mathrm{opt}} - n_{\mathrm{elite}}
 
 \begin{itemize}
 
-\item \textbf{Map~1}：一个中等障碍密度的栅格地图，用于测试基本搜索性能。
+\item \textbf{Map~1}（\texttt{Map1.mat}）：一个中等障碍密度的栅格地图，用于测试基本搜索性能（所有实验共用）。
 
-\item \textbf{Map~2}：一个更大的栅格地图，具有开阔、走廊式的结构，考验长距离直线遍历，并在栅格路径中产生显著的阶梯伪影。
+\item \textbf{Map~2}（\texttt{Map2\_kong.mat}）：一个更大的栅格地图，具有开阔、走廊式的结构，考验长距离直线遍历，并在栅格路径中产生显著的阶梯伪影（所有实验共用）。
 
-\item \textbf{Map~3}：一个$80\times 80$迷宫栅格地图，仅用于全局路径规划对比。
+\item \textbf{Map~3}（\texttt{迷宫x80\_3.mat}）：一个$80\times 80$迷宫栅格地图，仅用于全局路径规划对比（第~\ref{subsec:exp_plan} 节）。
 
-\item \textbf{kroB100}：一个标准的100城市TSPLIB基准实例，仅用于旅行商排序实验。
+\item \textbf{kroB100}（\texttt{kroB100\_coords.mat}）：一个标准的100城市TSPLIB基准实例，仅用于旅行商排序实验（第~\ref{subsec:exp_sens}--\ref{subsec:exp_cmp} 节）。
 
 \end{itemize}
 
@@ -717,7 +700,7 @@ A* (JPS) & 启发式 & 标准欧氏距离 \\
 蚁群优化 & 蚂蚁数量$n_{\mathrm{ants}}$ & 40 \\
 蚁群优化 & 信息素权重$\alpha$ & 1 \\
 蚁群优化 & 启发式权重$\beta$ & 2.0 \\
-蚁群优化 & 蒸发率$\rho$ & 0.25 \\
+蚁群优化 & 蒸发率$\rho_{\mathrm{ACO}}$ & 0.25 \\
 蚁群优化 & 沉积常数$Q$ & 225 \\
 蚁群优化 & 初始信息素$\tau_0$ & 0.1 \\
 蚁群优化 & 贪心概率$q_0$ & 0.45 \\
@@ -725,21 +708,13 @@ A* (JPS) & 启发式 & 标准欧氏距离 \\
 蚁群优化 & 局部搜索转换区间$[x_L, x_R]$ & $[0, 30]$ \\
 蚁群优化 & 精英比率$r_{\mathrm{elite}}$ & 0.7 \\
 蚁群优化 & 候选列表大小$k$ & 9 \\
-蚁群优化 & 局部搜索比例下限$y_{\min}$ & 0.0 \\
-蚁群优化 & S形陡度$a$ & 2.0 \\
-蚁群优化 & 同质性阈值$\varepsilon_{\mathrm{CV}}$ & $10^{-3}$ \\
-蚁群优化 & 停滞上限$\mathrm{stagn}_{\max}$ & 70 \\
-蚁群优化 & 最少迭代$\mathrm{minIter}$ & 30 \\
-蚁群优化 & 最大迭代$n_{\mathrm{iter}}$ & 800 \\
-路径简化 & 机器人半径$r_{\mathrm{robot}}$ & 0.2 \\
-路径简化 & 附加安全裕度 & 0.2 \\
 \bottomrule
 \end{tabular}
 \end{table}
 评估指标包括：路径长度（栅格单位）、计算时间（秒）、扩展节点数（仅限全局规划）、最优/中位/平均收敛代价、成功率（达到最优代价的运行百分比）和标准差。
 \subsection{全局路径规划对比}
 \label{subsec:exp_plan}
-本组实验旨在对比所提基于JPS的改进A*规划器（含路径简化与平滑后处理）与三个基线规划器的搜索效率和路径质量：传统A*、Dijkstra和RRT。
+本组实验旨在对比所提基于JPS的改进A*规划器（含路径简化与平滑后处理）与三个基线规划器的搜索效率和路径质量：传统A*（传统A*算法）、Dijkstra和RRT。
 实验流程如下：每个规划器在三张栅格地图（Map~1、Map~2和Map~3，即$80\times 80$迷宫）上运行。对于所提方法，报告结果包含完整后处理管线（SimplifyPath + SmoothPath）。每个算法在每张地图上运行10次，计算时间取平均。
 实验结果见表~\ref{tab:plan}，其中汇总了每个算法在每张地图上的路径长度、计算时间和扩展节点数。RRT是基于采样的方法，因此不报告扩展节点数。路径规划可视化结果见图~\ref{fig:plan_paths}。
 \begin{table}[!t]
@@ -776,20 +751,30 @@ A* (JPS) & 启发式 & 标准欧氏距离 \\
 从结果来看，所提基于JPS的规划器在所有三张地图上均取得最短路径长度（Map~1上72.93对比传统A*与Dijkstra的76.53；Map~2上108.17对比111.44；Map~3上113.33对比119.64）。此路径长度优势源于简化阶段，其去除了阶梯伪影并有效缩短路径。在搜索效率方面，JPS规划器比基线方法扩展更少的节点：Map~3上仅扩展48个节点，对比传统A*的280个和Dijkstra的566个，减少超过80\%。这直接转化为更快的计算速度：Map~2上所提方法以11.85~ms完成，对比传统A*的29.19~ms和Dijkstra的202.29~ms——比Dijkstra快17倍以上。RRT产生最长路径（Map~1上100.80、Map~2上135.40、Map~3上144.07），方差较高，与其基于采样的性质一致。上述优势可归因于以下机制：JPS通过对称性剪枝大幅减少冗余节点扩展，安全感知简化去除了栅格阶梯伪影并压缩航点数量，样条平滑则进一步将离散路径转化为可执行的连续曲线。三者叠加，使所提方法在保持可行性的同时获得了更短的路径与更高的计算效率。路径可视化对比如图~\ref{fig:plan_paths}所示，路径长度与计算时间对比分别如图~\ref{fig:plan_len}和图~\ref{fig:plan_time}所示。
 \begin{figure*}[!t]
 \centering
-\includegraphics[width=0.92\textwidth]{figures/fig07_pathplan_compare}
-\caption{四种算法在三张地图上的路径规划结果。}
+\subfloat[本文A*（JPS）规划器]{\includegraphics[width=0.22\textwidth]{figures/fig07a_jps_m1}\hfil
+\includegraphics[width=0.22\textwidth]{figures/fig07a_jps_m2}\hfil
+\includegraphics[width=0.22\textwidth]{figures/fig07a_jps_m3}}\\
+\subfloat[传统A*]{\includegraphics[width=0.22\textwidth]{figures/fig07b_astar_m1}\hfil
+\includegraphics[width=0.22\textwidth]{figures/fig07b_astar_m2}\hfil
+\includegraphics[width=0.22\textwidth]{figures/fig07b_astar_m3}}\\
+\subfloat[Dijkstra]{\includegraphics[width=0.22\textwidth]{figures/fig07c_dijk_m1}\hfil
+\includegraphics[width=0.22\textwidth]{figures/fig07c_dijk_m2}\hfil
+\includegraphics[width=0.22\textwidth]{figures/fig07c_dijk_m3}}\\
+\subfloat[RRT]{\includegraphics[width=0.22\textwidth]{figures/fig07d_rrt_m1}\hfil
+\includegraphics[width=0.22\textwidth]{figures/fig07d_rrt_m2}\hfil
+\includegraphics[width=0.22\textwidth]{figures/fig07d_rrt_m3}}
+\caption{四种算法在三张地图上的路径规划结果。每行从左至右依次为Map~1、Map~2、Map~3。}
 \label{fig:plan_paths}
 \end{figure*}
-
 \begin{figure}[!t]
 \centering
-\includegraphics[width=2.5in]{figures/DifPathPlan_CostCompare}
+\includegraphics[width=2.5in]{figures/fig08_pathlen}
 \caption{四个算法在Map~1、2、3上的路径长度对比（折线图）。}
 \label{fig:plan_len}
 \end{figure}
 \begin{figure}[!t]
 \centering
-\includegraphics[width=2.5in]{figures/DifPathPlan_TimeCompare}
+\includegraphics[width=2.5in]{figures/fig09_time}
 \caption{四个算法在Map~1、2、3上的计算时间对比（折线图）。}
 \label{fig:plan_time}
 \end{figure}
@@ -865,17 +850,30 @@ $k$ & 3 & 9 & 15 & 30 & 60 \\
 }
 \end{table*}
 
-上述结果揭示了若干重要的敏感性特征。首先，蚂蚁数量$n_{\mathrm{ants}}$具有中等影响：在$n_{\mathrm{ants}} = 40$（默认值）时，算法在Map~2上达到100\%成功率、kroB100上达97.5\%，而减至10只蚂蚁使kroB100成功率降至92.5\%并增加平均代价。其次，贪心概率$q_0$在默认值0.45处呈现明确最优：增至0.9（近纯贪心）导致严重退化，kroB100成功率降至50\%、标准差增至42.06，表明过早收敛。第三，后期局部搜索比例$y_{\max}$至关重要：减至0.10使Map~2成功率降至65\%、kroB100降至80\%，证实密集后期局部搜索对解质量不可或缺。第四，精英比率$r_{\mathrm{elite}}$和候选列表大小$k$的敏感性相对温和，候选列表大小$k$是最不敏感的参数——但过小的$k = 3$使kroB100成功率降至30\%，表明最小候选列表对有效VND剪枝是必要的。这表明默认配置在收敛质量、稳定性与运行时间之间取得了良好折中，故后续实验均采用该组参数。各参数水平的代价与计算时间对比如图~\ref{fig:sens_cost_time}所示，默认参数下规划路径如图~\ref{fig:sens_paths}所示。
+上述结果揭示了若干重要的敏感性特征。首先，蚂蚁数量$n_{\mathrm{ants}}$具有中等影响：在$n_{\mathrm{ants}} = 40$（默认值）时，算法在Map~2上达到100\%成功率、kroB100上达97.5\%，而减至10只蚂蚁使kroB100成功率降至92.5\%并增加平均代价。其次，贪心概率$q_0$在默认值0.45处呈现明确最优：增至0.9（近纯贪心）导致严重退化，kroB100成功率降至50\%、标准差增至42.06，表明过早收敛。第三，后期局部搜索比例$y_{\max}$至关重要：减至0.10使Map~2成功率降至65\%、kroB100降至80\%，证实密集后期局部搜索对解质量不可或缺。第四，精英比率$r_{\mathrm{elite}}$和候选列表大小$k$的敏感性相对温和，候选列表大小$k$是最不敏感的参数——但过小的$k = 3$使kroB100成功率降至30\%，表明最小候选列表对有效VND剪枝是必要的。这表明默认配置在收敛质量、稳定性与运行时间之间取得了良好折中，故后续实验均采用该组参数。各参数水平的代价与时间对比如图~\ref{fig:sens_cost}和图~\ref{fig:sens_time}所示，默认参数下规划路径如图~\ref{fig:sens_paths}所示。
 
 \begin{figure*}[!t]
+
 \centering
-\includegraphics[width=0.32\textwidth]{figures/fig10_costtime_nants}\hfil
-\includegraphics[width=0.32\textwidth]{figures/fig10_costtime_q0}\hfil
-\includegraphics[width=0.32\textwidth]{figures/fig10_costtime_ymax}\\
-\includegraphics[width=0.32\textwidth]{figures/fig10_costtime_relite}\hfil
-\includegraphics[width=0.32\textwidth]{figures/fig10_costtime_k}
-\caption{各参数水平在Map~1、Map~2、kroB100上的代价与计算时间对比。}
-\label{fig:sens_cost_time}
+\includegraphics[width=0.32\textwidth]{figures/fig10_cost_nants}\hfil
+\includegraphics[width=0.32\textwidth]{figures/fig10_cost_q0}\hfil
+\includegraphics[width=0.32\textwidth]{figures/fig10_cost_ymax}\\
+\includegraphics[width=0.32\textwidth]{figures/fig10_cost_relite}\hfil
+\includegraphics[width=0.32\textwidth]{figures/fig10_cost_k}
+\caption{各参数水平在Map~1、Map~2、kroB100上的代价对比。}
+\label{fig:sens_cost}
+\end{figure*}
+
+\begin{figure*}[!t]
+
+\centering
+\includegraphics[width=0.32\textwidth]{figures/fig11_time_nants}\hfil
+\includegraphics[width=0.32\textwidth]{figures/fig11_time_q0}\hfil
+\includegraphics[width=0.32\textwidth]{figures/fig11_time_ymax}\\
+\includegraphics[width=0.32\textwidth]{figures/fig11_time_relite}\hfil
+\includegraphics[width=0.32\textwidth]{figures/fig11_time_k}
+\caption{各参数水平在Map~1、Map~2、kroB100上的计算时间对比。}
+\label{fig:sens_time}
 \end{figure*}
 
 \begin{figure}[!t]
@@ -1108,39 +1106,21 @@ $T_{\mathrm{end}}=10^{-8}$ \\
 \end{figure*}
 
 \begin{figure*}[!t]
-\centering
-\begin{minipage}[t]{0.48\textwidth}
-\centering
-\textbf{MMAS-VND-CL（本文）}\\[2pt]
-\includegraphics[width=0.46\linewidth]{figures/fig12_default_m1}\hfil
-\includegraphics[width=0.46\linewidth]{figures/fig12_default_m2}\\
-\includegraphics[width=0.78\linewidth]{figures/fig12_default_kro}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.48\textwidth}
-\centering
-\textbf{ACO}\\[2pt]
-\includegraphics[width=0.46\linewidth]{figures/fig21b_aco_m1}\hfil
-\includegraphics[width=0.46\linewidth]{figures/fig21b_aco_m2}\\
-\includegraphics[width=0.78\linewidth]{figures/fig21b_aco_m3}
-\end{minipage}
 
-\vspace{8pt}
-
-\begin{minipage}[t]{0.48\textwidth}
 \centering
-\textbf{GA}\\[2pt]
-\includegraphics[width=0.46\linewidth]{figures/fig21c_ga_m1}\hfil
-\includegraphics[width=0.46\linewidth]{figures/fig21c_ga_m2}\\
-\includegraphics[width=0.78\linewidth]{figures/fig21c_ga_m3}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.48\textwidth}
-\centering
-\textbf{SA}\\[2pt]
-\includegraphics[width=0.46\linewidth]{figures/fig21d_sa_m1}\hfil
-\includegraphics[width=0.46\linewidth]{figures/fig21d_sa_m2}\\
-\includegraphics[width=0.78\linewidth]{figures/fig21d_sa_m3}
-\end{minipage}
-\caption{各旅行商求解器在Map~1、Map~2、kroB100上规划的最优代价路径图。}
+\subfloat[MMAS-VND-CL（本文）]{\includegraphics[width=0.22\textwidth]{figures/fig12_default_m1}\hfil
+\includegraphics[width=0.22\textwidth]{figures/fig12_default_m2}\hfil
+\includegraphics[width=0.22\textwidth]{figures/fig12_default_kro}}\\
+\subfloat[ACO]{\includegraphics[width=0.22\textwidth]{figures/fig21b_aco_m1}\hfil
+\includegraphics[width=0.22\textwidth]{figures/fig21b_aco_m2}\hfil
+\includegraphics[width=0.22\textwidth]{figures/fig21b_aco_m3}}\\
+\subfloat[GA]{\includegraphics[width=0.22\textwidth]{figures/fig21c_ga_m1}\hfil
+\includegraphics[width=0.22\textwidth]{figures/fig21c_ga_m2}\hfil
+\includegraphics[width=0.22\textwidth]{figures/fig21c_ga_m3}}\\
+\subfloat[SA]{\includegraphics[width=0.22\textwidth]{figures/fig21d_sa_m1}\hfil
+\includegraphics[width=0.22\textwidth]{figures/fig21d_sa_m2}\hfil
+\includegraphics[width=0.22\textwidth]{figures/fig21d_sa_m3}}
+\caption{每个旅行商求解器在三张地图上规划的最优代价路径图。每行从左至右依次为Map~1、Map~2、Map~3。}
 \label{fig:tsp_paths}
 \end{figure*}
 
