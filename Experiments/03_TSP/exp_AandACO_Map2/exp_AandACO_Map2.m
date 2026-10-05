@@ -10,11 +10,12 @@ rootDir = fileparts(fileparts(fileparts(fileparts(mfilename('fullpath')))));
 addpath(genpath(rootDir));
 
 % ===== Config（可在此切换算法 / 运行次数）=====
-planner   = @(map, s, g) AStar_v1(map, s, g, 0);   % 全局规划器，返回 [path, info]
+% planner   = @(map, s, g) AStar_v1(map, s, g, 0);   % 全局规划器，返回 [path, info]
+planner   = @(map, s, g) AStar_v3_1(map, s, g, 0);
 
-% tspSolver = @(costMatrix, nPts) TSP_ACO_v2_4(costMatrix, nPts);  % TSP 求解器
+tspSolver = @(costMatrix, nPts) TSP_ACO_v2_4(costMatrix, nPts);  % TSP 求解器
 % tspSolver = @(costMatrix, nPts) TSP_ACO_X(costMatrix, nPts);
-tspSolver = @(costMatrix, nPts) TSP_GA_X(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_GA_X(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_SA_v0_X(costMatrix, nPts);
 
 % tspSolver = @(costMatrix, nPts) TSP_ACO(costMatrix, nPts);
@@ -22,7 +23,7 @@ tspSolver = @(costMatrix, nPts) TSP_GA_X(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_SA_v0(costMatrix, nPts);
 
 
-nRuns = 40;          % TSP 重复运行次数
+nRuns = 1;          % TSP 重复运行次数
 mapSize = 80;
 safetyMargin = 0.4;  % SimplifyPath 拐角裁剪安全距离（栅格单位）
 smoothDensity = 10;  % SmoothPath 平滑插值密度

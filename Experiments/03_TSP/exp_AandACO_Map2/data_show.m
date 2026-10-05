@@ -6,7 +6,7 @@ rootDir = fileparts(fileparts(fileparts(fileparts(mfilename('fullpath')))));
 addpath(genpath(rootDir));
 
 % ===== 指定结果文件 =====
-resultsFile = fullfile(fileparts(mfilename('fullpath')), 'results', 'C_Map2_3.mat');
+resultsFile = fullfile(fileparts(mfilename('fullpath')), 'results', 'C_Map2_2.mat');
 
 %% ===== 加载数据 =====
 if ~exist(resultsFile, 'file')
@@ -37,7 +37,7 @@ fprintf('运行次数: %d | Best: %.4f (Run #%d) | Avg: %.4f±%.4f\n', ...
 navXY = [navPoints(:,2) - 0.5, navPoints(:,1) - 0.5];
 
 %% ===== Figure 1: 地图 + 最优平滑路径 =====
-figure('Position', [50, 50, 720, 680], 'Color', 'w');
+figure('Position', [50, 50, 720, 520], 'Color', 'w');
 ax = axes; hold(ax, 'on');
 
 for i = 1:size(staticObstacles, 1)
@@ -55,19 +55,21 @@ plot(ax, fullSmoothPath(:,1), fullSmoothPath(:,2), '-', 'Color', [0.9, 0.3, 0.2]
 
 plot(ax, navXY(1,1), navXY(1,2), 'o', 'MarkerSize', 8, ...
     'MarkerFaceColor', [0.2, 0.8, 0.2], 'MarkerEdgeColor', 'k', 'LineWidth', 0.5);
-text(ax, navXY(1,1), navXY(1,2) - 1.8, 'Start', ...
-    'HorizontalAlignment', 'center', 'FontSize', 10, 'FontWeight', 'bold', 'Color', [0.2, 0.6, 0.2]);
+% text(ax, navXY(1,1), navXY(1,2) - 1.8, 'Start', ...
+%     'HorizontalAlignment', 'center', 'FontSize', 10, 'FontWeight', 'bold', 'Color', [0.2, 0.6, 0.2]);
 
 plot(ax, navXY(end,1), navXY(end,2), '^', 'MarkerSize', 8, ...
     'MarkerFaceColor', [0.9, 0.2, 0.2], 'MarkerEdgeColor', 'k', 'LineWidth', 0.5);
-text(ax, navXY(end,1), navXY(end,2) + 1.8, 'Goal', ...
-    'HorizontalAlignment', 'center', 'FontSize', 10, 'FontWeight', 'bold', 'Color', [0.8, 0.2, 0.2]);
+% text(ax, navXY(end,1), navXY(end,2) + 1.8, 'Goal', ...
+%     'HorizontalAlignment', 'center', 'FontSize', 10, 'FontWeight', 'bold', 'Color', [0.8, 0.2, 0.2]);
 
 xlim(ax, [0, mapSize]); ylim(ax, [0, mapSize]);
-set(ax, 'YDir', 'normal', 'XTick', 0:5:mapSize, 'YTick', 0:5:mapSize);
+axis(ax, 'equal');          % 数据单位两方向等比例
+pbaspect(ax, [1 1 1]);      % 让 axes 绘图框本身变成正方形
+set(ax, 'YDir', 'normal', 'XTickMode', 'auto', 'YTickMode', 'auto', 'FontSize', 16);
 grid(ax, 'on'); set(ax, 'GridAlpha', 0.15);
-xlabel('X (列)'); ylabel('Y (行)');
-title(sprintf('Map1 — 最优路径 (Cost: %.4f, Run #%d)', stats.bestCost, bestRunIdx), 'FontSize', 12);
+% xlabel('X (列)'); ylabel('Y (行)');
+title(sprintf('Map1 — 最优路径 (Cost: %.4f, Run #%d)', stats.bestCost, bestRunIdx), 'FontSize', 16);
 hold(ax, 'off');
 
 %% ===== Figure 2: 收敛曲线（迭代维度）=====

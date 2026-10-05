@@ -15,10 +15,10 @@ resultsDir = fullfile(fileparts(mfilename('fullpath')), 'results');
 algoLabels = {
 
 %   Map 3 最优结果：3 51.441
-   'C_Map1_1.mat',            'MMAS-VND-CL',   [0.62, 0.75, 0.45];   % green
-   'C_Map1_2.mat',            'ACO',           [0.90, 0.53, 0.47];   % orange
-   'C_Map1_3.mat',            'GA',            [0.96, 0.82, 0.47];   % yellow
-   'C_Map1_4.mat',            'SA',            [0.27, 0.60, 0.82];   % blue
+%    'C_Map1_1.mat',            'MMAS-VND-CL',   [0.62, 0.75, 0.45];   % green
+%    'C_Map1_2.mat',            'ACO',           [0.90, 0.53, 0.47];   % orange
+%    'C_Map1_3.mat',            'GA',            [0.96, 0.82, 0.47];   % yellow
+%    'C_Map1_4.mat',            'SA',            [0.27, 0.60, 0.82];   % blue
 
 
 %   Map 2 最优结果：6 20.15
@@ -29,10 +29,10 @@ algoLabels = {
 
 
 %    Map 3 最优结果：2 2141
-%    'C_Map3_1.mat',            'MMAS-VND-CL',   [0.62, 0.75, 0.45];   % green
-%    'C_Map3_2.mat',            'ACO',           [0.90, 0.53, 0.47];   % orange
-%    'C_Map3_3.mat',            'GA',            [0.96, 0.82, 0.47];   % yellow
-%    'C_Map3_4.mat',            'SA',            [0.27, 0.60, 0.82];   % blue
+   'C_Map3_1.mat',            'MMAS-VND-CL',   [0.62, 0.75, 0.45];   % green
+   'C_Map3_2.mat',            'ACO',           [0.90, 0.53, 0.47];   % orange
+   'C_Map3_3.mat',            'GA',            [0.96, 0.82, 0.47];   % yellow
+   'C_Map3_4.mat',            'SA',            [0.27, 0.60, 0.82];   % blue
 
 };
 algoFiles    = algoLabels(:,1);
@@ -49,7 +49,7 @@ for ai = 1:nAlgo
         colors(ai,:) = defaultColors(ai,:);
     end
 end
-knownOpt = 351.44;
+knownOpt = 22141;
 
 %% ===== Load all data =====
 allData = cell(1, nAlgo);
@@ -82,8 +82,8 @@ for ai = 1:nAlgo
 end
 
 %% ===== Figure 1: Convergence (Iteration) — all algorithms overlaid =====
-baseline = 350.44;
-figure('Position', [50, 50, 1000, 650], 'Color', 'w');
+baseline = 22140;
+figure('Position', [50, 50, 900, 600], 'Color', 'w');
 hold on;
 for ai = 1:nAlgo
     data = allData{ai};
@@ -104,15 +104,15 @@ for ai = 1:nAlgo
     plot(x, mu, '-', 'Color', colors(ai,:), 'LineWidth', 1.8, ...
         'DisplayName', displayNames{ai});
 end
-yline(knownOpt - baseline, '--k', '(351.44)', 'LineWidth', 0.5, ...
+yline(knownOpt - baseline, '--k', '(22141)', 'LineWidth', 0.5, ...
     'LabelVerticalAlignment', 'bottom', 'HandleVisibility', 'off');
-xlabel('Iteration'); ylabel('Best Cost − 350.44 (log)');
+xlabel('Iteration'); ylabel('Best Cost − 22140 (log)');
 title(sprintf('Convergence — Iteration (Mean + 95%% CI, %d runs each)', nR));
 set(gca, 'YScale', 'log');
 legend('Location', 'northeast'); grid on; hold off;
 
 %% ===== Figure 2: Convergence (Time) — all algorithms overlaid =====
-figure('Position', [50, 50, 1000, 650], 'Color', 'w');
+figure('Position', [50, 50, 900, 600], 'Color', 'w');
 hold on;
 for ai = 1:nAlgo
     data = allData{ai};
@@ -145,15 +145,15 @@ for ai = 1:nAlgo
     plot(tC, mu, '-', 'Color', colors(ai,:), 'LineWidth', 1.8, ...
         'DisplayName', displayNames{ai});
 end
-yline(knownOpt - baseline, '--k', '(351.44)', 'LineWidth', 0.5, ...
+yline(knownOpt - baseline, '--k', '(22141)', 'LineWidth', 0.5, ...
     'LabelVerticalAlignment', 'bottom', 'HandleVisibility', 'off');
-xlabel('Time (s)'); ylabel('Best Cost − 350.44 (log)');
+xlabel('Time (s)'); ylabel('Best Cost − 22140 (log)');
 title(sprintf('Convergence — Time (Mean + 95%% CI, %d runs each)', nR));
 set(gca, 'YScale', 'log');
 legend('Location', 'northeast'); grid on; hold off;
 
 %% ===== Figure 3: Cost Boxplot Comparison =====
-figure('Position', [50, 50, 1000, 550], 'Color', 'w');
+figure('Position', [50, 50, 900, 600], 'Color', 'w');
 boxData = []; boxGroup = [];
 for ai = 1:nAlgo
     if ~isempty(allData{ai})
@@ -162,8 +162,8 @@ for ai = 1:nAlgo
         boxGroup = [boxGroup; repmat(ai, length(c), 1)];
     end
 end
-% Apply baseline shift: subtract 350.44 so optimal=351.44 → y=1
-boxData = boxData - 350.44;
+% Apply baseline shift: subtract 22140 so optimal=22141 → y=1
+boxData = boxData - 22140;
 h = boxplot(boxData, boxGroup, 'Labels', displayNames, 'Symbol', 'o');
 for ai = 1:nAlgo
     set(h(:,ai), 'Color', colors(ai,:));
@@ -179,22 +179,22 @@ hold on;
 jitterWidth = 0.25;
 for ai = 1:nAlgo
     if ~isempty(allData{ai})
-        cShifted = allData{ai}.costs(:) - 350.44;
+        cShifted = allData{ai}.costs(:) - 22140;
         nPts = length(cShifted);
         xJitter = ai + jitterWidth * (rand(nPts, 1) - 0.5);
         scatter(xJitter, cShifted, 12, colors(ai,:), 'filled', ...
             'MarkerFaceAlpha', 0.5, 'MarkerEdgeColor', 'none');
     end
 end
-yline(1, '--k', '(351.44)', 'LineWidth', 0.5, ...
+yline(1, '--k', '(22141)', 'LineWidth', 0.5, ...
     'LabelVerticalAlignment', 'bottom');
 set(gca, 'YScale', 'log');
-ylabel('Best Cost − 350.44 (log)');
+ylabel('Best Cost − 22140 (log)');
 title(sprintf('Cost Distribution Comparison (%d runs each)', nR));
 grid on;
 
 %% ===== Figure 4: Average OptimalCost + TimeToOptimal per Algorithm (Bar + Line) =====
-figure('Position', [50, 50, 900, 500], 'Color', 'w');
+figure('Position', [50, 50, 900, 600], 'Color', 'w');
 avgOptCosts = nan(1, nAlgo);
 avgTTO = nan(1, nAlgo);
 tolerance = 1e-12;
@@ -233,11 +233,11 @@ for ai = 1:nAlgo
 end
 for ai = 1:nAlgo
     text(ai, avgOptCosts(ai) + max(avgOptCosts)*0.01, sprintf('%.3f', avgOptCosts(ai)), ...
-        'HorizontalAlignment', 'center', 'FontSize', 10, 'FontWeight', 'bold');
+        'HorizontalAlignment', 'center', 'FontSize', 16, 'FontWeight', 'bold');
 end
-yline(knownOpt, '--k', '(351.44)', 'LineWidth', 0.5, ...
+yline(knownOpt, '--k', '(22141)', 'LineWidth', 0.5, ...
     'LabelVerticalAlignment', 'bottom');
-ylabel('Average OptimalCost', 'FontSize', 12);
+ylabel('Average OptimalCost', 'FontSize', 16);
 
 % 右轴：折线图 — Average TimeToOptimal（log 标尺）
 yyaxis right;
@@ -246,10 +246,10 @@ hl = plot(1:nAlgo, avgTTO_ms, '-o', 'Color', [0.64, 0.08, 0.18], ...
     'LineWidth', 1.8, 'MarkerSize', 7, 'MarkerFaceColor', [0.64, 0.08, 0.18], ...
     'DisplayName', 'TimeToOptimal');
 set(gca, 'YScale', 'log');
-ylabel('Average TimeToOptimal (ms, log)', 'FontSize', 12);
+ylabel('Average TimeToOptimal (ms, log)', 'FontSize', 16);
 for ai = 1:nAlgo
     text(ai, avgTTO_ms(ai) * 1.08, sprintf('%.1f ms', avgTTO_ms(ai)), ...
-        'HorizontalAlignment', 'center', 'FontSize', 10, 'FontWeight', 'bold', ...
+        'HorizontalAlignment', 'center', 'FontSize', 16, 'FontWeight', 'bold', ...
         'Color', 'k');
 end
 
@@ -259,7 +259,7 @@ hb = bar(nan(nAlgo,1), 0.6, 'FaceColor', [0.6 0.6 0.6], 'EdgeColor', 'k', ...
     'LineWidth', 0.5, 'DisplayName', 'Average OptimalCost');
 legend([hb, hl], 'Location', 'northwest');
 
-set(gca, 'XTick', 1:nAlgo, 'XTickLabel', displayNames, 'XTickLabelRotation', 15, 'FontSize', 12);
+set(gca, 'XTick', 1:nAlgo, 'XTickLabel', displayNames, 'FontSize', 16);
 title(sprintf('Average OptimalCost & TimeToOptimal per Algorithm (%d runs each)', nR));
 grid on; hold off;
 

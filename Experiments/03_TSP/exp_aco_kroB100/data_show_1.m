@@ -6,7 +6,7 @@ rootDir = fileparts(fileparts(fileparts(fileparts(mfilename('fullpath')))));
 addpath(genpath(rootDir));
 
 % ===== 指定结果文件 =====
-resultsFile = fullfile(fileparts(mfilename('fullpath')), 'results', 'A_Map3_3.mat');
+resultsFile = fullfile(fileparts(mfilename('fullpath')), 'results', 'C_Map3_4.mat');
 
 %% ===== 加载数据 =====
 if ~exist(resultsFile, 'file')
@@ -70,10 +70,11 @@ if ~isLoop
         'HorizontalAlignment', 'center', 'FontSize', 10, 'FontWeight', 'bold', 'Color', [0.8, 0.2, 0.2]);
 end
 
-xlabel('X'); ylabel('Y');
+% xlabel('X'); ylabel('Y');
+
 titleStr = sprintf('Best TSP Tour (C%d→C%d, Cost: %.2f, Run #%d)', ...
     startCity, endCity, stats.bestCost, bestRunIdx);
-title(titleStr, 'FontSize', 13);
+title(titleStr, 'FontSize', 16);
 axis equal tight;
 grid on; set(gca, 'GridAlpha', 0.1);
 hold off;

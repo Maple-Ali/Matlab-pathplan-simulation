@@ -44,13 +44,13 @@ enableSimplify = false;   % true=启用 SimplifyPath 拐角裁剪
 enableSmooth   = false;   % true=启用 SmoothPath 样条平滑（需先 SimplifyPath）
 %  两者均启用时: 原始路径 → SimplifyPath → SmoothPath
 
-nRuns = 10;   % 每组（算法×地图）重复运行次数，≥2 时输出标准差
+nRuns = 1;   % 每组（算法×地图）重复运行次数，≥2 时输出标准差
 
 % 地图配置: {地图名, startGrid, goalGrid}
 %   startGrid/goalGrid 留空 [] → 使用地图自带；若地图无自带 → 默认角点 [2,2] / [size-1,size-1]
 mapConfigs = {
-    'Map2_kong',  [], [];
-    'Map1',       [], [];
+    % 'Map2_kong',  [], [];
+    % 'Map1',       [], [];
     '迷宫x80_3',        [], [];
     % '杂乱不规则',        [], [];
     % '迷宫x80',        [], [];
