@@ -6,6 +6,11 @@ clear variables; close all;
 rootDir = fileparts(fileparts(fileparts(fileparts(mfilename('fullpath')))));
 addpath(genpath(rootDir));
 
+% 全局字体大小统一为 16（坐标轴刻度、标题、标签、图例、文本）
+set(0, 'DefaultAxesFontSize', 16);
+set(0, 'DefaultTextFontSize', 16);
+set(0, 'DefaultLegendFontSize', 16);
+
 resultsDir = fullfile(fileparts(mfilename('fullpath')), 'results');
 
 % ===== Config: map result files → display labels → color (optional) =====
@@ -14,7 +19,7 @@ resultsDir = fullfile(fileparts(mfilename('fullpath')), 'results');
 %  Column 3: color [R,G,B] (optional — auto-assigned if omitted or empty)
 algoLabels = {
 
-%   Map 3 最优结果：3 51.441
+%   Map 3 最优结果：3 52.56
 %    'B_Map1_1.mat',            'Group 1',          [0.62, 0.75, 0.45];   % green
 %    'B_Map1_2.mat',            'Group 2',          [0.90, 0.53, 0.47];   % orange
 %    'B_Map1_3.mat',            'Group 3',          [0.96, 0.82, 0.47];   % yellow
@@ -22,22 +27,22 @@ algoLabels = {
 %    'B_Map1_5.mat',            'Group 5',          [0.56, 0.86, 0.98];   % cyan
 %    'B_Map1_6.mat',            'Group 6',          [0.65, 0.40, 0.71];   % purple
 
-%   Map 2 最优结果：6 20.15
-   'B_Map2_1.mat',            'Group 1',          [0.62, 0.75, 0.45];   % green
-   'B_Map2_2.mat',            'Group 2',          [0.90, 0.53, 0.47];   % orange
-   'B_Map2_3.mat',            'Group 3',          [0.96, 0.82, 0.47];   % yellow
-   'B_Map2_4.mat',            'Group 4',          [0.27, 0.60, 0.82];   % blue
-   'B_Map2_5.mat',            'Group 5',          [0.56, 0.86, 0.98];   % cyan
-   'B_Map2_6.mat',            'Group 6',          [0.65, 0.40, 0.71];   % purple
+%   Map 2 最优结果：6 23.78
+%    'B_Map2_1.mat',            'Group 1',          [0.62, 0.75, 0.45];   % green
+%    'B_Map2_2.mat',            'Group 2',          [0.90, 0.53, 0.47];   % orange
+%    'B_Map2_3.mat',            'Group 3',          [0.96, 0.82, 0.47];   % yellow
+%    'B_Map2_4.mat',            'Group 4',          [0.27, 0.60, 0.82];   % blue
+%    'B_Map2_5.mat',            'Group 5',          [0.56, 0.86, 0.98];   % cyan
+%    'B_Map2_6.mat',            'Group 6',          [0.65, 0.40, 0.71];   % purple
 %    'name.mat',                  'show_name', [0.64, 0.08, 0.18]; % maroon
 
 %    Map 3 最优结果：2 2141
-%    'B_Map3_1.mat',            'Group 1',          [0.62, 0.75, 0.45];   % green
-%    'B_Map3_2.mat',            'Group 2',          [0.90, 0.53, 0.47];   % orange
-%    'B_Map3_3.mat',            'Group 3',          [0.96, 0.82, 0.47];   % yellow
-%    'B_Map3_4.mat',            'Group 4',          [0.27, 0.60, 0.82];   % blue
-%    'B_Map3_5.mat',            'Group 5',          [0.56, 0.86, 0.98];   % cyan
-%    'B_Map3_6.mat',            'Group 6',          [0.65, 0.40, 0.71];   % purple
+   'B_Map3_1.mat',            'Group 1',          [0.62, 0.75, 0.45];   % green
+   'B_Map3_2.mat',            'Group 2',          [0.90, 0.53, 0.47];   % orange
+   'B_Map3_3.mat',            'Group 3',          [0.96, 0.82, 0.47];   % yellow
+   'B_Map3_4.mat',            'Group 4',          [0.27, 0.60, 0.82];   % blue
+   'B_Map3_5.mat',            'Group 5',          [0.56, 0.86, 0.98];   % cyan
+   'B_Map3_6.mat',            'Group 6',          [0.65, 0.40, 0.71];   % purple
 
 };
 algoFiles    = algoLabels(:,1);
@@ -54,7 +59,7 @@ for ai = 1:nAlgo
         colors(ai,:) = defaultColors(ai,:);
     end
 end
-knownOpt = 620.15;
+knownOpt = 22141;
 
 %% ===== Load all data =====
 allData = cell(1, nAlgo);
@@ -87,7 +92,7 @@ for ai = 1:nAlgo
 end
 
 %% ===== Figure 1: Convergence (Iteration) — all algorithms overlaid =====
-baseline = 619.15;
+baseline = 22140;
 figure('Position', [50, 50, 1000, 600], 'Color', 'w');
 hold on;
 for ai = 1:nAlgo
@@ -109,9 +114,9 @@ for ai = 1:nAlgo
     plot(x, mu, '-', 'Color', colors(ai,:), 'LineWidth', 1.8, ...
         'DisplayName', displayNames{ai});
 end
-yline(knownOpt - baseline, '--k', '(620.15)', 'LineWidth', 0.5, ...
+yline(knownOpt - baseline, '--k', '(22141)', 'LineWidth', 0.5, ...
     'LabelVerticalAlignment', 'bottom', 'HandleVisibility', 'off');
-xlabel('Iteration'); ylabel('Best Cost − 619.15 (log)');
+xlabel('Iteration'); ylabel('Best Cost − 22140 (log)');
 title(sprintf('Convergence — Iteration (Mean + 95%% CI, %d runs each)', nR));
 set(gca, 'YScale', 'log');
 legend('Location', 'northeast'); grid on; hold off;
@@ -150,9 +155,9 @@ for ai = 1:nAlgo
     plot(tC, mu, '-', 'Color', colors(ai,:), 'LineWidth', 1.8, ...
         'DisplayName', displayNames{ai});
 end
-yline(knownOpt - baseline, '--k', '(620.15)', 'LineWidth', 0.5, ...
+yline(knownOpt - baseline, '--k', '(22141)', 'LineWidth', 0.5, ...
     'LabelVerticalAlignment', 'bottom', 'HandleVisibility', 'off');
-xlabel('Time (s)'); ylabel('Best Cost − 619.15 (log)');
+xlabel('Time (s)'); ylabel('Best Cost − 22140 (log)');
 title(sprintf('Convergence — Time (Mean + 95%% CI, %d runs each)', nR));
 set(gca, 'YScale', 'log');
 legend('Location', 'northeast'); grid on; hold off;
@@ -167,8 +172,8 @@ for ai = 1:nAlgo
         boxGroup = [boxGroup; repmat(ai, length(c), 1)];
     end
 end
-% Apply baseline shift: subtract 619.15 so optimal=620.15 → y=1
-boxData = boxData - 619.15;
+% Apply baseline shift: subtract 22140 so optimal=22141 → y=1
+boxData = boxData - 22140;
 h = boxplot(boxData, boxGroup, 'Labels', displayNames, 'Symbol', 'o');
 for ai = 1:nAlgo
     set(h(:,ai), 'Color', colors(ai,:));
@@ -184,17 +189,17 @@ hold on;
 jitterWidth = 0.25;
 for ai = 1:nAlgo
     if ~isempty(allData{ai})
-        cShifted = allData{ai}.costs(:) - 619.15;
+        cShifted = allData{ai}.costs(:) - 22140;
         nPts = length(cShifted);
         xJitter = ai + jitterWidth * (rand(nPts, 1) - 0.5);
         scatter(xJitter, cShifted, 12, colors(ai,:), 'filled', ...
             'MarkerFaceAlpha', 0.5, 'MarkerEdgeColor', 'none');
     end
 end
-yline(1, '--k', '(620.15)', 'LineWidth', 0.5, ...
+yline(1, '--k', '(22141)', 'LineWidth', 0.5, ...
     'LabelVerticalAlignment', 'bottom');
 set(gca, 'YScale', 'log');
-ylabel('Best Cost − 619.15 (log)');
+ylabel('Best Cost − 22140 (log)');
 title(sprintf('Cost Distribution Comparison (%d runs each)', nR));
 grid on;
 
@@ -229,47 +234,50 @@ for ai = 1:nAlgo
     avgTTO(ai) = mean(runTTO, 'omitnan');
 end
 
-% 左轴：柱状图 — Average OptimalCost（真实值 − 基准值，log 标尺，与 Figure 3 一致）
-yyaxis left;
-hold on;
-avgOptShift = avgOptCosts - baseline;      % 真实值 − 基准值(619.15)
+avgTTO_ms   = avgTTO * 1000;               % 平均耗时（毫秒）
+avgOptShift = avgOptCosts - baseline;      % 真实值 − 基准值(22140)
 minPositive = 1e-6;                        % log 轴下非正值替换为极小正数
 avgOptPlot  = avgOptShift;
 avgOptPlot(avgOptPlot <= 0) = minPositive;
-b = bar(1:nAlgo, avgOptPlot, 0.6, 'FaceColor', 'flat', 'EdgeColor', 'k', 'LineWidth', 0.5);
+
+% 双标尺用「两个重叠 Axes」实现：yyaxis 是单 Axes 双标尺，其右标尺上的对象恒在左标尺
+% 对象之上（uistack 亦被禁止），无法把折线画到柱状图之上；重叠 Axes 则按创建顺序叠放。
+% 先建柱状图轴（下层，右标尺），再建折线轴（上层，左标尺，背景透明以露出柱子）。
+axPos  = [0.13, 0.11, 0.775, 0.815];       % 常规坐标轴位置，四周留出标签空间
+axBar  = axes('Parent', gcf, 'Position', axPos, 'Color', 'w', ...
+    'YAxisLocation', 'right', 'Box', 'on', 'FontSize', 16);
+hold(axBar, 'on');
+b = bar(axBar, 1:nAlgo, avgTTO_ms, 0.6, 'FaceColor', 'flat', ...
+    'EdgeColor', 'k', 'LineWidth', 0.5, 'DisplayName', 'Average TimeToOptimal');
 for ai = 1:nAlgo
     b.CData(ai,:) = colors(ai,:);
 end
-for ai = 1:nAlgo
-    text(ai, avgOptPlot(ai) * 1.06, sprintf('%.3f', avgOptShift(ai)), ...   % log 轴用乘性偏移
-        'HorizontalAlignment', 'center', 'FontSize', 16, 'FontWeight', 'bold');
-end
-set(gca, 'YScale', 'log');
-yline(knownOpt - baseline, '--k', '(620.15)', 'LineWidth', 0.5, ...
-    'LabelVerticalAlignment', 'bottom');
-ylabel('Average OptimalCost − 619.15 (log)', 'FontSize', 16);
+ylabel(axBar, 'Average TimeToOptimal (ms)', 'FontSize', 16);
+xlim(axBar, [0.5, nAlgo + 0.5]);
+ylim(axBar, [0, max(avgTTO_ms) * 1.05]);
+% 刻度位置保留用于网格线，标签留空（X 轴标签由上层折线轴提供，避免重复）
+set(axBar, 'XTick', 1:nAlgo, 'XTickLabel', repmat({''}, 1, nAlgo), 'FontSize', 16);
+grid(axBar, 'on');
 
-% 右轴：折线图 — Average TimeToOptimal
-yyaxis right;
-avgTTO_ms = avgTTO * 1000;  % 转换为毫秒
-hl = plot(1:nAlgo, avgTTO_ms, '-o', 'Color', [0.64, 0.08, 0.18], ...
+% 上层：折线 — Average OptimalCost（log 标尺，与 Figure 3 一致）
+axLine = axes('Parent', gcf, 'Position', axPos, 'Color', 'none', ...
+    'YAxisLocation', 'left', 'Box', 'on', 'FontSize', 16);
+hold(axLine, 'on');
+hl = plot(axLine, 1:nAlgo, avgOptPlot, '-o', 'Color', [0.64, 0.08, 0.18], ...
     'LineWidth', 1.8, 'MarkerSize', 7, 'MarkerFaceColor', [0.64, 0.08, 0.18], ...
-    'DisplayName', 'TimeToOptimal');
-ylabel('Average TimeToOptimal (ms)', 'FontSize', 16);
-for ai = 1:nAlgo
-    text(ai, avgTTO_ms(ai) + max(avgTTO_ms)*0.01, sprintf('%.1f ms', avgTTO_ms(ai)), ...
-        'HorizontalAlignment', 'center', 'FontSize', 16, 'FontWeight', 'bold', ...
-        'Color', 'k');
-end
+    'DisplayName', 'Average OptimalCost');
+set(axLine, 'YScale', 'log', 'GridLineStyle', 'none');
+yline(axLine, knownOpt - baseline, '--k', '(22141)', 'LineWidth', 0.5, ...
+    'LabelVerticalAlignment', 'bottom');
+ylabel(axLine, 'Average OptimalCost − 22140 (log)', 'FontSize', 16);
+xlim(axLine, [0.5, nAlgo + 0.5]);
 
-% 图例（左轴柱状图 + 右轴折线图）
-yyaxis left;
-hb = bar(nan(nAlgo,1), 0.6, 'FaceColor', [0.6 0.6 0.6], 'EdgeColor', 'k', ...
-    'LineWidth', 0.5, 'DisplayName', 'Average OptimalCost');
-legend([hb, hl], 'Location', 'northwest');
+% 图例（灰色色块代表柱状图，折线沿用自身颜色；两句柄同属上层轴，图例正常绘制）
+hb = bar(axLine, nan(nAlgo,1), 0.6, 'FaceColor', [0.6 0.6 0.6], 'EdgeColor', 'k', ...
+    'LineWidth', 0.5, 'DisplayName', 'Average TimeToOptimal');
+legend(axLine, [hb, hl], 'Location', 'northwest');
 
-set(gca, 'XTick', 1:nAlgo, 'XTickLabel', displayNames, 'FontSize', 12);
-title(sprintf('Average OptimalCost & TimeToOptimal per Algorithm (%d runs each)', nR));
-grid on; hold off;
+set(axLine, 'XTick', 1:nAlgo, 'XTickLabel', displayNames, 'FontSize', 16);
+title(axLine, sprintf('Average TimeToOptimal & OptimalCost per Algorithm (%d runs each)', nR));
 
 fprintf('\nAll figures ready. (Not auto-saved)\n');

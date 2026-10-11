@@ -6,11 +6,11 @@
 %  用法：修改下方 startCity / endCity 后直接运行
 
 clear variables; close all;
-rootDir = fileparts(fileparts(fileparts(fileparts(mfilename('fullpath')))));
+rootDir = fileparts(fileparts(fileparts(fileparts(mfilename('fullpath')))));    
 addpath(genpath(rootDir));
 
 % ===== TSP Algorithm Selector =====
-%tspSolver = @(costMatrix, nPts) TSP_ACO_v2_4(costMatrix, nPts);
+% tspSolver = @(costMatrix, nPts) TSP_ACO_v2_4(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_ACO_X(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_GA_X(costMatrix, nPts);
 tspSolver = @(costMatrix, nPts) TSP_SA_v0_X(costMatrix, nPts);
@@ -120,7 +120,18 @@ fprintf('Total wall time: %.1fs\n', totalWallTime);
 %% ===== Export Data =====
 startLabel = sprintf('city%d', startCity);
 goalLabel  = sprintf('city%d', endCity);
-resultsFile = fullfile(resultsDir, sprintf('exp_kroB100_%s_to_%s.mat', startLabel, goalLabel));
+
+baseName = sprintf('exp_kroB100_%s_to_%s', startLabel, goalLabel);
+ext      = '.mat';
+resultsFile = fullfile(resultsDir, [baseName ext]);
+
+% 若已存在，则依次尝试 (1)(2)(3)...
+idx = 1;
+while isfile(resultsFile)
+    resultsFile = fullfile(resultsDir, sprintf('%s(%d)%s', baseName, idx, ext));
+    idx = idx + 1;
+end
+
 save(resultsFile, 'allOrders', 'allCosts', 'allHistories', 'bestRunIdx', 'stats', ...
     'fullDist100', 'cityCoords', 'costMatrix', 'nodeToCity', 'startCity', 'endCity');
 fprintf('\nResults saved to: %s\n', resultsFile);

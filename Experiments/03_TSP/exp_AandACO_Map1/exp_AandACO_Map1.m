@@ -13,16 +13,16 @@ addpath(genpath(rootDir));
 % planner   = @(map, s, g) AStar_v1(map, s, g, 0);   % 全局规划器，返回 [path, info]
 planner   = @(map, s, g) AStar_v3_1(map, s, g, 0);
 
-tspSolver = @(costMatrix, nPts) TSP_ACO_v2_4(costMatrix, nPts);  % TSP 求解器
+% tspSolver = @(costMatrix, nPts) TSP_ACO_v2_4(costMatrix, nPts);  % TSP 求解器
 % tspSolver = @(costMatrix, nPts) TSP_ACO_X(costMatrix, nPts);
-% tspSolver = @(costMatrix, nPts) TSP_GA_X(costMatrix, nPts);
+tspSolver = @(costMatrix, nPts) TSP_GA_X(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_SA_v0_X(costMatrix, nPts);
 
 % tspSolver = @(costMatrix, nPts) TSP_ACO(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_GA(costMatrix, nPts);
 % tspSolver = @(costMatrix, nPts) TSP_SA_v0(costMatrix, nPts);
 
-nRuns = 5;          % TSP 重复运行次数
+nRuns = 40;          % TSP 重复运行次数
 mapSize = 50;
 safetyMargin = 0.4;  % SimplifyPath 拐角裁剪安全距离（栅格单位）
 smoothDensity = 10;  % SmoothPath 平滑插值密度
@@ -139,7 +139,17 @@ pathCostCheck = sum(segCost);
 fprintf('拼接路径总代价(距离矩阵): %.4f (TSP bestCost: %.4f)\n', pathCostCheck, stats.bestCost);
 
 %% ===== 导出结果 =====
-resultsFile = fullfile(resultsDir, 'exp_AandACO_Map1_results.mat');
+baseName = 'exp_AandACO_Map1_results';
+ext      = '.mat';
+resultsFile = fullfile(resultsDir, [baseName ext]);
+
+% 若已存在，则依次尝试 (1)(2)(3)...
+idx = 1;
+while isfile(resultsFile)
+    resultsFile = fullfile(resultsDir, sprintf('%s(%d)%s', baseName, idx, ext));
+    idx = idx + 1;
+end
+
 save(resultsFile, 'allOrders', 'allCosts', 'allHistories', 'bestRunIdx', 'stats', ...
     'bestOrder', 'segSmooth', 'fullSmoothPath', 'distMatrix', 'distMatrixTime', ...
     'navPoints', 'staticObstacles', 'mapSize', 'nRuns', 'safetyMargin', 'smoothDensity');
