@@ -1,0 +1,576 @@
+[
+  {
+    "doi": "10.3390/vehicles3030027",
+    "title": "A Survey of Path Planning Algorithms for Mobile Robots",
+    "year": 2021,
+    "authors": [
+      "Karthik Karur",
+      "Nitin Sharma",
+      "Chinmay Dharmatti",
+      "Joshua Eric Siegel"
+    ],
+    "venue": "Vehicles",
+    "volume": "3",
+    "issue": "3",
+    "first_page": "448",
+    "last_page": "468",
+    "cited": 400
+  },
+  {
+    "doi": "10.3390/robotics12040093",
+    "title": "Classical and Heuristic Approaches for Mobile Robot Path Planning: A Survey",
+    "year": 2023,
+    "authors": [
+      "Jaafar Ahmed Abdulsaheb",
+      "Dheyaa Jasim Kadhim"
+    ],
+    "venue": "Robotics",
+    "volume": "12",
+    "issue": "4",
+    "first_page": "93",
+    "last_page": "93",
+    "cited": 114
+  },
+  {
+    "doi": "10.3390/s24113573",
+    "title": "Obstacle Avoidance and Path Planning Methods for Autonomous Navigation of Mobile Robot",
+    "year": 2024,
+    "authors": [
+      "Kornél Katona",
+      "Husam A. Neamah",
+      "Péter Köröndi"
+    ],
+    "venue": "Sensors",
+    "volume": "24",
+    "issue": "11",
+    "first_page": "3573",
+    "last_page": "3573",
+    "cited": 142
+  },
+  {
+    "doi": "10.48084/etasr.13885",
+    "title": "A Survey of Path Planning and Obstacle Avoidance Techniques in Mobile Robotics",
+    "year": 2025,
+    "authors": [
+      "Amanzhol Bektemessov"
+    ],
+    "venue": "Engineering Technology & Applied Science Research",
+    "volume": "15",
+    "issue": "6",
+    "first_page": "29632",
+    "last_page": "29640",
+    "cited": 5
+  },
+  {
+    "doi": "10.1007/s10514-022-10039-8",
+    "title": "Motion planning and control for mobile robot navigation using machine learning: a survey",
+    "year": 2022,
+    "authors": [
+      "Xuesu Xiao",
+      "Bo Liu",
+      "Garrett Warnell",
+      "Peter Stone"
+    ],
+    "venue": "Autonomous Robots",
+    "volume": "46",
+    "issue": "5",
+    "first_page": "569",
+    "last_page": "597",
+    "cited": 253
+  },
+  {
+    "doi": "10.1016/j.ejor.2023.07.022",
+    "title": "A comprehensive survey on the generalized traveling salesman problem",
+    "year": 2023,
+    "authors": [
+      "Petrică C. Pop",
+      "Ovidiu Cosma",
+      "Cosmin Sabo",
+      "Corina Pop Sitar"
+    ],
+    "venue": "European Journal of Operational Research",
+    "volume": "314",
+    "issue": "3",
+    "first_page": "819",
+    "last_page": "835",
+    "cited": 168
+  },
+  {
+    "doi": "10.3390/a19040278",
+    "title": "A Comprehensive Review of Metaheuristics for the Modern Traveling Salesman Problem and Drone-Assisted Delivery",
+    "year": 2026,
+    "authors": [
+      "Alessio Mezzina",
+      "Mario Francesco Pavone"
+    ],
+    "venue": "Algorithms",
+    "volume": "19",
+    "issue": "4",
+    "first_page": "278",
+    "last_page": "278",
+    "cited": 1
+  },
+  {
+    "doi": "10.3390/mca31050180",
+    "title": "Advanced Optimization Methods for the Knapsack, Traveling Salesman, and Close-Enough Traveling Salesman Problems: A Survey and Case Studies",
+    "year": 2026,
+    "authors": [
+      "Said El Kafhali",
+      "Mohamed Abid",
+      "Mohamed Hanini"
+    ],
+    "venue": "Mathematical and Computational Applications",
+    "volume": "31",
+    "issue": "5",
+    "first_page": "180",
+    "last_page": "180",
+    "cited": 1
+  },
+  {
+    "doi": "10.1016/j.robot.2024.104655",
+    "title": "A new approach to smooth path planning of Ackerman mobile robot based on improved ACO algorithm and B-spline curve",
+    "year": 2024,
+    "authors": [
+      "Fengcai Huo",
+      "Shuai Zhu",
+      "Hongli Dong",
+      "Weijian Ren"
+    ],
+    "venue": "Robotics and Autonomous Systems",
+    "volume": "175",
+    "issue": null,
+    "first_page": "104655",
+    "last_page": "104655",
+    "cited": 107
+  },
+  {
+    "doi": "10.1016/j.asoc.2021.107439",
+    "title": "Ant colony optimization for traveling salesman problem based on parameters optimization",
+    "year": 2021,
+    "authors": [
+      "Yong Wang",
+      "Zunpu Han"
+    ],
+    "venue": "Applied Soft Computing",
+    "volume": "107",
+    "issue": null,
+    "first_page": "107439",
+    "last_page": "107439",
+    "cited": 191
+  },
+  {
+    "doi": "10.1016/j.engappai.2022.105139",
+    "title": "Parameter adaptation-based ant colony optimization with dynamic hybrid mechanism",
+    "year": 2022,
+    "authors": [
+      "Xiangbing Zhou",
+      "Hongjiang Ma",
+      "Jianggang Gu",
+      "Huiling Chen",
+      "Wu Deng"
+    ],
+    "venue": "Engineering Applications of Artificial Intelligence",
+    "volume": "114",
+    "issue": null,
+    "first_page": "105139",
+    "last_page": "105139",
+    "cited": 214
+  },
+  {
+    "doi": "10.1016/j.swevo.2022.101056",
+    "title": "Adaptive Ant Colony Optimization with node clustering applied to the Travelling Salesman Problem",
+    "year": 2022,
+    "authors": [
+      "Petr Stodola",
+      "Pavel Otřísal",
+      "Kamila Hasilová"
+    ],
+    "venue": "Swarm and Evolutionary Computation",
+    "volume": "70",
+    "issue": null,
+    "first_page": "101056",
+    "last_page": "101056",
+    "cited": 63
+  },
+  {
+    "doi": "10.1613/jair.1.12255",
+    "title": "Regarding Goal Bounding and Jump Point Search",
+    "year": 2021,
+    "authors": [
+      "Yue Hu",
+      "Daniel Harabor",
+      "Long Qin",
+      "Quanjun Yin"
+    ],
+    "venue": "Journal of Artificial Intelligence Research",
+    "volume": "70",
+    "issue": null,
+    "first_page": "631",
+    "last_page": "681",
+    "cited": 20
+  },
+  {
+    "doi": "10.1609/socs.v3i1.18254",
+    "title": "The JPS Pathfinding System",
+    "year": 2021,
+    "authors": [
+      "Daniel Harabor",
+      "Alban Grastien"
+    ],
+    "venue": "Proceedings of the International Symposium on Combinatorial Search",
+    "volume": "3",
+    "issue": "1",
+    "first_page": "207",
+    "last_page": "208",
+    "cited": 49
+  },
+  {
+    "doi": "10.1609/aaai.v37i10.26458",
+    "title": "Optimal Pathfinding on Weighted Grid Maps",
+    "year": 2023,
+    "authors": [
+      "Mark Carlson",
+      "Sajjad Kardani Moghadam",
+      "Daniel Harabor",
+      "Peter J. Stuckey",
+      "Morteza Ebrahimi"
+    ],
+    "venue": "Proceedings of the AAAI Conference on Artificial Intelligence",
+    "volume": "37",
+    "issue": "10",
+    "first_page": "12373",
+    "last_page": "12380",
+    "cited": 7
+  },
+  {
+    "doi": "10.1109/lra.2023.3311207",
+    "title": "SMUG Planner: A Safe Multi-Goal Planner for Mobile Robots in Challenging Environments",
+    "year": 2023,
+    "authors": [
+      "Changan Chen",
+      "Jonas Frey",
+      "Philip Arm",
+      "Marco Hutter"
+    ],
+    "venue": "IEEE Robotics and Automation Letters",
+    "volume": "8",
+    "issue": "11",
+    "first_page": "7170",
+    "last_page": "7177",
+    "cited": 19
+  },
+  {
+    "doi": "10.1109/lra.2024.3524912",
+    "title": "TRG-Planner: Traversal Risk Graph-Based Path Planning in Unstructured Environments for Safe and Efficient Navigation",
+    "year": 2025,
+    "authors": [
+      "Dongkyu Lee",
+      "I Made Aswin Nahrendra",
+      "Minho Oh",
+      "Byeongho Yu",
+      "Hyun Myung"
+    ],
+    "venue": "IEEE Robotics and Automation Letters",
+    "volume": "10",
+    "issue": "2",
+    "first_page": "1736",
+    "last_page": "1743",
+    "cited": 21
+  },
+  {
+    "doi": "10.3390/s25020446",
+    "title": "A Fuzzy Control Strategy for Multi-Goal Autonomous Robot Navigation",
+    "year": 2025,
+    "authors": [
+      "Stavros Stavrinidis",
+      "Paraskevi Th. Zacharia",
+      "Elias K. Xidias"
+    ],
+    "venue": "Sensors",
+    "volume": "25",
+    "issue": "2",
+    "first_page": "446",
+    "last_page": "446",
+    "cited": 18
+  },
+  {
+    "doi": "10.1109/TSMC.2020.3048984",
+    "title": "Real-Time Decision Making and Path Planning for Robotic Autonomous Luggage Trolley Collection at Airports",
+    "year": 2021,
+    "authors": [
+      "Jiankun Wang",
+      "Max Q.‐H. Meng"
+    ],
+    "venue": "IEEE Transactions on Systems Man and Cybernetics Systems",
+    "volume": "52",
+    "issue": "4",
+    "first_page": "2174",
+    "last_page": "2183",
+    "cited": 26
+  },
+  {
+    "doi": "10.1109/lra.2021.3091695",
+    "title": "Multi-Tour Set Traveling Salesman Problem in Planning Power Transmission Line Inspection",
+    "year": 2021,
+    "authors": [
+      "František Nekovář",
+      "Jan Faigl",
+      "Martin Saska"
+    ],
+    "venue": "IEEE Robotics and Automation Letters",
+    "volume": "6",
+    "issue": "4",
+    "first_page": "6196",
+    "last_page": "6203",
+    "cited": 67
+  },
+  {
+    "doi": "10.1016/j.ins.2011.05.019",
+    "title": "On the performance of self-organizing maps for the non-Euclidean Traveling Salesman Problem in the polygonal domain",
+    "year": 2011,
+    "authors": [
+      "Jan Faigl"
+    ],
+    "venue": "Information Sciences",
+    "volume": "181",
+    "issue": "19",
+    "first_page": "4214",
+    "last_page": "4229",
+    "cited": 19
+  },
+  {
+    "doi": "10.1016/j.eswa.2024.125185",
+    "title": "Combinatorial lower bounds for the Generalized Traveling Salesman Problem with Neighborhoods",
+    "year": 2024,
+    "authors": [
+      "Jindřiška Deckerová",
+      "Petr Váňa",
+      "Jan Faigl"
+    ],
+    "venue": "Expert Systems with Applications",
+    "volume": "258",
+    "issue": null,
+    "first_page": "125185",
+    "last_page": "125185",
+    "cited": 11
+  },
+  {
+    "doi": "10.1109/iros.2014.6942974",
+    "title": "Multi-goal path planning based on the generalized Traveling Salesman Problem with neighborhoods",
+    "year": 2014,
+    "authors": [
+      "Kevin Vicencio",
+      "Brian Davis",
+      "Iacopo Gentilini"
+    ],
+    "venue": "IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)",
+    "volume": null,
+    "issue": null,
+    "first_page": "2985",
+    "last_page": "2990",
+    "cited": 36
+  },
+  {
+    "doi": "10.1016/j.cor.2018.07.023",
+    "title": "A Steiner Zone Variable Neighborhood Search Heuristic for the Close-Enough Traveling Salesman Problem",
+    "year": 2018,
+    "authors": [
+      "Xingyin Wang",
+      "Bruce Golden",
+      "Edward Wasil"
+    ],
+    "venue": "Computers & Operations Research",
+    "volume": "101",
+    "issue": null,
+    "first_page": "200",
+    "last_page": "219",
+    "cited": 32
+  },
+  {
+    "doi": "10.1287/ijoc.2013.0574",
+    "title": "An Integer-Programming-Based Approach to the Close-Enough Traveling Salesman Problem",
+    "year": 2014,
+    "authors": [
+      "Behnam Behdani",
+      "Jonathan Cole Smith"
+    ],
+    "venue": "INFORMS journal on computing",
+    "volume": "26",
+    "issue": "3",
+    "first_page": "415",
+    "last_page": "432",
+    "cited": 64
+  },
+  {
+    "doi": "10.1016/j.ejor.2023.04.010",
+    "title": "The generalized close enough traveling salesman problem",
+    "year": 2023,
+    "authors": [
+      "Andrea Di Placido",
+      "Claudia Archetti",
+      "Carmine Cerrone",
+      "Bruce Golden"
+    ],
+    "venue": "European Journal of Operational Research",
+    "volume": "310",
+    "issue": "3",
+    "first_page": "974",
+    "last_page": "991",
+    "cited": 23
+  },
+  {
+    "doi": "10.1007/s11370-025-00654-6",
+    "title": "Fast marching firework method for multi-goal mobile robot path planning in complex obstacle maps",
+    "year": 2025,
+    "authors": [
+      "Tran Thi Cam Giang",
+      "Huỳnh Thị Thanh Bình",
+      "Ho Viet Duc Luong",
+      "Nguyen Huy Hoang",
+      "Do Quoc Huy"
+    ],
+    "venue": "Intelligent Service Robotics",
+    "volume": "18",
+    "issue": "6",
+    "first_page": "1467",
+    "last_page": "1484",
+    "cited": 2
+  },
+  {
+    "doi": "10.1016/j.autcon.2017.04.013",
+    "title": "Enhanced discrete particle swarm optimization path planning for UAV vision-based surface inspection",
+    "year": 2017,
+    "authors": [
+      "Manh Duong Phung",
+      "Cong Hoang Quach",
+      "Tran Hiep Dinh",
+      "Quang Phuc Ha"
+    ],
+    "venue": "Automation in Construction",
+    "volume": "81",
+    "issue": null,
+    "first_page": "25",
+    "last_page": "33",
+    "cited": 278
+  },
+  {
+    "doi": "10.1109/access.2021.3058190",
+    "title": "Adaptive Task Planning for Multi-Robot Smart Warehouse",
+    "year": 2021,
+    "authors": [
+      "Ali Bolu",
+      "Ömer Korçak"
+    ],
+    "venue": "IEEE Access",
+    "volume": "9",
+    "issue": null,
+    "first_page": "27346",
+    "last_page": "27358",
+    "cited": 116
+  },
+  {
+    "doi": "10.1007/s10462-025-11267-x",
+    "title": "Solving the traveling salesman problem with machine learning: a review of recent advances and challenges",
+    "year": 2025,
+    "authors": [
+      "Entesar Alanzi",
+      "Mohamed El Bachir Menaï"
+    ],
+    "venue": "Artificial Intelligence Review",
+    "volume": "58",
+    "issue": "9",
+    "first_page": null,
+    "last_page": null,
+    "cited": 33
+  },
+  {
+    "doi": "10.1007/s11704-024-40490-y",
+    "title": "A survey on deep learning-based algorithms for the traveling salesman problem",
+    "year": 2024,
+    "authors": [
+      "Jingyan Sui",
+      "Shizhe Ding",
+      "Xulin Huang",
+      "Yue Yu",
+      "Ruizhi Liu",
+      "Boyang Xia",
+      "Zhenxin Ding",
+      "Liming Xu",
+      "Haicang Zhang",
+      "Chungong Yu",
+      "Dongbo Bu"
+    ],
+    "venue": "Frontiers of Computer Science",
+    "volume": "19",
+    "issue": "6",
+    "first_page": null,
+    "last_page": null,
+    "cited": 35
+  },
+  {
+    "doi": "10.1016/j.procs.2018.07.018",
+    "title": "Methodology for Path Planning and Optimization of Mobile Robots: A Review",
+    "year": 2018,
+    "authors": [
+      "Mohd. Nayab Zafar",
+      "Jagadish Chandra Mohanta"
+    ],
+    "venue": "Procedia Computer Science",
+    "volume": "133",
+    "issue": null,
+    "first_page": "141",
+    "last_page": "152",
+    "cited": 239
+  },
+  {
+    "doi": "10.1155/2016/7426913",
+    "title": "Survey of Robot 3D Path Planning Algorithms",
+    "year": 2016,
+    "authors": [
+      "Liang Yang",
+      "Juntong Qi",
+      "Dalei Song",
+      "Jizhong Xiao",
+      "Jianda Han",
+      "Yong Xia"
+    ],
+    "venue": "Journal of Control Science and Engineering",
+    "volume": "2016",
+    "issue": null,
+    "first_page": "1",
+    "last_page": "22",
+    "cited": 328
+  },
+  {
+    "doi": "10.3390/math11214439",
+    "title": "An Adaptive Ant Colony Optimization for Solving Large-Scale Traveling Salesman Problem",
+    "year": 2023,
+    "authors": [
+      "Kezong Tang",
+      "Xiongfei Wei",
+      "Yuan-Hao Jiang",
+      "Ziwei Chen",
+      "Lihua Yang"
+    ],
+    "venue": "Mathematics",
+    "volume": "11",
+    "issue": "21",
+    "first_page": "4439",
+    "last_page": "4439",
+    "cited": 19
+  },
+  {
+    "doi": "10.1016/j.matcom.2023.12.003",
+    "title": "The AddACO: A bio-inspired modified version of the ant colony optimization algorithm to solve travel salesman problems",
+    "year": 2023,
+    "authors": [
+      "Marco Scianna"
+    ],
+    "venue": "Mathematics and Computers in Simulation",
+    "volume": "218",
+    "issue": null,
+    "first_page": "357",
+    "last_page": "382",
+    "cited": 21
+  }
+]

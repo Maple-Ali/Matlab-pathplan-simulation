@@ -1,0 +1,1083 @@
+{
+  "arxiv": {
+    "multi_goal_nav": [
+      {
+        "title": "Integrated Multi-Drone Task Allocation, Sequencing, and Optimal Trajectory Generation in Obstacle-Rich 3D Environments",
+        "summary": "Coordinating teams of aerial robots in cluttered three-dimensional (3D) environments requires a principled integration of discrete mission planning-deciding which robot serves which goals and in what order -- with continuous-time trajectory synthesis that enforces collision avoidance and dynamic feasibility. This paper introduces IMD-TAPP (Integrated Multi-Drone Task Allocation and Path Planning), an end-to-end framework that jointly addresses multi-goal allocation, tour sequencing, and safe tra",
+        "published": "2026-03-26T00:46:26Z",
+        "id": "http://arxiv.org/abs/2603.24908v1",
+        "authors": [
+          "Yunes Alqudsi",
+          "Murat Makaraci"
+        ]
+      },
+      {
+        "title": "A Fast Method for Planning All Optimal Homotopic Configurations for Tethered Robots and Its Extended Applications",
+        "summary": "Tethered robots play a pivotal role in specialized environments such as disaster response and underground exploration, where their stable power supply and reliable communication offer unparalleled advantages. However, their motion planning is severely constrained by tether length limitations and entanglement risks, posing significant challenges to achieving optimal path planning. To address these challenges, this study introduces CDT-TCS (Convex Dissection Topology-based Tethered Configuration S",
+        "published": "2025-07-16T03:48:53Z",
+        "id": "http://arxiv.org/abs/2507.11880v1",
+        "authors": [
+          "Jinyuan Liu",
+          "Minglei Fu",
+          "Ling Shi",
+          "Chenguang Yang",
+          "Wenan Zhang"
+        ]
+      },
+      {
+        "title": "Sampling-Based Multi-Modal Multi-Robot Multi-Goal Path Planning",
+        "summary": "In many robotics applications, multiple robots are working in a shared workspace to complete a set of tasks as fast as possible. Such settings can be treated as multi-modal multi-robot multi-goal path planning problems, where each robot has to reach a set of goals. Existing approaches to this type of problem solve this using prioritization or assume synchronous task completion, and are thus neither optimal nor complete. We formalize this problem as a single centralized path planning problem and ",
+        "published": "2025-03-05T13:57:05Z",
+        "id": "http://arxiv.org/abs/2503.03509v3",
+        "authors": [
+          "Valentin N. Hartmann",
+          "Tirza Heinle",
+          "Yijiang Huang",
+          "Stelian Coros"
+        ]
+      },
+      {
+        "title": "Heuristic Planner for Communication-Constrained Multi-Agent Multi-Goal Path Planning",
+        "summary": "In robotics, coordinating a group of robots is an essential task. This work presents the communication-constrained multi-agent multi-goal path planning problem and proposes a graph-search based algorithm to address this task. Given a fleet of robots, an environment represented by a weighted graph, and a sequence of goals, the aim is to visit all the goals without breaking the communication constraints between the agents, minimizing the completion time. The resulting paths produced by our approac",
+        "published": "2024-12-18T11:00:46Z",
+        "id": "http://arxiv.org/abs/2412.13719v1",
+        "authors": [
+          "Jáchym Herynek",
+          "Stefan Edelkamp"
+        ]
+      },
+      {
+        "title": "S&Reg: End-to-End Learning-Based Model for Multi-Goal Path Planning Problem",
+        "summary": "In this paper, we propose a novel end-to-end approach for solving the multi-goal path planning problem in obstacle environments. Our proposed model, called S&Reg, integrates multi-task learning networks with a TSP solver and a path planner to quickly compute a closed and feasible path visiting all goals. Specifically, the model first predicts promising regions that potentially contain the optimal paths connecting two goals as a segmentation task. Simultaneously, estimations for pairwise distance",
+        "published": "2023-08-08T09:45:52Z",
+        "id": "http://arxiv.org/abs/2308.04160v1",
+        "authors": [
+          "Yuan Huang",
+          "Kairui Gu",
+          "Hee-hyol Lee"
+        ]
+      }
+    ],
+    "multi_goal_tsp": [
+      {
+        "title": "KRRF: Kinodynamic Rapidly-exploring Random Forest algorithm for multi-goal motion planning",
+        "summary": "The problem of kinodynamic multi-goal motion planning is to find a trajectory over multiple target locations with an apriori unknown sequence of visits. The objective is to minimize the cost of the trajectory planned in a cluttered environment for a robot with a kinodynamic motion model. This problem has yet to be efficiently solved as it combines two NP-hard problems, the Traveling Salesman Problem~(TSP) and the kinodynamic motion planning problem. We propose a novel approximate method called K",
+        "published": "2025-05-09T15:29:11Z",
+        "id": "http://arxiv.org/abs/2505.06126v1",
+        "authors": [
+          "Petr Ježek",
+          "Michal Minařík",
+          "Vojtěch Vonásek",
+          "Robert Pěnička"
+        ]
+      },
+      {
+        "title": "Combining Machine Learning and Sampling-Based Search for Multi-Goal Motion Planning with Dynamics",
+        "summary": "This paper considers multi-goal motion planning in unstructured, obstacle-rich environments where a robot is required to reach multiple regions while avoiding collisions. The planned motions must also satisfy the differential constraints imposed by the robot dynamics. To find solutions efficiently, this paper leverages machine learning, Traveling Salesman Problem (TSP), and sampling-based motion planning. The approach expands a motion tree by adding collision-free and dynamically-feasible trajec",
+        "published": "2025-03-26T13:21:46Z",
+        "id": "http://arxiv.org/abs/2503.20530v1",
+        "authors": [
+          "Yuanjie Lu",
+          "Erion Plaku"
+        ]
+      },
+      {
+        "title": "Multi-Goal Motion Memory",
+        "summary": "Autonomous mobile robots (e.g., warehouse logistics robots) often need to traverse complex, obstacle-rich, and changing environments to reach multiple fixed goals (e.g., warehouse shelves). Traditional motion planners need to calculate the entire multi-goal path from scratch in response to changes in the environment, which result in a large consumption of computing resources. This process is not only time-consuming but also may not meet real-time requirements in application scenarios that requir",
+        "published": "2024-07-16T05:36:08Z",
+        "id": "http://arxiv.org/abs/2407.11399v1",
+        "authors": [
+          "Yuanjie Lu",
+          "Dibyendu Das",
+          "Erion Plaku",
+          "Xuesu Xiao"
+        ]
+      },
+      {
+        "title": "PKE-RRT: Efficient Multi-Goal Path Finding Algorithm Driven by Multi-Task Learning Model",
+        "summary": "Multi-goal path finding (MGPF) aims to find a closed and collision-free path to visit a sequence of goals orderly. As a physical travelling salesman problem, an undirected complete graph with accurate weights is crucial for determining the visiting order. Lack of prior knowledge of local paths between vertices poses challenges in meeting the optimality and efficiency requirements of algorithms. In this study, a multi-task learning model designated Prior Knowledge Extraction (PKE), is designed to",
+        "published": "2023-08-15T18:21:08Z",
+        "id": "http://arxiv.org/abs/2308.07972v2",
+        "authors": [
+          "Yuan Huang"
+        ]
+      },
+      {
+        "title": "Multi-goal path planning using multiple random trees",
+        "summary": "In this paper, we propose a novel sampling-based planner for multi-goal path planning among obstacles, where the objective is to visit predefined target locations while minimizing the travel costs. The order of visiting the targets is often achieved by solving the Traveling Salesman Problem (TSP) or its variants. TSP requires to define costs between the individual targets, which - in a map with obstacles - requires to compute mutual paths between the targets. These paths, found by path planning,",
+        "published": "2021-06-07T08:12:13Z",
+        "id": "http://arxiv.org/abs/2106.03407v1",
+        "authors": [
+          "Jaroslav Janoš",
+          "Vojtěch Vonásek",
+          "Robert Pěnička"
+        ]
+      },
+      {
+        "title": "MS*: A New Exact Algorithm for Multi-agent Simultaneous Multi-goal Sequencing and Path Finding",
+        "summary": "In multi-agent applications such as surveillance and logistics, fleets of mobile agents are often expected to coordinate and safely visit a large number of goal locations as efficiently as possible. The multi-agent planning problem in these applications involves allocating and sequencing goals for each agent while simultaneously producing conflict-free paths for the agents. In this article, we introduce a new algorithm called MS* which computes an optimal solution for this multi-agent problem by",
+        "published": "2021-03-18T01:57:35Z",
+        "id": "http://arxiv.org/abs/2103.09979v1",
+        "authors": [
+          "Zhongqiang Ren",
+          "Sivakumar Rathinam",
+          "Howie Choset"
+        ]
+      },
+      {
+        "title": "S$^*$: A Heuristic Information-Based Approximation Framework for Multi-Goal Path Finding",
+        "summary": "We combine ideas from uni-directional and bi-directional heuristic search, and approximation algorithms for the Traveling Salesman Problem, to develop a novel framework for a Multi-Goal Path Finding (MGPF) problem that provides a 2-approximation guarantee. MGPF aims to find a least-cost path from an origin to a destination such that each node in a given set of goals is visited at least once along the path. We present numerical results to illustrate the advantages of our framework over convention",
+        "published": "2021-03-15T06:27:37Z",
+        "id": "http://arxiv.org/abs/2103.08155v2",
+        "authors": [
+          "Kenny Chour",
+          "Sivakumar Rathinam",
+          "Ramamoorthi Ravi"
+        ]
+      }
+    ],
+    "path_planning_survey": [
+      {
+        "title": "Coverage Path Planning in Precision Agriculture: Algorithms, Applications, and Key Benefits",
+        "summary": "Coverage path planning (CPP) is the task of computing an optimal path within a region to completely scan or survey an area of interest using one or multiple mobile robots. Robots equipped with sensors and cameras can collect vast amounts of data on crop health, soil conditions, and weather patterns. Advanced analytics can then be applied to this data to make informed decisions, improving overall farm management. In this paper, we will demonstrate one approach to find the optimal coverage path of",
+        "published": "2024-12-10T19:58:47Z",
+        "id": "http://arxiv.org/abs/2412.19813v2",
+        "authors": [
+          "Jahid Chowdhury Choton",
+          "William H. Hsu"
+        ]
+      },
+      {
+        "title": "A Survey on Reinforcement Learning Applications in SLAM",
+        "summary": "Simultaneous localization and mapping (SLAM) allows a mobile robot or autonomous vehicle to build a map of an unknown environment while estimating its own pose within that map. Reinforcement learning (RL), in which an agent learns a decision policy from interaction and reward, has been applied to decide how such systems move, explore, and recognize places they have visited before. This survey reviews the applications of RL in SLAM. We first distinguish passive SLAM, in which the robot's motion i",
+        "published": "2024-08-26T00:13:14Z",
+        "id": "http://arxiv.org/abs/2408.14518v3",
+        "authors": [
+          "Mohammad Dehghani Tezerjani",
+          "Mohammad Khoshnazar",
+          "Mohammadhamed Tangestanizadeh",
+          "Arman Kiani",
+          "Qing Yang"
+        ]
+      },
+      {
+        "title": "Learning-based Methods for Adaptive Informative Path Planning",
+        "summary": "Adaptive informative path planning (AIPP) is important to many robotics applications, enabling mobile robots to efficiently collect useful data about initially unknown environments. In addition, learning-based methods are increasingly used in robotics to enhance adaptability, versatility, and robustness across diverse and complex tasks. Our survey explores research on applying robotic learning to AIPP, bridging the gap between these two research fields. We begin by providing a unified mathematic",
+        "published": "2024-04-10T11:45:31Z",
+        "id": "http://arxiv.org/abs/2404.06940v3",
+        "authors": [
+          "Marija Popovic",
+          "Joshua Ott",
+          "Julius Rückin",
+          "Mykel J. Kochenderfer"
+        ]
+      },
+      {
+        "title": "Similar but Different: A Survey of Ground Segmentation and Traversability Estimation for Terrestrial Robots",
+        "summary": "With the increasing demand for mobile robots and autonomous vehicles, several approaches for long-term robot navigation have been proposed. Among these techniques, ground segmentation and traversability estimation play important roles in perception and path planning, respectively. Even though these two techniques appear similar, their objectives are different. Ground segmentation divides data into ground and non-ground elements; thus, it is used as a preprocessing stage to extract objects of int",
+        "published": "2023-12-28T05:57:51Z",
+        "id": "http://arxiv.org/abs/2312.16839v2",
+        "authors": [
+          "Hyungtae Lim",
+          "Minho Oh",
+          "Seungjae Lee",
+          "Seunguk Ahn",
+          "Hyun Myung"
+        ]
+      },
+      {
+        "title": "Review of control algorithms for mobile robotics",
+        "summary": "This article presents a comprehensive review of control algorithms used in mobile robotics, a field in constant evolution. Mobile robotics has seen significant advances in recent years, driven by the demand for applications in various sectors, such as industrial automation, space exploration, and medical care. The review focuses on control algorithms that address specific challenges in navigation, localization, mapping, and path planning in changing and unknown environments. Classical approaches",
+        "published": "2023-10-09T16:47:20Z",
+        "id": "http://arxiv.org/abs/2310.06006v1",
+        "authors": [
+          "Andres-David Suarez-Gomez",
+          "Andres A. Hernandez Ortega"
+        ]
+      },
+      {
+        "title": "Recent Advancements in Deep Learning Applications and Methods for Autonomous Navigation: A Comprehensive Review",
+        "summary": "This review article is an attempt to survey all recent AI based techniques used to deal with major functions in This review paper presents a comprehensive overview of end-to-end deep learning frameworks used in the context of autonomous navigation, including obstacle detection, scene perception, path planning, and control. The paper aims to bridge the gap between autonomous navigation and deep learning by analyzing recent research studies and evaluating the implementation and testing of deep lea",
+        "published": "2023-02-22T01:42:49Z",
+        "id": "http://arxiv.org/abs/2302.11089v3",
+        "authors": [
+          "Arman Asgharpoor Golroudbari",
+          "Mohammad Hossein Sabour"
+        ]
+      },
+      {
+        "title": "A Comprehensive Review on Autonomous Navigation",
+        "summary": "The field of autonomous mobile robots has undergone dramatic advancements over the past decades. Despite achieving important milestones, several challenges are yet to be addressed. Aggregating the achievements of the robotic community as survey papers is vital to keep the track of current state-of-the-art and the challenges that must be tackled in the future. This paper tries to provide a comprehensive review of autonomous mobile robots covering topics such as sensor types, mobile robot platform",
+        "published": "2022-12-24T19:44:41Z",
+        "id": "http://arxiv.org/abs/2212.12808v1",
+        "authors": [
+          "Saeid Nahavandi",
+          "Roohallah Alizadehsani",
+          "Darius Nahavandi",
+          "Shady Mohamed",
+          "Navid Mohajer",
+          "Mohammad Rokonuzzaman",
+          "Ibrahim Hossain"
+        ]
+      },
+      {
+        "title": "Bio-inspired Intelligence with Applications to Robotics: A Survey",
+        "summary": "In the past decades, considerable attention has been paid to bio-inspired intelligence and its applications to robotics. This paper provides a comprehensive survey of bio-inspired intelligence, with a focus on neurodynamics approaches, to various robotic applications, particularly to path planning and control of autonomous robotic systems. Firstly, the bio-inspired shunting model and its variants (additive model and gated dipole model) are introduced, and their main characteristics are given in ",
+        "published": "2022-06-17T04:35:39Z",
+        "id": "http://arxiv.org/abs/2206.08544v1",
+        "authors": [
+          "Junfei Li",
+          "Zhe Xu",
+          "Danjie Zhu",
+          "Kevin Dong",
+          "Tao Yan",
+          "Zhu Zeng",
+          "Simon X. Yang"
+        ]
+      },
+      {
+        "title": "Automatic Guided Vehicles System and Its Coordination Control for Containers Terminal Logistics Application",
+        "summary": "Automatic Guided Vehicle (AGV) has been widely applied in automatic logistics system because it provides flexibility and efficiency. This paper addresses review and design of multi AGVs system (MAGS) and its coordination control to be implemented at containers terminal logistics systems. It focuses on design of electric AGV and supervisory control to coordinate multi AGVs. Firstly, related previous works by other researchers are reviewed including containers terminal system, application of AGV i",
+        "published": "2021-03-07T14:08:35Z",
+        "id": "http://arxiv.org/abs/2104.08331v1",
+        "authors": [
+          "Roni Permana Saputra",
+          "Estiko Rijanto"
+        ]
+      },
+      {
+        "title": "Mobile Robot Path Planning in Dynamic Environments: A Survey",
+        "summary": "There are many challenges for robot navigation in densely populated dynamic environments. This paper presents a survey of the path planning methods for robot navigation in dense environments. Particularly, the path planning in the navigation framework of mobile robots is composed of global path planning and local path planning, with regard to the planning scope and the executability. Within this framework, the recent progress of the path planning methods is presented in the paper, while examinin",
+        "published": "2020-06-25T06:20:20Z",
+        "id": "http://arxiv.org/abs/2006.14195v2",
+        "authors": [
+          "Kuanqi Cai",
+          "Chaoqun Wang",
+          "Jiyu Cheng",
+          "Clarence W De Silva",
+          "Max Q. -H. Meng"
+        ]
+      }
+    ],
+    "astar_review": [
+      {
+        "title": "LLM-Enabled UAV Dispatch: A System-Level Survey and Taxonomy",
+        "summary": "Unmanned aerial vehicle (UAV) dispatch is beginning to move beyond isolated path planning and optimization-driven resource allocation toward system-level coordination supported by semantic reasoning and LLM-based interfaces. This survey provides a unified characterization of LLM-enabled UAV dispatch systems that bridges semantic intent, symbolic decision-making, and physical UAV execution. Rather than treating LLMs as standalone add-ons, we conceptualize them as a cross-layer semantic orchestrat",
+        "published": "2026-10-07T05:22:51Z",
+        "id": "http://arxiv.org/abs/2610.09466v1",
+        "authors": [
+          "Xiao Han",
+          "Aoyang Quan",
+          "Xiangyu Zhao",
+          "Xiangjie Kong",
+          "Guojiang Shen"
+        ]
+      },
+      {
+        "title": "Coverage Path Planning: Classical Foundations, Recent Advances, and Future Directions",
+        "summary": "Coverage path planning (CPP) is a fundamental problem in robot motion planning, whose aim is to produce robot trajectories that provide complete coverage of target workspaces while minimizing task-specific objectives such as path length, overlap, number of turns, and energy consumption. CPP has widespread applications in cleaning, inspection, mapping, agriculture, manufacturing, surveillance, demining, and environmental monitoring. Although classical CPP has been extensively studied, recent adva",
+        "published": "2026-07-12T08:33:42Z",
+        "id": "http://arxiv.org/abs/2607.10649v1",
+        "authors": [
+          "Zongyuan Shen",
+          "Shalabh Gupta",
+          "Shancheng Zhao",
+          "Dehua Zhou",
+          "Gao Wang",
+          "Zhongqiang Ren",
+          "Yaming Ou",
+          "Yikui Zhai",
+          "C. L. Philip Chen"
+        ]
+      },
+      {
+        "title": "Autonomous UAV Route Planning for Coverage Maximization in Environmental Monitoring: A Systematic Literature Review",
+        "summary": "Environmental monitoring with unmanned aerial vehicles (UAVs) requires route planning methods that maximize covered area while handling energy limits, operational constraints, and geometric complexity. This paper reports the protocol and preliminary results of an ongoing systematic literature review (SLR) on autonomous UAV route planning for coverage-oriented environmental monitoring. The review follows the PRISMA 2020 framework and searches Scopus and Web of Science for studies published betwee",
+        "published": "2026-07-03T22:19:36Z",
+        "id": "http://arxiv.org/abs/2607.13054v1",
+        "authors": [
+          "Sebastian Jouannet-Contreras",
+          "Carola Figueroa-Flores"
+        ]
+      },
+      {
+        "title": "Vision-Language Models for Deployable Social Robot Navigation: Bridging Semantic Reasoning and Low-Level Control",
+        "summary": "Social robot navigation (SRN) requires more than geometric path planning; it demands understanding human intentions, social norms, and contextual cues to generate socially compliant behaviors. Although classical navigation methods provide reliable metric planning and collision avoidance, they often lack the semantic reasoning capabilities necessary for operation in complex human-centered environments. Recent advances in Vision-Language Models (VLMs) have opened new opportunities for SRN by enabl",
+        "published": "2026-06-27T06:32:47Z",
+        "id": "http://arxiv.org/abs/2606.28760v1",
+        "authors": [
+          "Runji Cai",
+          "Toshihiko Yamasaki",
+          "Ling Xiao"
+        ]
+      },
+      {
+        "title": "Submodular Optimization with Applications to Decision and Control",
+        "summary": "Submodular set functions, characterized by the diminishing-returns property, provide a unifying combinatorial framework for many subset-selection problems in decision and control. Although exact maximization is NP-hard in general, the structural properties of submodular functions enable simple greedy algorithms that achieve constant-factor approximation guarantees for monotone objectives, with randomized greedy-based variants extending such guarantees to the non-monotone case. This survey review",
+        "published": "2026-06-08T21:28:54Z",
+        "id": "http://arxiv.org/abs/2606.10192v1",
+        "authors": [
+          "Shamak Dutta",
+          "Bahman Gharesifard",
+          "Stephen L. Smith"
+        ]
+      },
+      {
+        "title": "Multi-Depth Uniform Coverage Path Planning for Unmanned Surface Vehicle Surveying",
+        "summary": "This paper introduces a novel automatic coverage path planning algorithm for bathymetry surveying with unmanned surface vehicles. The detection range of the mapping sensor employed - a multibeam echo sounder - is heavily influenced by local seafloor depths. Hence, a path designed to uniformly cover the sea surface does not guarantee uniform coverage of the seafloor. Yet this is currently the typical process for bathymetric surveys, with the simplistic boustrophedon scheme along manually selected",
+        "published": "2026-05-13T07:48:29Z",
+        "id": "http://arxiv.org/abs/2605.13123v1",
+        "authors": [
+          "Maider Larrazabal",
+          "Tong Yang",
+          "Izaro Goienetxea",
+          "Jaime Valls Miro"
+        ]
+      },
+      {
+        "title": "Informative Path Planning with Guaranteed Estimation Uncertainty",
+        "summary": "Environmental monitoring robots often need to estimate data fields (e.g., salinity, temperature, bathymetry) under tight resource constraints. Classical boustrophedon lawnmower surveys provide geometric coverage guarantees but can waste effort by oversampling predictable regions. In contrast, informative path planning (IPP) methods leverage spatial correlations to reduce oversampling, yet typically offer no guarantees on estimation quality. This paper bridges these approaches by addressing IPP w",
+        "published": "2026-02-05T01:51:38Z",
+        "id": "http://arxiv.org/abs/2602.05198v3",
+        "authors": [
+          "Kalvik Jakkala",
+          "Saurav Agarwal",
+          "Jason O'Kane",
+          "Srinivas Akella"
+        ]
+      },
+      {
+        "title": "UAV-Based Infrastructure Inspections: A Literature Review and Proposed Framework for AEC+FM",
+        "summary": "Unmanned Aerial Vehicles (UAVs) are transforming infrastructure inspections in the Architecture, Engineering, Construction, and Facility Management (AEC+FM) domain. By synthesizing insights from over 150 studies, this review paper highlights UAV-based methodologies for data acquisition, photogrammetric modeling, defect detection, and decision-making support. Key innovations include path optimization, thermal integration, and advanced machine learning (ML) models such as YOLO and Faster R-CNN for",
+        "published": "2026-01-16T00:16:42Z",
+        "id": "http://arxiv.org/abs/2601.11665v3",
+        "authors": [
+          "Amir Farzin Nikkhah",
+          "Dong Chen",
+          "Bradford Campbell",
+          "Somayeh Asadi",
+          "Arsalan Heydarian"
+        ]
+      },
+      {
+        "title": "Optimizing Path Planning using Deep Reinforcement Learning for UGVs in Precision Agriculture",
+        "summary": "This study focuses on optimizing path planning for unmanned ground vehicles (UGVs) in precision agriculture using deep reinforcement learning (DRL) techniques in continuous action spaces. The research begins with a review of traditional grid-based methods, such as A* and Dijkstra's algorithms, and discusses their limitations in dynamic agricultural environments, highlighting the need for adaptive learning strategies. The study then explores DRL approaches, including Deep Q-Networks (DQN), which ",
+        "published": "2026-01-08T07:28:11Z",
+        "id": "http://arxiv.org/abs/2601.04668v1",
+        "authors": [
+          "Laukik Patade",
+          "Rohan Rane",
+          "Sandeep Pillai"
+        ]
+      },
+      {
+        "title": "AeroResQ: Edge-Accelerated UAV Framework for Scalable, Resilient and Collaborative Escape Route Planning in Wildfire Scenarios",
+        "summary": "Drone fleets equipped with onboard cameras, computer vision, and Deep Neural Network (DNN) models present a powerful paradigm for real-time spatio-temporal decision-making. In wildfire response, such drones play a pivotal role in monitoring fire dynamics, supporting firefighter coordination, and facilitating safe evacuation. In this paper, we introduce AeroResQ, an edge-accelerated UAV framework designed for scalable, resilient, and collaborative escape route planning during wildfire scenarios. ",
+        "published": "2025-10-27T23:41:03Z",
+        "id": "http://arxiv.org/abs/2511.00038v1",
+        "authors": [
+          "Suman Raj",
+          "Radhika Mittal",
+          "Rajiv Mayani",
+          "Pawel Zuk",
+          "Anirban Mandal",
+          "Michael Zink",
+          "Yogesh Simmhan",
+          "Ewa Deelman"
+        ]
+      }
+    ],
+    "jps": [
+      {
+        "title": "Jump Point Search Pathfinding in 4-connected Grids",
+        "summary": "This work introduces JPS4, a novel pathfinding algorithm for 4-connected grid maps. JPS4 builds upon the Jump Point Search (JPS8) algorithm, originally designed for 8-connected environments. To achieve efficient pathfinding on 4-connected grids, JPS4 employs a canonical ordering and a successor function that enable online graph pruning. This reduces the search space by minimizing unnecessary node expansions.   The core concept of JPS4 as well as JPS8 lies in the utilization of jump points. Strat",
+        "published": "2025-01-20T10:16:02Z",
+        "id": "http://arxiv.org/abs/2501.14816v1",
+        "authors": [
+          "Johannes Baum"
+        ]
+      },
+      {
+        "title": "A-OctoMap: An Adaptive OctoMap for Online Path Planning",
+        "summary": "Downsampling and path planning are essential in robotics and autonomous systems, as they enhance computational efficiency and enable effective navigation in complex environments. However, current downsampling methods often fail to preserve crucial geometric information while maintaining computational efficiency, leading to challenges such as information loss during map reconstruction and the need to balance precision with computational demands. Similarly, current graph-based search algorithms fo",
+        "published": "2024-06-20T00:50:50Z",
+        "id": "http://arxiv.org/abs/2406.13910v2",
+        "authors": [
+          "Yihui Mao",
+          "Shuo Liu"
+        ]
+      },
+      {
+        "title": "Reducing Redundant Work in Jump Point Search",
+        "summary": "JPS (Jump Point Search) is a state-of-the-art optimal algorithm for online grid-based pathfinding. Widely used in games and other navigation scenarios, JPS nevertheless can exhibit pathological behaviours which are not well studied: (i) it may repeatedly scan the same area of the map to find successors; (ii) it may generate and expand suboptimal search nodes. In this work, we examine the source of these pathological behaviours, show how they can occur in practice, and propose a purely online app",
+        "published": "2023-06-28T05:21:59Z",
+        "id": "http://arxiv.org/abs/2306.15928v1",
+        "authors": [
+          "Shizhe Zhao",
+          "Daniel Harabor",
+          "Peter J. Stuckey"
+        ]
+      },
+      {
+        "title": "A Fast Planning Approach for 3D Short Trajectory with a Parallel Framework",
+        "summary": "For real applications of unmanned aerial vehicles, the capability of navigating with full autonomy in unknown environments is a crucial requirement. However, planning a shorter path with less computing time is contradictory. To address this problem, we present a framework with the map planner and point cloud planner running in parallel in this paper. The map planner determines the initial path using the improved jump point search method on the 2D map, and then it tries to optimize the path by co",
+        "published": "2021-10-20T05:09:05Z",
+        "id": "http://arxiv.org/abs/2110.10376v1",
+        "authors": [
+          "Han Chen",
+          "Shengyang Chen",
+          "Peng Lu",
+          "Chih-Yung Wen"
+        ]
+      },
+      {
+        "title": "Path planning with Inventory-driven Jump-Point-Search",
+        "summary": "In many navigational domains the traversability of cells is conditioned on the path taken. This is often the case in video-games, in which a character may need to acquire a certain object (i.e., a key or a flying suit) to be able to traverse specific locations (e.g., doors or high walls). In order for non-player characters to handle such scenarios we present invJPS, an \"inventory-driven\" pathfinding approach based on the highly successful grid-based Jump-Point-Search (JPS) algorithm. We show, fo",
+        "published": "2016-07-04T01:13:32Z",
+        "id": "http://arxiv.org/abs/1607.00715v1",
+        "authors": [
+          "Davide Aversa",
+          "Sebastian Sardina",
+          "Stavros Vassos"
+        ]
+      }
+    ],
+    "open_tsp": [
+      {
+        "title": "Sparse Sampling for Fast Quasiparticle Interference Mapping",
+        "summary": "Scanning tunneling microscopy (STM) is a notoriously slow technique; Data-recording is serial which renders complex measurement tasks, such as quasiparticle interference (QPI) mapping, impractical. However, QPI would provide insight into band-structure details of quantum materials which can be inaccessible to angle-resolved photoemission spectroscopy. Here we use compressed sensing (CS) to fundamentally speed-up QPI mapping. We reliably recover the QPI information from a fraction of the usual lo",
+        "published": "2019-08-05T23:32:15Z",
+        "id": "http://arxiv.org/abs/1908.01903v1",
+        "authors": [
+          "Jens Oppliger",
+          "Fabian Donat Natterer"
+        ]
+      }
+    ],
+    "tsp_obstacles": [
+      {
+        "title": "SGE: Semantically-Guided Exploration for Unstructured Environments via Image-Space Waypoint Sampling",
+        "summary": "This work introduces Semantically-Guided Exploration (SGE), a modular exploration framework for ground vehicles that integrates pixel-level semantic segmentation into sampling-based waypoint selection and receding-horizon route optimization. Unlike conventional geometric exploration methods, SGE evaluates candidate exploration goals directly in the image space using a semantic-aware utility function that accounts for terrain traversability, obstacle proximity, objects of interest, and depth-base",
+        "published": "2026-08-29T14:58:22Z",
+        "id": "http://arxiv.org/abs/2608.29315v1",
+        "authors": [
+          "Christopher Tatsch",
+          "Yu Gu"
+        ]
+      },
+      {
+        "title": "Information-theoretic formulation of the Traveling Salesman Problem",
+        "summary": "The Traveling Salesman Problem (TSP) asks for the shortest route to visit a set of cities exactly once. It combines a simple local rule - each city must be visited once - with a hard, global constraint- all cities must be traversed within a single cycle. We cast the problem within a probabilistic, information-theoretic framework. The coexistence of local and global constraints is precisely what makes the problem difficult to address in this framework: the local rule can be enforced through verte",
+        "published": "2026-08-26T19:18:57Z",
+        "id": "http://arxiv.org/abs/2608.26339v1",
+        "authors": [
+          "Enrico Maria Fenoaltea",
+          "Riccardo Piombo",
+          "Aurelio Patelli"
+        ]
+      },
+      {
+        "title": "Two-Phase Bilevel Search for the Moving-Target Traveling Salesman Problem with Moving Obstacles",
+        "summary": "The Moving-Target Traveling Salesman Problem (MT-TSP) seeks a minimum cost trajectory for an agent that departs from a static depot, visits a set of moving targets, each within one of their assigned time windows, and returns to the depot. In this article, we study the Moving-Target Traveling Salesman Problem with Moving Obstacles (MT-TSP-MO), a generalization of the MT-TSP where the agent trajectory must avoid moving obstacles. We present a Mixed-Integer Conic Programming (MICP) formulation that",
+        "published": "2026-06-17T06:17:12Z",
+        "id": "http://arxiv.org/abs/2606.18730v1",
+        "authors": [
+          "Allen George Philip",
+          "Anoop Bhat",
+          "Sivakumar Rathinam",
+          "Howie Choset"
+        ]
+      },
+      {
+        "title": "Optimized Area Coverage in Disaster Response Utilizing Autonomous UAV Swarm Formations",
+        "summary": "This paper presents a UAV swarm system designed to assist first responders in disaster scenarios like wildfires. By distributing sensors across multiple agents, the system extends flight duration and enhances data availability, reducing the risk of mission failure due to collisions. To mitigate this risk further, we introduce an autonomous navigation framework that utilizes a local Euclidean Signed Distance Field (ESDF) map for obstacle avoidance while maintaining swarm formation with minimal pa",
+        "published": "2025-12-08T20:41:08Z",
+        "id": "http://arxiv.org/abs/2512.08028v1",
+        "authors": [
+          "Lampis Papakostas",
+          "Aristeidis Geladaris",
+          "Athanasios Mastrogeorgiou",
+          "Jim Sharples",
+          "Gautier Hattenberger",
+          "Panagiotis Chatzakos",
+          "Panagiotis Polygerinos"
+        ]
+      },
+      {
+        "title": "Traveling Salesman-Based Token Ordering Improves Stability in Homomorphically Encrypted Language Models",
+        "summary": "As users increasingly interact with large language models (LLMs) using private information, secure and encrypted communication becomes essential. Homomorphic encryption (HE) provides a principled solution by enabling computation directly on encrypted data. Although prior work has explored aspects of running LLMs under HE, the challenge of text generation, particularly next-token prediction, has received limited attention and remains a key obstacle to practical encrypted interaction. In this work",
+        "published": "2025-10-14T09:56:50Z",
+        "id": "http://arxiv.org/abs/2510.12343v1",
+        "authors": [
+          "Donghwan Rho",
+          "Sieun Seo",
+          "Hyewon Sung",
+          "Chohong Min",
+          "Ernest K. Ryu"
+        ]
+      },
+      {
+        "title": "Optimal Smooth Coverage Trajectory Planning for Quadrotors in Cluttered Environment",
+        "summary": "For typical applications of UAVs in power grid scenarios, we construct the problem as planning UAV trajectories for coverage in cluttered environments. In this paper, we propose an optimal smooth coverage trajectory planning algorithm. The algorithm consists of two stages. In the front-end, a Genetic Algorithm (GA) is employed to solve the Traveling Salesman Problem (TSP) for Points of Interest (POIs), generating an initial sequence of optimized visiting points. In the back-end, the sequence is ",
+        "published": "2025-10-03T16:43:50Z",
+        "id": "http://arxiv.org/abs/2510.03169v1",
+        "authors": [
+          "Duanjiao Li",
+          "Yun Chen",
+          "Ying Zhang",
+          "Junwen Yao",
+          "Dongyue Huang",
+          "Jianguo Zhang",
+          "Ning Ding"
+        ]
+      },
+      {
+        "title": "Comparison of Innovative Strategies for the Coverage Problem: Path Planning, Search Optimization, and Applications in Underwater Robotics",
+        "summary": "In many applications, including underwater robotics, the coverage problem requires an autonomous vehicle to systematically explore a defined area while minimizing redundancy and avoiding obstacles. This paper investigates coverage path planning strategies to enhance the efficiency of underwater gliders, particularly in maximizing the probability of detecting a radioactive source while ensuring safe navigation.   We evaluate three path-planning approaches: the Traveling Salesman Problem (TSP), Mi",
+        "published": "2025-06-18T11:46:27Z",
+        "id": "http://arxiv.org/abs/2506.15376v1",
+        "authors": [
+          "Ahmed Ibrahim",
+          "Francisco F. C. Rego",
+          "Éric Busvelle"
+        ]
+      },
+      {
+        "title": "Purity Law for Generalizable Neural TSP Solvers",
+        "summary": "Achieving generalization in neural approaches across different scales and distributions remains a significant challenge for the Traveling Salesman Problem~(TSP). A key obstacle is that neural networks often fail to learn robust principles for identifying universal patterns and deriving optimal solutions from diverse instances. In this paper, we first uncover Purity Law (PuLa), a fundamental structural principle for optimal TSP solutions, defining that edge prevalence grows exponentially with the",
+        "published": "2025-05-07T16:46:48Z",
+        "id": "http://arxiv.org/abs/2505.04558v2",
+        "authors": [
+          "Wenzhao Liu",
+          "Haoran Li",
+          "Congying Han",
+          "Zicheng Zhang",
+          "Anqi Li",
+          "Tiande Guo"
+        ]
+      },
+      {
+        "title": "A Complete and Bounded-Suboptimal Algorithm for a Moving Target Traveling Salesman Problem with Obstacles in 3D",
+        "summary": "The moving target traveling salesman problem with obstacles (MT-TSP-O) seeks an obstacle-free trajectory for an agent that intercepts a given set of moving targets, each within specified time windows, and returns to the agent's starting position. Each target moves with a constant velocity within its time windows, and the agent has a speed limit no smaller than any target's speed. We present FMC*-TSP, the first complete and bounded-suboptimal algorithm for the MT-TSP-O, and results for an agent w",
+        "published": "2025-04-20T16:51:29Z",
+        "id": "http://arxiv.org/abs/2504.14680v2",
+        "authors": [
+          "Anoop Bhat",
+          "Geordan Gutow",
+          "Bhaskar Vundurthy",
+          "Zhongqiang Ren",
+          "Sivakumar Rathinam",
+          "Howie Choset"
+        ]
+      },
+      {
+        "title": "LiDAR-based Quadrotor Autonomous Inspection System in Cluttered Environments",
+        "summary": "In recent years, autonomous unmanned aerial vehicle (UAV) technology has seen rapid advancements, significantly improving operational efficiency and mitigating risks associated with manual tasks in domains such as industrial inspection, agricultural monitoring, and search-and-rescue missions. Despite these developments, existing UAV inspection systems encounter two critical challenges: limited reliability in complex, unstructured, and GNSS-denied environments, and a pronounced dependency on skil",
+        "published": "2025-03-29T00:40:54Z",
+        "id": "http://arxiv.org/abs/2503.22921v1",
+        "authors": [
+          "Wenyi Liu",
+          "Huajie Wu",
+          "Liuyu Shi",
+          "Fangcheng Zhu",
+          "Yuying Zou",
+          "Fanze Kong",
+          "Fu Zhang"
+        ]
+      }
+    ],
+    "aco_tsp": [
+      {
+        "title": "RouteRepair: Instance-Level Failure Diagnosis and Targeted Repair in LLM-Based Automated Heuristic Design for Routing Optimization",
+        "summary": "Efficient routing optimization is essential to freight transportation, urban logistics, and shared mobility, where high-quality heuristics are often required under limited computational budgets. Recent large language model (LLM)-based automated heuristic design methods can generate effective routing rules, but aggregate evaluation may mask recurrent failures on particular instance structures. To address this limitation, this study develops RouteRepair, which diagnoses parent-specific weaknesses ",
+        "published": "2026-09-10T12:21:18Z",
+        "id": "http://arxiv.org/abs/2609.11452v1",
+        "authors": [
+          "Binghao Ji",
+          "Di Huang",
+          "Jiahui Fang",
+          "Zhiyuan Liu"
+        ]
+      },
+      {
+        "title": "Evolving Parallel Algorithm Portfolios via Potential-Aware Instance Generation with LLMs",
+        "summary": "The Automatic Construction of Portfolios via Large Language Models (LLM-ACP) suffers from poor generalization in practical few-shot scenarios when solving complex combinatorial optimization problems. Instance and algorithm co-evolution frameworks address this by expanding the training dataset with generated hard instances on which the current algorithm portfolio underperforms, thereby enhancing generalization. However, this paradigm faces two critical limitations: evaluating instance hardness re",
+        "published": "2026-08-07T05:00:29Z",
+        "id": "http://arxiv.org/abs/2608.06808v1",
+        "authors": [
+          "Shaofeng Zhang",
+          "Shengcai Liu",
+          "Zhiyuan Wang",
+          "Ke Tang"
+        ]
+      },
+      {
+        "title": "Hybrid Metaheuristic Combining the Dragonfly Algorithm and Tabu Search for the Traveling Salesman Problem",
+        "summary": "The Traveling Salesman Problem (TSP) is a classical NP-hard combinatorial optimization problem that aims to find the shortest Hamiltonian cycle visiting each city exactly once and returning to the starting point. This paper proposes a hybrid metaheuristic for the TSP by combining the Dragonfly Algorithm (DA), a swarm-intelligence-based global search method, with Tabu Search (TS), a memory-based local search technique. The proposed method follows a High-Level Relay Hybridization (HRH) scheme, in ",
+        "published": "2026-06-08T14:14:50Z",
+        "id": "http://arxiv.org/abs/2606.09529v1",
+        "authors": [
+          "Ammar Bouketta"
+        ]
+      },
+      {
+        "title": "Exploration-Exploitation-Evaluation (EEE): A Framework for Metaheuristic Algorithms in Combinatorial Optimization",
+        "summary": "We introduce a framework for applying metaheuristic algorithms, such as ant colony optimization (ACO), to combinatorial optimization problems (COPs) like the traveling salesman problem (TSP). The framework consists of three sequential stages: broad exploration of the parameter space, exploitation of top-performing parameters, and uncertainty quantification (UQ) to assess the reliability of results. As a case study, we apply ACO to the TSPLIB berlin52 dataset, which has a known optimal tour lengt",
+        "published": "2025-10-06T17:04:46Z",
+        "id": "http://arxiv.org/abs/2510.05027v1",
+        "authors": [
+          "Ethan Davis"
+        ]
+      },
+      {
+        "title": "NeuFACO: Neural Focused Ant Colony Optimization for Traveling Salesman Problem",
+        "summary": "This study presents Neural Focused Ant Colony Optimization (NeuFACO), a non-autoregressive framework for the Traveling Salesman Problem (TSP) that combines advanced reinforcement learning with enhanced Ant Colony Optimization (ACO). NeuFACO employs Proximal Policy Optimization (PPO) with entropy regularization to train a graph neural network for instance-specific heuristic guidance, which is integrated into an optimized ACO framework featuring candidate lists, restricted tour refinement, and sca",
+        "published": "2025-09-21T06:09:47Z",
+        "id": "http://arxiv.org/abs/2509.16938v2",
+        "authors": [
+          "Dat Thanh Tran",
+          "Khai Quang Tran",
+          "Khoi Anh Pham",
+          "Van Khu Vu",
+          "Dong Duc Do"
+        ]
+      },
+      {
+        "title": "RedAHD: Reduction-Based End-to-End Automatic Heuristic Design with Large Language Models",
+        "summary": "Solving NP-hard combinatorial optimization problems (COPs) (e.g., traveling salesman problems (TSPs) and capacitated vehicle routing problems (CVRPs)) in practice traditionally involves handcrafting heuristics or specifying a search space for finding effective heuristics. The main challenges from these approaches, however, are the sheer amount of domain knowledge and implementation efforts required from human experts. Recently, significant progress has been made to address these challenges, part",
+        "published": "2025-05-26T17:21:16Z",
+        "id": "http://arxiv.org/abs/2505.20242v1",
+        "authors": [
+          "Nguyen Thach",
+          "Aida Riahifar",
+          "Nathan Huynh",
+          "Hau Chan"
+        ]
+      },
+      {
+        "title": "CPP-DIP: Multi-objective Coverage Path Planning for MAVs in Dispersed and Irregular Plantations",
+        "summary": "Coverage Path Planning (CPP) is vital in precision agriculture to improve efficiency and resource utilization. In irregular and dispersed plantations, traditional grid-based CPP often causes redundant coverage over non-vegetated areas, leading to waste and pollution. To overcome these limitations, we propose CPP-DIP, a multi-objective CPP framework designed for Micro Air Vehicles (MAVs). The framework transforms the CPP task into a Traveling Salesman Problem (TSP) and optimizes flight paths by m",
+        "published": "2025-05-08T06:52:22Z",
+        "id": "http://arxiv.org/abs/2505.04989v1",
+        "authors": [
+          "Weijie Kuang",
+          "Hann Woei Ho",
+          "Ye Zhou"
+        ]
+      },
+      {
+        "title": "A practical applicable quantum-classical hybrid ant colony algorithm for the NISQ era",
+        "summary": "Quantum ant colony optimization (QACO) has drew much attention since it combines the advantages of quantum computing and ant colony optimization (ACO) algorithm overcoming some limitations of the traditional ACO algorithm. However,due to the hardware resource limitations of currently available quantum computers, the practical application of the QACO is still not realized. In this paper, we developed a quantum-classical hybrid algorithm by combining the clustering algorithm with QACO algorithm.Th",
+        "published": "2024-10-08T09:50:28Z",
+        "id": "http://arxiv.org/abs/2410.17277v1",
+        "authors": [
+          "Qian Qiu",
+          "Liang Zhang",
+          "Mohan Wu",
+          "Qichun Sun",
+          "Xiaogang Li",
+          "Da-Chuang Li",
+          "Hua Xu"
+        ]
+      },
+      {
+        "title": "Enhancing Population-based Search with Active Inference",
+        "summary": "The Active Inference framework models perception and action as a unified process, where agents use probabilistic models to predict and actively minimize sensory discrepancies. In complement and contrast, traditional population-based metaheuristics rely on reactive environmental interactions without anticipatory adaptation. This paper proposes the integration of Active Inference into these metaheuristics to enhance performance through anticipatory environmental adaptation. We demonstrate this app",
+        "published": "2024-08-18T17:21:21Z",
+        "id": "http://arxiv.org/abs/2408.09548v1",
+        "authors": [
+          "Nassim Dehouche",
+          "Daniel Friedman"
+        ]
+      },
+      {
+        "title": "A Carbon Aware Ant Colony System (CAACS)",
+        "summary": "In an era where sustainability is becoming increasingly crucial, we introduce a new Carbon-Aware Ant Colony System (CAACS) Algorithm that addresses the Generalized Traveling Salesman Problem (GTSP) while minimizing carbon emissions. This novel approach leverages the natural efficiency of ant colony pheromone trails to find optimal routes, balancing both environmental and economic objectives. By integrating sustainability into transportation models, CAACS provides a powerful tool for real-world a",
+        "published": "2024-07-12T16:30:12Z",
+        "id": "http://arxiv.org/abs/2407.09404v2",
+        "authors": [
+          "Marina Lin",
+          "Laura P. Schaposnik"
+        ]
+      }
+    ],
+    "path_smoothing": [
+      {
+        "title": "APP: A* Post-Processing Algorithm for Robots with Bidirectional Shortcut and Path Perturbation",
+        "summary": "Paths generated by A* and other graph-search-based planners are widely used in the robotic field. Due to the restricted node-expansion directions, the resulting paths are usually not the shortest. Besides, unnecessary heading changes, or zig-zag patterns, exist even when no obstacle is nearby, which is inconsistent with the human intuition that the path segments should be straight in wide-open space due to the absence of obstacles. This article puts forward a general and systematic post-processi",
+        "published": "2025-11-17T06:42:37Z",
+        "id": "http://arxiv.org/abs/2511.13042v1",
+        "authors": [
+          "Yong Li",
+          "Hui Cheng"
+        ]
+      },
+      {
+        "title": "Research on UAV Applications in Public Administration: Based on an Improved RRT Algorithm",
+        "summary": "This study investigates the application of unmanned aerial vehicles (UAVs) in public management, focusing on optimizing path planning to address challenges such as energy consumption, obstacle avoidance, and airspace constraints. As UAVs transition from 'technical tools' to 'governance infrastructure', driven by advancements in low-altitude economy policies and smart city demands, efficient path planning becomes critical. The research proposes an enhanced Rapidly-exploring Random Tree algorithm ",
+        "published": "2025-08-15T04:30:57Z",
+        "id": "http://arxiv.org/abs/2508.14096v1",
+        "authors": [
+          "Zhanxi Xie",
+          "Baili Lu",
+          "Yanzhao Gu",
+          "Zikun Li",
+          "Junhao Wei",
+          "Ngai Cheong"
+        ]
+      },
+      {
+        "title": "A Scalable Post-Processing Pipeline for Large-Scale Free-Space Multi-Agent Path Planning with PiBT",
+        "summary": "Free-space multi-agent path planning remains challenging at large scales. Most existing methods either offer optimality guarantees but do not scale beyond a few dozen agents, or rely on grid-world assumptions that do not generalize well to continuous space. In this work, we propose a hybrid, rule-based planning framework that combines Priority Inheritance with Backtracking (PiBT) with a novel safety-aware path smoothing method. Our approach extends PiBT to 8-connected grids and selectively appli",
+        "published": "2025-06-20T04:50:35Z",
+        "id": "http://arxiv.org/abs/2506.16748v1",
+        "authors": [
+          "Arjo Chakravarty",
+          "Michael X. Grey",
+          "M. A. Viraj J. Muthugala",
+          "Mohan Rajesh Elara"
+        ]
+      },
+      {
+        "title": "Deep-Sea A*+: An Advanced Path Planning Method Integrating Enhanced A* and Dynamic Window Approach for Autonomous Underwater Vehicles",
+        "summary": "As terrestrial resources become increasingly depleted, the demand for deep-sea resource exploration has intensified. However, the extreme conditions in the deep-sea environment pose significant challenges for underwater operations, necessitating the development of robust detection robots. In this paper, we propose an advanced path planning methodology that integrates an improved A* algorithm with the Dynamic Window Approach (DWA). By optimizing the search direction of the traditional A* algorith",
+        "published": "2024-10-22T07:29:05Z",
+        "id": "http://arxiv.org/abs/2410.16762v1",
+        "authors": [
+          "Yinyi Lai",
+          "Jiaqi Shang",
+          "Zenghui Liu",
+          "Zheyu Jiang",
+          "Yuyang Li",
+          "Longchao Chen"
+        ]
+      },
+      {
+        "title": "FDSPC: Fast and Direct Smooth Path Planning via Continuous Curvature Integration",
+        "summary": "In recent decades, global path planning of robot has seen significant advancements. Both heuristic search-based methods and probability sampling-based methods have shown capabilities to find feasible solutions in complex scenarios. However, mainstream global path planning algorithms often produce paths with bends, requiring additional smoothing post-processing. In this work, we propose a fast and direct path planning method based on continuous curvature integration. This method ensures path feas",
+        "published": "2024-05-06T08:57:55Z",
+        "id": "http://arxiv.org/abs/2405.03281v2",
+        "authors": [
+          "Zong Chen",
+          "Yiqun Li"
+        ]
+      },
+      {
+        "title": "A Smoothing Algorithm for Minimum Sensing Path Plans in Gaussian Belief Space",
+        "summary": "This paper explores minimum sensing navigation of robots in environments cluttered with obstacles. The general objective is to find a path plan to a goal region that requires minimal sensing effort. In [1], the information-geometric RRT* (IG-RRT*) algorithm was proposed to efficiently find such a path. However, like any stochastic sampling-based planner, the computational complexity of IG-RRT* grows quickly, impeding its use with a large number of nodes. To remedy this limitation, we suggest run",
+        "published": "2023-03-13T17:45:12Z",
+        "id": "http://arxiv.org/abs/2303.07326v1",
+        "authors": [
+          "Ali Reza Pedram",
+          "Takashi Tanaka"
+        ]
+      },
+      {
+        "title": "Reducing Collision Checking for Sampling-Based Motion Planning Using Graph Neural Networks",
+        "summary": "Sampling-based motion planning is a popular approach in robotics for finding paths in continuous configuration spaces. Checking collision with obstacles is the major computational bottleneck in this process. We propose new learning-based methods for reducing collision checking to accelerate motion planning by training graph neural networks (GNNs) that perform path exploration and path smoothing. Given random geometric graphs (RGGs) generated from batch sampling, the path exploration component it",
+        "published": "2022-10-17T09:02:04Z",
+        "id": "http://arxiv.org/abs/2210.08864v1",
+        "authors": [
+          "Chenning Yu",
+          "Sicun Gao"
+        ]
+      },
+      {
+        "title": "SDA-SNE: Spatial Discontinuity-Aware Surface Normal Estimation via Multi-Directional Dynamic Programming",
+        "summary": "The state-of-the-art (SoTA) surface normal estimators (SNEs) generally translate depth images into surface normal maps in an end-to-end fashion. Although such SNEs have greatly minimized the trade-off between efficiency and accuracy, their performance on spatial discontinuities, e.g., edges and ridges, is still unsatisfactory. To address this issue, this paper first introduces a novel multi-directional dynamic programming strategy to adaptively determine inliers (co-planar 3D points) by minimizi",
+        "published": "2022-08-18T06:57:54Z",
+        "id": "http://arxiv.org/abs/2208.08667v1",
+        "authors": [
+          "Nan Ming",
+          "Yi Feng",
+          "Rui Fan"
+        ]
+      },
+      {
+        "title": "G$ \\mathbf{^2} $VD Planner: Efficient Motion Planning With Grid-based Generalized Voronoi Diagrams",
+        "summary": "In this paper, an efficient motion planning approach with grid-based generalized Voronoi diagrams (G$ \\mathbf{^2} $VD) is newly proposed for mobile robots. Different from existing approaches, the novelty of this work is twofold: 1) a new state lattice-based path searching approach is proposed, in which the search space is reduced to a novel Voronoi corridor to further improve the search efficiency; 2) an efficient quadratic programming-based path smoothing approach is presented, wherein the clea",
+        "published": "2022-01-31T03:29:23Z",
+        "id": "http://arxiv.org/abs/2201.12981v4",
+        "authors": [
+          "Jian Wen",
+          "Xuebo Zhang",
+          "Qingchen Bi",
+          "Hui Liu",
+          "Jing Yuan",
+          "Yongchun Fang"
+        ]
+      },
+      {
+        "title": "Augmenting GRIPS with Heuristic Sampling for Planning Feasible Trajectories of a Car-Like Robot",
+        "summary": "Kinodynamic motion planning for non-holomonic mobile robots is a challenging problem that is lacking a universal solution. One of the computationally efficient ways to solve it is to build a geometric path first and then transform this path into a kinematically feasible one. Gradient-informed Path Smoothing (GRIPS) is a recently introduced method for such transformation. GRIPS iteratively deforms the path and adds/deletes the waypoints while trying to connect each consecutive pair of them via th",
+        "published": "2021-08-15T18:28:07Z",
+        "id": "http://arxiv.org/abs/2108.06789v1",
+        "authors": [
+          "Brian Angulo",
+          "Konstantin Yakovlev",
+          "Ivan Radionov"
+        ]
+      }
+    ],
+    "robot_navigation_survey": [
+      {
+        "title": "LiDAR-based Crowd Navigation with Visible Edge Group Representation",
+        "summary": "Robot navigation in crowded pedestrian environments is a well-known challenge and we explore the practical deployment of group-based representations in this setting. Pedestrian groups have been empirically shown to enable a mobile robot's navigation behavior to be safer and more social. However, existing approaches either explored groups only in limited scenarios with no high-density crowds or depended on external detection modules to track individuals, which are prone to noise and errors due to",
+        "published": "2026-04-17T23:13:18Z",
+        "id": "http://arxiv.org/abs/2604.16741v1",
+        "authors": [
+          "Allan Wang",
+          "Aaron Steinfeld"
+        ]
+      },
+      {
+        "title": "The Theorems of Dr. David Blackwell and Their Contributions to Artificial Intelligence",
+        "summary": "Dr. David Blackwell was a mathematician and statistician of the first rank, whose contributions to statistical theory, game theory, and decision theory predated many of the algorithmic breakthroughs that define modern artificial intelligence. This survey examines three of his most consequential theoretical results the Rao Blackwell theorem, the Blackwell Approachability theorem, and the Blackwell Informativeness theorem (comparison of experiments) and traces their direct influence on contemporar",
+        "published": "2026-04-08T03:01:58Z",
+        "id": "http://arxiv.org/abs/2604.06621v2",
+        "authors": [
+          "Napoleon Paxton"
+        ]
+      },
+      {
+        "title": "A Step-by-step Guide on Nonlinear Model Predictive Control for Safe Mobile Robot Navigation",
+        "summary": "Designing a model predictive control (MPC) scheme that enables a mobile robot to safely navigate through an obstacle-filled environment is a complicated yet essential task in robotics. In this technical report, safety refers to ensuring that the robot respects state and input constraints while avoiding collisions with obstacles despite the presence of disturbances and measurement noise. This report offers a step-by-step approach to implementing nonlinear model predictive control (NMPC) schemes a",
+        "published": "2025-07-23T18:26:18Z",
+        "id": "http://arxiv.org/abs/2507.17856v3",
+        "authors": [
+          "Dennis Benders",
+          "Laura Ferranti",
+          "Johannes Köhler"
+        ]
+      },
+      {
+        "title": "Skeletonization Quality Evaluation: Geometric Metrics for Point Cloud Analysis in Robotics",
+        "summary": "Skeletonization is a powerful tool for shape analysis, rooted in the inherent instinct to understand an object's morphology. It has found applications across various domains, including robotics. Although skeletonization algorithms have been studied in recent years, their performance is rarely quantified with detailed numerical evaluations. This work focuses on defining and quantifying geometric properties to systematically score the skeletonization results of point cloud shapes across multiple a",
+        "published": "2025-03-29T16:33:13Z",
+        "id": "http://arxiv.org/abs/2504.00032v1",
+        "authors": [
+          "Qingmeng Wen",
+          "Yu-Kun Lai",
+          "Ze Ji",
+          "Seyed Amir Tafrishi"
+        ]
+      },
+      {
+        "title": "Data-Driven Sampling Based Stochastic MPC for Skid-Steer Mobile Robot Navigation",
+        "summary": "Traditional approaches to motion modeling for skid-steer robots struggle with capturing nonlinear tire-terrain dynamics, especially during high-speed maneuvers. In this paper, we tackle such nonlinearities by enhancing a dynamic unicycle model with Gaussian Process (GP) regression outputs. This enables us to develop an adaptive, uncertainty-informed navigation formulation. We solve the resultant stochastic optimal control problem using a chance-constrained Model Predictive Path Integral (MPPI) c",
+        "published": "2024-11-05T17:38:03Z",
+        "id": "http://arxiv.org/abs/2411.03289v1",
+        "authors": [
+          "Ananya Trivedi",
+          "Sarvesh Prajapati",
+          "Anway Shirgaonkar",
+          "Mark Zolotas",
+          "Taskin Padir"
+        ]
+      },
+      {
+        "title": "Deep Reinforcement Learning with Enhanced PPO for Safe Mobile Robot Navigation",
+        "summary": "Collision-free motion is essential for mobile robots. Most approaches to collision-free and efficient navigation with wheeled robots require parameter tuning by experts to obtain good navigation behavior. This study investigates the application of deep reinforcement learning to train a mobile robot for autonomous navigation in a complex environment. The robot utilizes LiDAR sensor data and a deep neural network to generate control signals guiding it toward a specified target while avoiding obsta",
+        "published": "2024-05-25T15:08:36Z",
+        "id": "http://arxiv.org/abs/2405.16266v2",
+        "authors": [
+          "Hamid Taheri",
+          "Seyed Rasoul Hosseini",
+          "Mohammad Ali Nekoui"
+        ]
+      },
+      {
+        "title": "Acoustic Local Positioning With Encoded Emission Beacons",
+        "summary": "Acoustic local positioning systems (ALPSs) are an interesting alternative for indoor positioning due to certain advantages over other approaches, including their relatively high accuracy, low cost, and room-level signal propagation. Centimeter-level or fine-grained indoor positioning can be an asset for robot navigation, guiding a person to, for instance, a particular piece in a museum or to a specific product in a shop, targeted advertising, or augmented reality. In airborne system applications",
+        "published": "2024-02-04T07:51:39Z",
+        "id": "http://arxiv.org/abs/2402.02384v1",
+        "authors": [
+          "Jesus Urena",
+          "Alvaro Hernandez",
+          "Juan Jesus Garcia",
+          "Jose Manuel Villadangos",
+          "Maria del Carmen Perez",
+          "David Gualda",
+          "Fernando J. Alvarez",
+          "Teodoro Aguilera"
+        ]
+      },
+      {
+        "title": "Model-based Chance-Constrained Reinforcement Learning via Separated Proportional-Integral Lagrangian",
+        "summary": "Safety is essential for reinforcement learning (RL) applied in the real world. Adding chance constraints (or probabilistic constraints) is a suitable way to enhance RL safety under uncertainty. Existing chance-constrained RL methods like the penalty methods and the Lagrangian methods either exhibit periodic oscillations or learn an over-conservative or unsafe policy. In this paper, we address these shortcomings by proposing a separated proportional-integral Lagrangian (SPIL) algorithm. We first ",
+        "published": "2021-08-26T07:34:14Z",
+        "id": "http://arxiv.org/abs/2108.11623v1",
+        "authors": [
+          "Baiyu Peng",
+          "Jingliang Duan",
+          "Jianyu Chen",
+          "Shengbo Eben Li",
+          "Genjin Xie",
+          "Congsheng Zhang",
+          "Yang Guan",
+          "Yao Mu",
+          "Enxin Sun"
+        ]
+      },
+      {
+        "title": "Motion Planning and Control for Mobile Robot Navigation Using Machine Learning: a Survey",
+        "summary": "Moving in complex environments is an essential capability of intelligent mobile robots. Decades of research and engineering have been dedicated to developing sophisticated navigation systems to move mobile robots from one point to another. Despite their overall success, a recently emerging research thrust is devoted to developing machine learning techniques to address the same problem, based in large part on the success of deep learning. However, to date, there has not been much direct compariso",
+        "published": "2020-11-26T03:43:32Z",
+        "id": "http://arxiv.org/abs/2011.13112v2",
+        "authors": [
+          "Xuesu Xiao",
+          "Bo Liu",
+          "Garrett Warnell",
+          "Peter Stone"
+        ]
+      },
+      {
+        "title": "Hierarchical Evidence Accumulation in the Pseiki System and Experiments in Model-Driven Mobile Robot Navigation",
+        "summary": "In this paper, we will review the process of evidence accumulation in the PSEIKI system for expectation-driven interpretation of images of 3-D scenes.  Expectations are presented to PSEIKI as a geometrical hierarchy of abstractions.  PSEIKI's job is then to construct abstraction hierarchies in the perceived image taking cues from the abstraction hierarchies in the expectations.  The Dempster-Shafer formalism is used for associating belief values with the different possible labels for the constru",
+        "published": "2013-03-27T19:38:59Z",
+        "id": "http://arxiv.org/abs/1304.1513v1",
+        "authors": [
+          "A. C. Kak",
+          "K. M. Andress",
+          "C. Lopez-Abadia",
+          "M. S. Carroll",
+          "J. R. Lewis"
+        ]
+      }
+    ]
+  },
+  "semantic_scholar": {
+    "survey_path_planning": {
+      "error": "HTTP Error 429: "
+    },
+    "survey_multi_goal": {
+      "error": "HTTP Error 429: "
+    },
+    "survey_tsp_meta": {
+      "error": "HTTP Error 429: "
+    },
+    "open_tsp": [
+      {
+        "title": "Multi-performance based computational model for the cuboid open traveling salesman problem in a smart floating city",
+        "year": 2021,
+        "authors": "Ayca Kirimtat, Ondrej Krejcar, M. Tasgetiren, E. Herrera-Viedma",
+        "abstract": "Abstract The term “smart city” has been emerged as a novel solution to uphold the useless urban areas and the term has taken the advantage of sustainable and environmental resources. On the other hand, the term “floating city” has been studied for just only a few years as alternative living spaces for humanity across the world since land scarcity has already begun. Therefore, in this research, we ",
+        "citations": 6,
+        "venue": "",
+        "doi": "10.1016/J.BUILDENV.2021.107721",
+        "arxiv": null
+      },
+      {
+        "title": "Open Competency Optimization with Combinatorial Operators for the Dynamic Green Traveling Salesman Problem",
+        "year": 2025,
+        "authors": "Rim Ben Jelloun, Mouna Tarik, Khalid Jebari",
+        "abstract": "This paper proposes the Open Competency Optimization (OCO) approach, based on adaptive combinatorial operators, to solve the Dynamic Green Traveling Salesman Problem (DG-TSP), which extends the classical TSP by incorporating dynamic travel conditions, realistic road gradients, and energy consumption considerations. The objective is to minimize fuel consumption and emissions by reducing the total t",
+        "citations": 2,
+        "venue": "Inf.",
+        "doi": "10.3390/info16080675",
+        "arxiv": null
+      },
+      {
+        "title": "Dynamic open time-dependent traveling salesman problem with speed optimization",
+        "year": 2024,
+        "authors": "Mustafa Çimen, Mehmet Soysal, Sedat Belbağ, Hande Cansın Kazanç",
+        "abstract": "Increased awareness of people of the problems caused by CO2 emissions brings companies to consider environmental issues in their distribution systems. The rapid advance in technology allows logistics companies to tackle with dynamic nature of distribution networks (e.g., a change in the vehicle speed due to unexpected events). The planned routes at the beginning of the time horizon could be subjec",
+        "citations": 1,
+        "venue": "International Transactions in Operational Research",
+        "doi": "10.1111/itor.13595",
+        "arxiv": null
+      },
+      {
+        "title": "A GRASP Heuristic for the Open Sub-route Traveling Salesman Problem",
+        "year": 2023,
+        "authors": "Paulo Henrique S. Dezingrini, J. E. C. Arroyo, Matheus de Freitas Araujo",
+        "abstract": "",
+        "citations": 0,
+        "venue": "International Conference on Health Information Science",
+        "doi": "10.1007/978-3-031-78934-2_44",
+        "arxiv": null
+      },
+      {
+        "title": "Solving the Traveling Salesman Problem Using the IDINFO Algorithm",
+        "year": 2025,
+        "authors": "Yichun Su, Yunbo Ran, Zhao Yan, Yun-Fei Zhang, Xue Yang",
+        "abstract": "The Traveling Salesman Problem (TSP) is a classical discrete combinatorial optimization problem that is widely applied in various domains, including robotics, transportation, networking, etc. Although existing studies have provided extensive discussions of the TSP, the issues of improving convergence and optimization capability are still open. In this study, we aim to address this issue by proposi",
+        "citations": 4,
+        "venue": "ISPRS Int. J. Geo Inf.",
+        "doi": "10.3390/ijgi14030111",
+        "arxiv": null
+      },
+      {
+        "title": "A near-complete resolution of the exponential-time complexity of k-opt for the traveling salesman problem",
+        "year": 2025,
+        "authors": "Sophia Heimann, Ho-Ang P. Hung, Stefan Hougardy",
+        "abstract": "The $k$-opt algorithm is one of the simplest and most widely used heuristics for solving the traveling salesman problem. Starting from an arbitrary tour, the $k$-opt algorithm improves the current tour in each iteration by exchanging up to $k$ edges. The algorithm continues until no further improvement of this kind is possible. For a long time, it remained an open question how many iterations the ",
+        "citations": 1,
+        "venue": "ACM-SIAM Symposium on Discrete Algorithms",
+        "doi": "10.48550/arXiv.2507.12304",
+        "arxiv": "2507.12304"
+      },
+      {
+        "title": "Quantum-Inspired Deep Reinforcement Learning for Solving the Traveling Salesman Problem",
+        "year": 2025,
+        "authors": "Qianqian Liu, Jiahong Rui, Yue Ruan",
+        "abstract": "The Traveling Salesman Problem (TSP), a well-known NP-hard optimization problem, has been widely studied for decades due to its broad practical applicability. In recent years, deep learning methods have shown promise in solving TSP; however, existing approaches often struggle to extract informative edge features between cities, which limits solution quality. To address this, we propose a Quantum-I",
+        "citations": 0,
+        "venue": "2025 Cross Strait Radio Science and Wireless Technology Conference (CSRSWTC)",
+        "doi": "10.1109/CSRSWTC67757.2025.11383891",
+        "arxiv": null
+      },
+      {
+        "title": "A New Parallel Fitness-Oriented Memetic Algorithm for the Close Enough Traveling Salesman Problem",
+        "year": 2025,
+        "authors": "Deniz Cantürk",
+        "abstract": "",
+        "citations": 0,
+        "venue": "Signal Processing and Communications Applications Conference",
+        "doi": "10.1109/SIU66497.2025.11111810",
+        "arxiv": null
+      },
+      {
+        "title": "The k-Opt algorithm for the Traveling Salesman Problem has exponential running time for k≥5",
+        "year": 2024,
+        "authors": "Sophia Heimann, Ho-Ang P. Hung, Stefan Hougardy",
+        "abstract": "The $k$-Opt algorithm is a local search algorithm for the Traveling Salesman Problem. Starting with an initial tour, it iteratively replaces at most $k$ edges in the tour with the same number of edges to obtain a better tour. Krentel (FOCS 1989) showed that the Traveling Salesman Problem with the $k$-Opt neighborhood is complete for the class PLS (polynomial time local search) and that the $k$-Opt",
+        "citations": 6,
+        "venue": "International Colloquium on Automata, Languages and Programming",
+        "doi": "10.48550/arXiv.2402.07061",
+        "arxiv": "2402.07061"
+      },
+      {
+        "title": "Fast approximation of the traveling salesman problem shortest route by rectangular cell clustering pattern to parallelize solving",
+        "year": 2024,
+        "authors": "V. Romanuke",
+        "abstract": "A method of quickly obtaining an approximate solution to the traveling salesman problem (TSP) is suggested, where a dramatic computational speedup is guaranteed. The initial TSP is broken into open-loop TSPs by using a clustering method. The clustering method is based on either imposing a rectangular lattice on the nodes or dividing the dataset iteratively until the open-loop TSPs become sufficien",
+        "citations": 0,
+        "venue": "Statistics, Optimization &amp; Information Computing",
+        "doi": "10.19139/soic-2310-5070-2037",
+        "arxiv": null
+      }
+    ],
+    "tsp_obstacles_robot": {
+      "error": "HTTP Error 429: "
+    },
+    "jps_astar_grid": {
+      "error": "HTTP Error 429: "
+    },
+    "aco_tsp_recent": {
+      "error": "HTTP Error 429: "
+    },
+    "multi_goal_nav": {
+      "error": "HTTP Error 429: "
+    },
+    "path_smoothing_robot": {
+      "error": "HTTP Error 429: "
+    },
+    "autonomous_nav_review": {
+      "error": "HTTP Error 429: "
+    },
+    "tsp_path_planning": {
+      "error": "HTTP Error 429: "
+    }
+  }
+}
