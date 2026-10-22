@@ -1,0 +1,320 @@
+{
+  "ref4": [
+    {
+      "title": "A survey on approximability of traveling salesman problems using the TSP-T3CO definition scheme",
+      "year": 2025,
+      "authors": [
+        "Sophia Saller",
+        "Jana Koehler",
+        "Andreas Karrenbauer"
+      ],
+      "venue": "Annals of Operations Research",
+      "doi": "https://doi.org/10.1007/s10479-025-06641-5",
+      "volume": "351",
+      "issue": "3",
+      "first_page": "2129",
+      "last_page": "2190"
+    },
+    {
+      "title": "A $(1+1/\\sqrt{2})$-Approximation for the Multiple-Depot Traveling Salesman Problem",
+      "year": 2026,
+      "authors": [
+        "Jingyang Zhao",
+        "Yuxi Liu",
+        "Mingyu Xiao"
+      ],
+      "venue": "arXiv (Cornell University)",
+      "doi": "https://doi.org/10.48550/arxiv.2609.19537",
+      "volume": null,
+      "issue": null,
+      "first_page": null,
+      "last_page": null
+    }
+  ],
+  "ref8": {
+    "error": "HTTP Error 400: Bad Request"
+  },
+  "ref13": [
+    {
+      "title": "Improved JPS and DWA path planning algorithm for mobile robots",
+      "year": 2026,
+      "authors": [
+        "Chenguang Gao",
+        "Haohao Ding",
+        "Dongguang Zhang",
+        "Yali Wu"
+      ],
+      "venue": "Mechatronics",
+      "doi": "https://doi.org/10.1016/j.mechatronics.2026.103540",
+      "volume": "118",
+      "issue": null,
+      "first_page": "103540",
+      "last_page": "103540"
+    },
+    {
+      "title": "Path Planning for Mobile Robots Based on Improved JPS and DWA Algorithms",
+      "year": 2026,
+      "authors": [
+        "CHENG Bo",
+        "CAI Longshuai",
+        "GUO Guifang",
+        "Xuan Zhang"
+      ],
+      "venue": "DOAJ (DOAJ: Directory of Open Access Journals)",
+      "doi": "https://doi.org/10.13705/j.issn.1671-6833.2025.03.018",
+      "volume": null,
+      "issue": null,
+      "first_page": null,
+      "last_page": null
+    }
+  ],
+  "ref14": [
+    {
+      "title": "Research on Mobile Robot Path Planning Based on an Improved Bidirectional Jump Point Search Algorithm",
+      "year": 2025,
+      "authors": [
+        "Rui Guo",
+        "Xingbo Quan",
+        "Changchun Bao"
+      ],
+      "venue": "Electronics",
+      "doi": "https://doi.org/10.3390/electronics14081669",
+      "volume": "14",
+      "issue": "8",
+      "first_page": "1669",
+      "last_page": "1669"
+    },
+    {
+      "title": "Improved Bidirectional RRT* Algorithm for Robot Path Planning",
+      "year": 2023,
+      "authors": [
+        "Xin Peng",
+        "Xiaomin Wang",
+        "Xiaoli Liu",
+        "Yanhui Wang",
+        "Zhibo Zhai",
+        "Xiqing Ma"
+      ],
+      "venue": "Sensors",
+      "doi": "https://doi.org/10.3390/s23021041",
+      "volume": "23",
+      "issue": "2",
+      "first_page": "1041",
+      "last_page": "1041"
+    }
+  ],
+  "ref15": {
+    "error": "HTTP Error 400: Bad Request"
+  },
+  "ref16": [
+    {
+      "title": "UGV Path Optimization in UAV-Assisted Environments Using Visibility-Aware Path Simplification",
+      "year": 2026,
+      "authors": [
+        "Isuru Munasinghe",
+        "Asanka G. Perera",
+        "Sreenatha Anavatti",
+        "Matt Garratt"
+      ],
+      "venue": "Journal of Sensor and Actuator Networks",
+      "doi": "https://doi.org/10.3390/jsan15030041",
+      "volume": "15",
+      "issue": "3",
+      "first_page": "41",
+      "last_page": "41"
+    },
+    {
+      "title": "UGV-UAV Integration Advancements for Coordinated Missions: A Review",
+      "year": 2025,
+      "authors": [
+        "Farah Syazwani Shahar",
+        "Mohamed Thariq Hameed Sultan",
+        "Marek Nowakowski",
+        "Andrzej Łukaszewicz"
+      ],
+      "venue": "Journal of Intelligent & Robotic Systems",
+      "doi": "https://doi.org/10.1007/s10846-025-02273-w",
+      "volume": "111",
+      "issue": "2",
+      "first_page": null,
+      "last_page": null
+    }
+  ],
+  "ref17": [
+    {
+      "title": "Multi-robot Path Planning in Dynamic Environments Using the Coati Optimization Algorithm",
+      "year": 2026,
+      "authors": [
+        "Hongyu Lu"
+      ],
+      "venue": "Applied and Computational Engineering",
+      "doi": "https://doi.org/10.54254/2755-2721/2026.36919",
+      "volume": "268",
+      "issue": "1",
+      "first_page": "41",
+      "last_page": "48"
+    },
+    {
+      "title": "Path Planning of Mobile Robot Based on Improved PRM Based on Cubic Spline",
+      "year": 2022,
+      "authors": [
+        "Xiaolu Ma",
+        "Rui Gong",
+        "Yibo Tan",
+        "Hong Mei",
+        "Chengcheng Li"
+      ],
+      "venue": "Wireless Communications and Mobile Computing",
+      "doi": "https://doi.org/10.1155/2022/1632698",
+      "volume": "2022",
+      "issue": "1",
+      "first_page": null,
+      "last_page": null
+    }
+  ],
+  "ref18": {
+    "error": "HTTP Error 400: Bad Request"
+  },
+  "ref26": [
+    {
+      "title": "An Improvement to the 2-Opt Heuristic Algorithm for Approximation of Optimal TSP Tour",
+      "year": 2023,
+      "authors": [
+        "Fakhar Uddin",
+        "Naveed Riaz",
+        "Abdul Manan",
+        "Imran Mahmood",
+        "Oh-Young Song",
+        "Arif Jamal Malik",
+        "Aaqif Afzaal Abbasi"
+      ],
+      "venue": "Applied Sciences",
+      "doi": "https://doi.org/10.3390/app13127339",
+      "volume": "13",
+      "issue": "12",
+      "first_page": "7339",
+      "last_page": "7339"
+    },
+    {
+      "title": "Worst Case and Probabilistic Analysis of the 2-Opt Algorithm for the TSP",
+      "year": 2013,
+      "authors": [
+        "Matthias Englert",
+        "Heiko Röglin",
+        "Berthold Vöcking"
+      ],
+      "venue": "Algorithmica",
+      "doi": "https://doi.org/10.1007/s00453-013-9801-4",
+      "volume": "68",
+      "issue": "1",
+      "first_page": "190",
+      "last_page": "264"
+    }
+  ],
+  "ref27": [
+    {
+      "title": "Matrix-Based Ant Colony System for Traveling Salesman Problem",
+      "year": 2024,
+      "authors": [
+        "Xu Li",
+        "Jian-Yu Li",
+        "Chunhua Chen",
+        "Zhi‐Hui Zhan",
+        "Sam Kwong",
+        "Jun Zhang"
+      ],
+      "venue": "Conference proceedings/Conference proceedings - IEEE International Conference on Systems, Man, and Cybernetics",
+      "doi": "https://doi.org/10.1109/smc54092.2024.10831943",
+      "volume": null,
+      "issue": null,
+      "first_page": "1358",
+      "last_page": "1363"
+    },
+    {
+      "title": "Matrix-Based Ant Colony Optimization with Matrix-Based 2-Opt for Traveling Salesman Problem",
+      "year": 2026,
+      "authors": [
+        "Chen-Ke Qiu",
+        "Gong-Wei Song",
+        "Qiang Yang",
+        "Dan-Ting Duan",
+        "Pei-Lan Xu",
+        "Xudong Gao",
+        "Zhen-Yu Lu",
+        "Jun Zhang"
+      ],
+      "venue": "Lecture notes in computer science",
+      "doi": "https://doi.org/10.1007/978-3-032-36223-0_29",
+      "volume": null,
+      "issue": null,
+      "first_page": "469",
+      "last_page": "484"
+    }
+  ],
+  "ref28": [
+    {
+      "title": "nLKH-ACS: A Niching Lin-Kernighan–Helsgaun-Based Ant Colony System for Multisolution Traveling Salesman Problems",
+      "year": 2024,
+      "authors": [
+        "Ting Huang",
+        "Zhen-Quan Zhang",
+        "Yue‐Jiao Gong",
+        "Jing Liu"
+      ],
+      "venue": "IEEE Transactions on Evolutionary Computation",
+      "doi": "https://doi.org/10.1109/tevc.2024.3507777",
+      "volume": "29",
+      "issue": "6",
+      "first_page": "2596",
+      "last_page": "2610"
+    }
+  ],
+  "ref29": [
+    {
+      "title": "A carbon aware ant colony system for the sustainable generalized traveling salesman problem",
+      "year": 2025,
+      "authors": [
+        "Marina Lin",
+        "Laura P. Schaposnik"
+      ],
+      "venue": "Scientific Reports",
+      "doi": "https://doi.org/10.1038/s41598-025-08276-9",
+      "volume": "15",
+      "issue": "1",
+      "first_page": "21928",
+      "last_page": "21928"
+    },
+    {
+      "title": "Heuristic Algorithm-Based Energy Optimization In Transportation To Reduce Carbon Emission",
+      "year": 2025,
+      "authors": [
+        "Ameya Uchil",
+        "Rohan Rajesh"
+      ],
+      "venue": "International Journal of Environmental Sciences",
+      "doi": "https://doi.org/10.64252/5bqz5m72",
+      "volume": null,
+      "issue": null,
+      "first_page": null,
+      "last_page": null
+    }
+  ],
+  "ref30": [
+    {
+      "title": "Ant Colony Optimization for Multiple Traveling Salesmen Problem with Revisitable Cities",
+      "year": 2024,
+      "authors": [
+        "Bing Sun",
+        "Wei–Jie Yu",
+        "Zi-Jia Wang",
+        "Jian-Yu Li"
+      ],
+      "venue": "International Conference on Machine Intelligence Theory and Applications (MiTA)",
+      "doi": "https://doi.org/10.1109/mita60795.2024.10751693",
+      "volume": null,
+      "issue": null,
+      "first_page": "1",
+      "last_page": "6"
+    }
+  ]
+}

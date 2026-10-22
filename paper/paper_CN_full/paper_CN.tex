@@ -74,7 +74,7 @@
 
 \section{引言}
 
-多目标点遍历路径规划是自主移动机器人领域的一项基本问题，在无人公交接驳、物流仓储管理、基础设施巡检以及搜救行动等场景中具有广泛应用\textcolor{blue}{\cite{ref1,ref2}}。在完成例如接送乘客、检查设备、投递物品等特定任务中，机器人需要从指定起始位置出发，依次访问一系列中间目标点，最终到达目标终点。规划器需解决两个既独立又耦合的子问题：
+多目标点遍历路径规划是自主移动机器人领域的一项基本问题，在无人公交接驳、物流仓储管理、基础设施巡检以及搜救行动等场景中具有广泛应用\textcolor{blue}{\cite{ref1,ref2,ref33,ref37,ref38}}。在完成例如接送乘客、检查设备、投递物品等特定任务中，机器人需要从指定起始位置出发，依次访问一系列中间目标点，最终到达目标终点。规划器需解决两个既独立又耦合的子问题：
 
 （1）在杂乱环境中寻找连续点对之间的无碰撞路径；
 
@@ -82,7 +82,7 @@
 
 第一个子问题属于几何问题——需要在物理空间中对障碍物几何形状和路径连续性进行推理。第二个子问题是一个组合优化问题，类似旅行商问题（TSP）这类经典 NP-hard 问题。这两个子问题相互影响，任意两点之间的通行代价取决于其间存在的障碍物，而最优访问顺序又取决于这些点对间的通行代价。
 
-总体来看，现有多目标导航方法通常仅独立处理其中一个子问题。大量旅行商问题研究假设点对间的代价由欧氏距离或已知距离矩阵给出\textcolor{blue}{\cite{ref3,ref4}}，忽略了在障碍物丰富的环境，两点之间的最短无碰撞路径可能远长于直线距离这一事实。另一方面，例如A*、Dijkstra、快速扩展随机树（RRT）及其变体路径规划领域的成熟算法能够高效地计算栅格地图中点对之间的最优或近似最优无碰撞路径，但这些规划器并不优化多目标点的访问顺序\textcolor{blue}{\cite{ref5,ref6,ref7}}。少量研究在特定几何假设下探索了带障碍物的旅行商问题变体（如带障碍物的TSP、Dubins TSP），但目前尚缺乏一种将基于栅格的全局规划器与高性能旅行商求解器相集成的、通用的障碍环境多目标点遍历框架。
+总体来看，现有多目标导航方法通常仅独立处理其中一个子问题。大量旅行商问题研究假设点对间的代价由欧氏距离或已知距离矩阵给出\textcolor{blue}{\cite{ref4,ref36}}，忽略了在障碍物丰富的环境中，两点之间的最短无碰撞路径可能远长于直线距离这一事实\textcolor{blue}{\cite{ref39}}。另一方面，例如A*、Dijkstra、快速扩展随机树（RRT）及其变体路径规划领域的成熟算法能够高效地计算栅格地图中点对之间的最优或近似最优无碰撞路径，但这些规划器并不优化多目标点的访问顺序\textcolor{blue}{\cite{ref5,ref6,ref7}}。少量研究在特定几何假设下探索了带障碍物的旅行商问题变体（如带障碍物的TSP、Dubins TSP），但目前尚缺乏一种将基于栅格的全局规划器与高性能旅行商求解器相集成的、通用的障碍环境多目标点遍历框架。
 
 针对上述约束并最大化利用两类算法的优势，本文旨在提出一种面向障碍环境多目标点遍历路径规划的协同优化框架。该框架由两个算法层组成，通过预计算的代价矩阵连接。第一层是基于跳点搜索（JPS）的改进A*全局规划器，其利用栅格对称性跳过冗余节点扩展、仅扩展跳点，从而大幅缩减搜索树规模；该规划器结合了安全感知的路径简化流程以及弧长参数化三次样条平滑管线。第二层是面向开放旅行商问题的改进蚁群优化（ACO）求解器，其通过虚拟节点（哑节点）法将开放旅行商问题转化为标准闭环旅行商问题，从而充分利用闭环旅行商问题的搜索算子；该求解器融合了最大-最小蚁群系统（MMAS）的信息素管理、蚁群系统（ACS）风格的伪随机转移规则、以$k$近邻候选列表加速的可变邻域下降（VND）局部搜索引擎，以及基于S形函数的渐进式局部搜索调度和自适应停止准则。
 
@@ -106,23 +106,23 @@
 
 \subsection{现有路径搜索方法及其局限}
 
-全局路径规划旨在已知静态环境中寻找两点之间的无碰撞路径，经典图搜索算法是栅格规划的主流方法。Dijkstra算法以均匀方式扩展，在大地图上效率较低\textcolor{blue}{\cite{ref6}}；A*以启发式引导搜索并在$h(n)$可采纳时保持最优性\textcolor{blue}{\cite{ref5}}，但固定的启发式权重存在权衡，权重为1时扩展节点过多，加大权重则牺牲最优性\textcolor{blue}{\cite{ref8}}。加权A*与任意时间修复A*等变体在整个搜索过程中施加统一权重\textcolor{blue}{\cite{ref9,ref10}}，而实用的权重直观上取决于到目标的距离。跳点搜索（JPS）利用栅格对称性仅扩展跳点，大幅压缩搜索树\textcolor{blue}{\cite{ref11,ref12}}，近期变体进一步引入双向搜索与任意角度精化\textcolor{blue}{\cite{ref13,ref14,ref15}}，本文的改进A*即建立在这一原理之上。采样类规划器如RRT\textcolor{blue}{\cite{ref7}}与PRM提供概率完备性，在高维构型空间中表现良好，但在栅格环境中的解路径通常更长且一致性较差。
+全局路径规划旨在已知静态环境中寻找两点之间的无碰撞路径，经典图搜索算法是栅格规划的主流方法\textcolor{blue}{\cite{ref33,ref34,ref35}}。Dijkstra算法以均匀方式扩展，在大地图上效率较低\textcolor{blue}{\cite{ref6}}；A*以启发式引导搜索并在$h(n)$可采纳时保持最优性\textcolor{blue}{\cite{ref5}}，但固定的启发式权重存在权衡，权重为1时扩展节点过多，加大权重则牺牲最优性\textcolor{blue}{\cite{ref8}}。加权A*与任意时间修复A*等变体在整个搜索过程中施加统一权重\textcolor{blue}{\cite{ref8,ref10}}，而实用的权重直观上取决于到目标的距离。跳点搜索（JPS）利用栅格对称性仅扩展跳点，大幅压缩搜索树\textcolor{blue}{\cite{ref11,ref12,ref44}}，近期变体进一步引入双向搜索与任意角度精化\textcolor{blue}{\cite{ref13,ref14,ref15}}，本文的改进A*即建立在这一原理之上。采样类规划器如RRT\textcolor{blue}{\cite{ref7}}与PRM提供概率完备性，在高维构型空间中表现良好，但在栅格环境中的解路径通常更长且一致性较差。
 
-栅格路径的后处理是成熟的技术实践，包括共线性或视线裁剪\textcolor{blue}{\cite{ref16}}以及三次样条、B样条、回旋曲线等平滑方法\textcolor{blue}{\cite{ref17,ref18}}。然而，裁剪和平滑通常被视为独立的事后步骤，未被纳入多目标代价的计算；将后处理得到的连续路径长度用于指导组合优化，是本文框架的一个显著特征。
+栅格路径的后处理是成熟的技术实践，包括共线性或视线裁剪\textcolor{blue}{\cite{ref16}}以及三次样条、B样条、回旋曲线等平滑方法\textcolor{blue}{\cite{ref17,ref18,ref41}}。然而，裁剪和平滑通常被视为独立的事后步骤，未被纳入多目标代价的计算；将后处理得到的连续路径长度用于指导组合优化，是本文框架的一个显著特征。
 
 \subsection{现有访问顺序优化方法及其不足}
 
-旅行商问题是组合优化领域中研究最为深入的问题之一，精确算法仅适用于小规模实例（通常$K \leq 20$），更大规模通常采用元启发式方法，如遗传算法\textcolor{blue}{\cite{ref19}}、模拟退火\textcolor{blue}{\cite{ref20}}与蚁群优化\textcolor{blue}{\cite{ref21}}。蚁群系统（ACS）的伪随机比例转移规则\textcolor{blue}{\cite{ref22}}与最大-最小蚁群系统（MMAS）的显式信息素上下界\textcolor{blue}{\cite{ref23}}分别改善了收敛速度与搜索稳定性，本文的排序求解器即以二者为组件基础。
+旅行商问题是组合优化领域中研究最为深入的问题之一\textcolor{blue}{\cite{ref4,ref36}}，精确算法通常仅适用于小规模实例，更大规模通常采用元启发式方法，如遗传算法\textcolor{blue}{\cite{ref19}}与蚁群优化\textcolor{blue}{\cite{ref21,ref42}}。蚁群系统（ACS）的伪随机比例转移规则\textcolor{blue}{\cite{ref22}}与最大-最小蚁群系统（MMAS）的显式信息素上下界\textcolor{blue}{\cite{ref23}}分别改善了收敛速度与搜索稳定性，本文的排序求解器即以二者为组件基础。
 
-对本文问题而言，现有排序方法存在两方面不足。其一，主流求解器默认点对代价为欧氏距离或已知距离矩阵，而在障碍环境中真实通行代价由避障路径决定。其二，将2-opt、可变邻域下降（VND）等局部搜索嵌入蚁群虽可显著提升解质量\textcolor{blue}{\cite{ref24,ref25}}，但VND对每个算子评估$O(K^2)$个候选移动，在$K > 100$时成为瓶颈，候选列表技术可将近评估限制在最近邻范围内加以缓解\textcolor{blue}{\cite{ref26}}。此外，局部搜索的渐进调度受到关注较少，多数实现全程对固定比例的蚂蚁施加局部搜索；近期蚁群变体多关注并行化、小生境与可持续性机制\textcolor{blue}{\cite{ref27,ref28,ref29,ref30}}。针对上述不足，本文以安全弧长计价纳入障碍代价，以候选列表加速VND（第~\textcolor{blue}{\ref{subsec:vnd}} 节）将局部搜索复杂度降至$O(K \cdot k)$，并以S形调度（第~\textcolor{blue}{\ref{subsec:sigmoid}} 节）安排局部搜索的投入时机。
+对本文问题而言，现有排序方法存在两方面不足。其一，主流求解器默认点对代价为欧氏距离或已知距离矩阵，而在障碍环境中真实通行代价由避障路径决定。其二，将2-opt、可变邻域下降（VND）等局部搜索嵌入蚁群虽可显著提升解质量\textcolor{blue}{\cite{ref24,ref25,ref43}}，但VND对每个算子评估$O(K^2)$个候选移动，在$K > 100$时成为瓶颈，候选列表技术可将近评估限制在最近邻范围内加以缓解\textcolor{blue}{\cite{ref26}}。此外，局部搜索的渐进调度受到关注较少，多数实现全程对固定比例的蚂蚁施加局部搜索；近期蚁群变体多关注并行化、小生境与可持续性机制\textcolor{blue}{\cite{ref27,ref28,ref29,ref30}}。针对上述不足，本文以安全弧长计价纳入障碍代价，以候选列表加速VND（第~\textcolor{blue}{\ref{subsec:vnd}} 节）将局部搜索复杂度降至$O(K \cdot k)$，并以S形调度（第~\textcolor{blue}{\ref{subsec:sigmoid}} 节）安排局部搜索的投入时机。
 
 \subsection{障碍约束下的两类方法结合}
 
-路径规划与旅行商优化的交叉领域已在多个名义下得到探索\textcolor{blue}{\cite{ref4}}。带障碍物的旅行商问题（TSPO）在连续平面多边形障碍下经可见图求解\textcolor{blue}{\cite{ref3}}，Dubins变体考虑最小转弯半径约束，邻域变体将目标从点泛化为区域。这些公式依赖连续几何表示并假设特定的障碍形状，难以直接用于障碍以任意占用模式表示的栅格导航。
+路径规划与旅行商优化的交叉领域已在多个名义下得到探索\textcolor{blue}{\cite{ref4,ref36}}。在连续平面多边形障碍下，点对通行代价依赖避障几何而非欧氏度量\textcolor{blue}{\cite{ref39}}；Dubins变体考虑最小转弯半径约束，邻域或贴近变体则将目标从点泛化为区域\textcolor{blue}{\cite{ref40}}。这些公式依赖连续几何表示并假设特定的障碍形状，难以直接用于障碍以任意占用模式表示的栅格导航。
 
-结合路径规划器与旅行商求解器的两层架构已有若干先例\textcolor{blue}{\cite{ref1,ref2}}。例如，概率路线图被用于构建连通图，并在其上以采样构型间的最短路径距离求解旅行商问题。然而，这些方法通常采用现成的规划器和求解器，未针对多目标点遍历上下文优化任一层。代价矩阵由原始栅格路径计算得出，因离散化伪影而高估了真实路径长度，且旅行商求解器缺乏我们框架所提供的例如开放旅行商编码、候选列表加速等此类问题特定增强。
+结合路径规划器与旅行商求解器的两层架构已有若干先例\textcolor{blue}{\cite{ref1,ref2}}。然而，这些方法通常采用现成的规划器和求解器，未针对多目标点遍历上下文优化任一层。代价矩阵由原始栅格路径计算得出，因离散化伪影而高估了真实路径长度，且旅行商求解器缺乏我们框架所提供的例如开放旅行商编码、候选列表加速等此类问题特定增强。
 
-开放旅行商变体——其中起点和终点为不重合的固定位置——与自主导航任务尤为相关，机器人从仓库出发并到达目的地。经典旅行商问题文献的大部分内容，包括大多数TSPLIB基准实例，针对的是闭环旅行商问题。开放旅行商问题需要不同的编码和代价评估函数，我们在第~\textcolor{blue}{\ref{subsec:otspp}} 节中将其形式化，并在第~\textcolor{blue}{\ref{subsec:virtual}} 节中通过虚拟节点法给出算法实现，该方法类似于开放车辆路径问题中所采用的技术\textcolor{blue}{\cite{ref31,ref32}}。
+开放旅行商变体——其中起点和终点为不重合的固定位置——与自主导航任务尤为相关，机器人从仓库出发并到达目的地。经典旅行商问题文献的大部分内容，包括大多数TSPLIB基准实例，针对的是闭环旅行商问题。开放旅行商问题需要不同的编码和代价评估函数，我们在第~\textcolor{blue}{\ref{subsec:otspp}} 节中将其形式化，并在第~\textcolor{blue}{\ref{subsec:virtual}} 节中通过虚拟节点法给出算法实现，该方法类似于开放车辆路径问题中所采用的技术\textcolor{blue}{\cite{ref32}}。
 
 综上，A*类方法可给出高质量的点对点路径，开放式旅行商元启发式则擅长组合排序，二者单独使用均难以覆盖障碍环境下的完整多目标点遍历任务。本文的定位是将跳点搜索全局规划、安全感知后处理与开放旅行商蚁群优化集成为一条完整的协同管线，并在组件层面做相应工程化改进。相较于既有集成先例\textcolor{blue}{\cite{ref1,ref2}}，本文以安全感知后处理的连续轨迹弧长而非原始栅格路径长度构建代价矩阵，并在统一几何接口下对排序模块的多种实现进行了对照，各增量的实验归因见第~\textcolor{blue}{\ref{sec:exp}} 节。
 
@@ -153,7 +153,7 @@
 \label{eq:boundary}
 \end{equation}
 
-中间索引$\{\pi_2, \dots, \pi_{N-1}\}$构成$\{2, \dots, N-1\}$的一个排列，表示目标点的有序访问。这是\textbf{开放旅行商问题}的形式化，区别于经典闭环旅行商问题——后者的路径构成环路且起始节点可任意选取\textcolor{blue}{\cite{ref3,ref4}}。
+中间索引$\{\pi_2, \dots, \pi_{N-1}\}$构成$\{2, \dots, N-1\}$的一个排列，表示目标点的有序访问。这是\textbf{开放旅行商问题}的形式化，区别于经典闭环旅行商问题——后者的路径构成环路且起始节点可任意选取\textcolor{blue}{\cite{ref4,ref36}}。
 
 \subsection{优化目标}
 
@@ -322,10 +322,10 @@ d(p, \mathrm{cell}) = \sqrt{d_x^2 + d_y^2}
 这种两阶段设计的合理性在于：路径简化和样条平滑分别解决了路径质量的两个不同维度。简化减少了路径点数量（降低了后续计算的复杂度），同时通过安全距离约束保证了路径的安全裕度；平滑则将离散的栅格路径转化为连续曲线，使机器人能够以平滑的运动轨迹跟踪路径。若跳过简化直接进行平滑，样条曲线需要处理大量冗余的控制点，不仅计算成本更高，还可能因控制点过于密集而产生不稳定的曲线形状。路径后处理前后对比如图~\textcolor{blue}{\ref{fig:pipeline}}所示。
 \begin{figure}[!t]
 \centering
-\subfloat[原始路径与简化后路径]{\includegraphics[width=1.55in]{figures/fig02a_simplify_raw}%
+\subfloat[原始路径与简化后路径]{\includegraphics[width=1.55in]{figures/SimplifyPath}%
 \label{fig:pipeline_a}}%
 \hfil
-\subfloat[简化后路径与平滑后路径]{\includegraphics[width=1.55in]{figures/fig02b_smooth_raw}%
+\subfloat[简化后路径与平滑后路径]{\includegraphics[width=1.55in]{figures/SmoothPath}%
 \label{fig:pipeline_b}}
 \caption{路径通过管线各阶段的对比。}
 \label{fig:pipeline}
@@ -336,7 +336,7 @@ d(p, \mathrm{cell}) = \sqrt{d_x^2 + d_y^2}
 \subsubsection{虚拟节点法编码开放旅行商问题}
 \label{subsec:virtual}
 本文问题中起点$S$与终点$G$为任务给定的不同物理位置（例如无人公交的始发站与终点站），须固定于候选解的首尾，优化仅针对$K$个中间目标点的排序进行。将所有$N$个点对称排列的朴素编码会产生首尾错位的无效路径，而将起点/终点固定在路径两端的边界固定编码则将其排除在信息素模型和局部搜索之外，限制了算法对完整解的优化能力。
-为此，本文采用虚拟节点法将开放旅行商问题转化为标准闭环旅行商问题，该技术在开放车辆路径问题中被广泛采用\textcolor{blue}{\cite{ref31,ref32}}。引入虚拟节点$V = N + 1$，构造$(N+1) \times (N+1)$的扩展代价矩阵$\mathbf{D}_{\mathrm{ext}}$：
+为此，本文采用虚拟节点法将开放旅行商问题转化为标准闭环旅行商问题，该技术在开放车辆路径问题中被广泛采用\textcolor{blue}{\cite{ref32}}。引入虚拟节点$V = N + 1$，构造$(N+1) \times (N+1)$的扩展代价矩阵$\mathbf{D}_{\mathrm{ext}}$：
 \begin{equation}
 \mathbf{D}_{\mathrm{ext}}(i, j) =
 \begin{cases}
@@ -527,7 +527,7 @@ v_{\mathrm{next}} =
 \item \textbf{构建代价矩阵}：对全部$O(N^2)$个点对调用改进A*规划器，并对所得路径进行安全简化后计价；
 \item \textbf{求解开放旅行商问题}：调用MMAS-VND-CL确定最优访问顺序；
 \item \textbf{回取各段路径}：依据访问顺序从路径缓存中拼接完整轨迹；
-\item \textbf{后处理}：对每段路径实施路径简化与三次样条平滑（第~\textcolor{blue}{\ref{subsec:post}} 节），输出可供机器人跟踪的平滑无障碍连续轨迹。
+\item \textbf{后处理}：对每段路径实施路径简化与三次样条平滑，输出平滑无障碍连续轨迹。
 \end{enumerate}
 系统整体架构如图~\textcolor{blue}{\ref{fig:system}}所示。
 \begin{figure}[!htbp]
@@ -541,7 +541,7 @@ v_{\mathrm{next}} =
 
 \label{sec:exp}
 
-在给出方法设计之后，本节通过仿真对所提框架的有效性进行检验。实验从四个相互衔接的层面展开：（1）比较基于JPS的改进A*规划器与常见基线在全局寻径上的效率与路径质量；（2）考察MMAS-VND-CL对关键超参数的敏感程度；（3）通过消融实验分离各组成机制的贡献；（4）将不同旅行商求解器与改进A*规划器组合，比较完整的多目标点遍历性能。所有对比均在统一参数策略下进行多次独立重复，以兼顾解质量与统计稳定性。
+在给出方法设计之后，本节通过仿真对所提框架的有效性进行检验。实验从以下几个相互衔接的层面展开，首先，比较基于JPS的改进A*规划器与常见基线在全局寻径上的效率与路径质量；其次，考察MMAS-VND-CL对关键超参数的敏感程度；然后，通过消融实验分离各组成机制的贡献；最终，将不同旅行商求解器与改进A*规划器组合，比较完整的多目标点遍历性能。所有对比均在统一参数策略下进行多次独立重复，以兼顾解质量与统计稳定性。
 
 \begin{figure*}[!htbp]
 \centering
@@ -557,19 +557,19 @@ v_{\mathrm{next}} =
 
 所有实验均在配备Intel Core Ultra 5 125H处理器与32~GB内存的计算机上完成，软件环境为MATLAB R2025b。
 
-为覆盖不同障碍形态与问题规模，本文构建了两类实验场景（图~\textcolor{blue}{\ref{fig:env_maps}}）：一类是含障碍的栅格地图（Map~1、Map~2与Map~3），用于检验避障寻径与多目标点遍历；另一类是标准TSPLIB算例kroB100，用于单独检验大规模组合排序能力。其中Map~1与Map~2同时给出多目标遍历所需的中间目标点（图中蓝色编号点）；在全局路径规划对比实验（第~\textcolor{blue}{\ref{subsec:exp_plan}} 节）中，仅使用各图的起点与终点进行点对点规划，不涉及中间目标点的访问顺序优化。
+为覆盖不同障碍形态与问题规模，本文构建了如图~\textcolor{blue}{\ref{fig:env_maps}}所示的两类实验场景：一类是含障碍的栅格地图（Map~1、Map~2与Map~3），用于检验避障寻径与多目标点遍历；另一类是标准TSPLIB算例kroB100，用于单独检验大规模组合排序能力。图中绿色圆点为起点，红色三角为终点，蓝色编号点为多目标遍历实验中的中间目标点。其中Map~1与Map~2同时给出多目标遍历所需的中间目标点；在第~\textcolor{blue}{\ref{subsec:exp_plan}} 节全局路径规划对比实验中，仅使用各图的起点与终点进行点对点规划，不涉及中间目标点的访问顺序优化。
 
 具体环境特征如下：
 
 \begin{enumerate}
 
-\item Map~1：$50\times 50$栅格环境。障碍以较长的横纵墙段为主，彼此错落布置，形成若干由走廊连通的“房间”状空腔，整体近似街区或室内隔断布局。自由空间连通性尚可，但直线通道会被墙体多次截断，适合考察规划器在中等障碍密度下的绕行与搜索效率。绿色圆点为起点（左下），红色三角为终点（右上）；蓝色编号点为多目标遍历实验中的中间目标点。
+\item Map~1：$50\times 50$栅格环境。障碍以较长的横纵墙段为主，彼此错落布置，形成若干由走廊连通的“房间”状空腔，整体近似街区或室内隔断布局。自由空间连通性尚可，但直线通道会被墙体多次截断，适合考察规划器在中等障碍密度下的绕行与搜索效率。
 
 \item Map~2：$80\times 80$栅格环境。障碍呈不规则碎块状高密度散布，自由空间被切割成大量细碎、曲折的通道，局部通行高度依赖短距离绕障。相较Map~1，其搜索分支更多、路径阶梯效应更明显，可用于检验算法在杂乱环境中的鲁棒性。同样包含起点、终点与编号中间目标点。
 
 \item Map~3：$80\times 80$迷宫环境。墙段更长且大体正交布置，构成典型的迷宫式走廊，通道狭长、转折频繁，但不设置中间目标点，仅用于全局路径规划对比，以突出不同寻径算法在结构化迷宫中的表现差异。
 
-\item kroB100：TSPLIB标准100城市算例。城市以平面坐标给出，不设栅格障碍，重点在于大规模目标点的访问顺序优化。本文将起点与终点取为同一城市（城市1），使开放路径退化为回路（回路退化设定），从而可与TSPLIB公布的最优回路长度22141直接对照，用作算法在约百点规模组合搜索能力的校准基准。起点与终点不重合的开放遍历设定由Map~1与Map~2的多目标遍历实验覆盖。
+\item kroB100：TSPLIB标准100城市算例。城市以平面坐标给出，不设栅格障碍，重点在于大规模目标点的访问顺序优化。本文将起点与终点均取为城市1，使开放路径退化为回路，从而可与TSPLIB公布的最优回路长度22141直接对照，用作算法在约百点规模组合搜索能力的校准基准。起点与终点不重合的开放遍历设定由Map~1与Map~2的多目标遍历实验覆盖。
 
 \end{enumerate}
 
@@ -987,131 +987,201 @@ Map & Algorithm & Best cost & \makecell{Path\\Mean/std.dev} & \makecell{Run Time
 
 后续工作将从三方面展开：面向动态障碍的在线重规划与三维地形扩展；候选列表规模等超参数的自适应或学习式调节；向多机器人协同遍历扩展，并以距离预言机近似或增量代价精化降低大规模代价矩阵的计算开销。
 
-\begin{thebibliography}{32}
-
+\begin{thebibliography}{40}
 \bibitem{ref1}
 
-S.~B. Liu et al., ``SMUG planner: A safe multi-goal planner for mobile robots in challenging environments,'' \textit{IEEE Robot. Autom. Lett.}, vol.~8, no.~9, pp.~5504--5511, 2023.
+C.~Chen, J.~Frey, P.~Arm, and M.~Hutter, ``SMUG planner: A safe multi-goal planner for mobile robots in challenging environments,'' \textit{IEEE Robot. Autom. Lett.}, vol.~8, no.~11, pp.~7170--7177, 2023, doi: 10.1109/LRA.2023.3311207.
+
 
 \bibitem{ref2}
 
-H.~T.~T. Binh, ``Fast marching firework method for multi-goal mobile robot path planning in complex obstacle maps,'' \textit{Intell. Service Robot.}, vol.~18, 2025, doi: 10.1007/s11370-025-00654-6.
+T.~T.~C. Giang, H.~T.~T. Binh, H.~V.~D. Luong, N.~H. Hoang, and D.~Q. Huy, ``Fast marching firework method for multi-goal mobile robot path planning in complex obstacle maps,'' \textit{Intell. Service Robot.}, vol.~18, no.~6, pp.~1467--1484, 2025, doi: 10.1007/s11370-025-00654-6.
 
-\bibitem{ref3}
 
-C.-G. Wu, Y.-C. Liang, H.-P. Lee, C. Lu, and C. Lin, ``Solving constrained traveling salesman problems by genetic algorithms,'' \textit{Prog. Nat. Sci.}, vol.~14, no.~7, pp.~631--637, 2004.
+\bibitem{ref33}
+
+K.~Karur, N.~Sharma, C.~Dharmatti, and J.~E. Siegel, ``A survey of path planning algorithms for mobile robots,'' \textit{Vehicles}, vol.~3, no.~3, pp.~448--468, 2021, doi: 10.3390/vehicles3030027.
+
+
+\bibitem{ref37}
+
+J.~Wang and M.~Q.-H. Meng, ``Real-time decision making and path planning for robotic autonomous luggage trolley collection at airports,'' \textit{IEEE Trans. Syst., Man, Cybern.: Syst.}, vol.~52, no.~4, pp.~2174--2183, 2022, doi: 10.1109/TSMC.2020.3048984.
+
+
+\bibitem{ref38}
+
+A.~Bolu and \"O.~Kor\c{c}ak, ``Adaptive task planning for multi-robot smart warehouse,'' \textit{IEEE Access}, vol.~9, pp.~27346--27358, 2021, doi: 10.1109/ACCESS.2021.3058190.
+
 
 \bibitem{ref4}
 
-``A survey on approximability of traveling salesman problems using the TSP-T3CO definition scheme,'' \textit{Ann. Oper. Res.}, 2025, doi: 10.1007/s10479-025-06641-5.
+S.~Saller, J.~Koehler, and A.~Karrenbauer, ``A survey on approximability of traveling salesman problems using the TSP-T3CO definition scheme,'' \textit{Ann. Oper. Res.}, vol.~351, no.~3, pp.~2129--2190, 2025, doi: 10.1007/s10479-025-06641-5.
+
+
+\bibitem{ref36}
+
+P.~C. Pop, O.~Cosma, C.~Sabo, and C.~Pop Sitar, ``A comprehensive survey on the generalized traveling salesman problem,'' \textit{Eur. J. Oper. Res.}, vol.~314, no.~3, pp.~819--835, 2023, doi: 10.1016/j.ejor.2023.07.022.
+
+
+\bibitem{ref39}
+
+J.~Faigl, ``On the performance of self-organizing maps for the non-Euclidean traveling salesman problem in the polygonal domain,'' \textit{Inf. Sci.}, vol.~181, no.~19, pp.~4214--4229, 2011, doi: 10.1016/j.ins.2011.05.019.
+
 
 \bibitem{ref5}
 
 P.~E. Hart, N.~J. Nilsson, and B. Raphael, ``A formal basis for the heuristic determination of minimum cost paths,'' \textit{IEEE Trans. Syst. Sci. Cybern.}, vol.~4, no.~2, pp.~100--107, 1968.
 
+
 \bibitem{ref6}
 
 E.~W. Dijkstra, ``A note on two problems in connexion with graphs,'' \textit{Numer. Math.}, vol.~1, no.~1, pp.~269--271, 1959.
+
 
 \bibitem{ref7}
 
 S.~M. LaValle, ``Rapidly-exploring random trees: A new tool for path planning,'' Dept. Comput. Sci., Iowa State Univ., Ames, IA, USA, Tech. Rep. 98-11, 1998.
 
+
+\bibitem{ref34}
+
+J.~A. Abdulsaheb and D.~J. Kadhim, ``Classical and heuristic approaches for mobile robot path planning: A survey,'' \textit{Robotics}, vol.~12, no.~4, p.~93, 2023, doi: 10.3390/robotics12040093.
+
+
+\bibitem{ref35}
+
+K.~Katona, H.~A. Neamah, and P.~K\"or\"ondi, ``Obstacle avoidance and path planning methods for autonomous navigation of mobile robot,'' \textit{Sensors}, vol.~24, no.~11, p.~3573, 2024, doi: 10.3390/s24113573.
+
+
 \bibitem{ref8}
 
-``A comprehensive review of improved A* path planning algorithms and their hybrid integrations,'' \textit{Automation}, vol.~6, p.~52, 2025.
+D.~T. Xuan, N.~T. Hung, and V.~T. Thang, ``A comprehensive review of improved A* path planning algorithms and their hybrid integrations,'' \textit{Automation}, vol.~6, no.~4, p.~52, 2025, doi: 10.3390/automation6040052.
 
-\bibitem{ref9}
-
-L.~H. O. Rios and L. Chaimowicz, ``A survey and classification of A* based best-first heuristic search algorithms,'' in \textit{Proc. 20th Brazilian Symp. Artif. Intell. (SBIA)}, 2010, pp.~253--262.
 
 \bibitem{ref10}
 
 M. Likhachev, G. Gordon, and S. Thrun, ``ARA*: Anytime A* with provable bounds on sub-optimality,'' in \textit{Adv. Neural Inf. Process. Syst. (NIPS)}, 2003, pp.~767--774.
 
+
 \bibitem{ref11}
 
 D. Harabor and A. Grastien, ``Online graph pruning for pathfinding on grid maps,'' in \textit{Proc. 25th AAAI Conf. Artif. Intell. (AAAI-11)}, 2011, pp.~1114--1119.
+
 
 \bibitem{ref12}
 
 D. Harabor and A. Grastien, ``Improving jump point search,'' in \textit{Proc. 24th Int. Conf. Automated Planning Scheduling (ICAPS-14)}, 2014, pp.~128--135.
 
+
+\bibitem{ref44}
+
+D. Harabor and A. Grastien, ``The JPS pathfinding system,'' in \textit{Proc. Int. Symp. Comb. Search (SoCS)}, vol.~3, no.~1, pp.~207--208, 2021, doi: 10.1609/socs.v3i1.18254.
+
+
 \bibitem{ref13}
 
-``Improved JPS and DWA path planning algorithm for mobile robots,'' \textit{Expert Syst. Appl.}, 2026.
+C.~Gao, H.~Ding, D.~Zhang, and Y.~Wu, ``Improved JPS and DWA path planning algorithm for mobile robots,'' \textit{Mechatronics}, vol.~118, p.~103540, 2026, doi: 10.1016/j.mechatronics.2026.103540.
+
 
 \bibitem{ref14}
 
-``Research on mobile robot path planning based on an improved bidirectional jump point search algorithm,'' \textit{Electronics}, vol.~14, no.~8, p.~1669, 2025, doi: 10.3390/electronics14081669.
+R.~Guo, X.~Quan, and C.~Bao, ``Research on mobile robot path planning based on an improved bidirectional jump point search algorithm,'' \textit{Electronics}, vol.~14, no.~8, p.~1669, 2025, doi: 10.3390/electronics14081669.
+
 
 \bibitem{ref15}
 
 ``Adaptive weight optimization based jump point Theta* algorithm in mobile robot path planning for intricate environments,'' \textit{Discover Appl. Sci.}, vol.~7, p.~11, 2025, doi: 10.1007/s42452-025-07932-z.
 
+
 \bibitem{ref16}
 
-``UGV path optimization in UAV-assisted environments using visibility-aware path simplification,'' \textit{J. Sens. Actuator Netw.}, vol.~15, no.~3, p.~41, 2025.
+I.~Munasinghe, A.~G. Perera, S.~Anavatti, and M.~Garratt, ``UGV path optimization in UAV-assisted environments using visibility-aware path simplification,'' \textit{J. Sens. Actuator Netw.}, vol.~15, no.~3, p.~41, 2026, doi: 10.3390/jsan15030041.
+
 
 \bibitem{ref17}
 
-``Enhancing the safety and smoothness of path planning through an integration of Dijkstra's algorithm and piecewise cubic Bezier optimization,'' \textit{Expert Syst. Appl.}, 2025.
+J.~Ahmad and M.~N. Ab Wahab, ``Enhancing the safety and smoothness of path planning through an integration of Dijkstra's algorithm and piecewise cubic Bezier optimization,'' \textit{Expert Syst. Appl.}, vol.~289, p.~128315, 2025, doi: 10.1016/j.eswa.2025.128315.
+
 
 \bibitem{ref18}
 
-``Adaptive A*/NSGA-II framework for multi-goal navigation of mobile robots,'' \textit{Meas. Sci. Technol.}, 2025, doi: 10.1088/1361-6501/ae9209.
+O.~E. Turan, O.~Misir, and M.~Ozden, ``Adaptive A*/NSGA-II framework for multi-goal navigation of mobile robots,'' \textit{Meas. Sci. Technol.}, 2026, doi: 10.1088/1361-6501/ae9209.
+
+
+\bibitem{ref41}
+
+F.~Huo, S.~Zhu, H.~Dong, and W.~Ren, ``A new approach to smooth path planning of Ackerman mobile robot based on improved ACO algorithm and B-spline curve,'' \textit{Robot. Auton. Syst.}, vol.~175, p.~104655, 2024, doi: 10.1016/j.robot.2024.104655.
+
 
 \bibitem{ref19}
 
 J.~H. Holland, \textit{Adaptation in Natural and Artificial Systems}. Ann Arbor, MI, USA: Univ. Michigan Press, 1975.
 
-\bibitem{ref20}
-
-S. Kirkpatrick, C.~D. Gelatt, and M.~P. Vecchi, ``Optimization by simulated annealing,'' \textit{Science}, vol.~220, no.~4598, pp.~671--680, 1983.
 
 \bibitem{ref21}
 
 M. Dorigo, V. Maniezzo, and A. Colorni, ``Ant system: Optimization by a colony of cooperating agents,'' \textit{IEEE Trans. Syst., Man, Cybern. B}, vol.~26, no.~1, pp.~29--41, 1996.
 
+
+\bibitem{ref42}
+
+Y.~Wang and Z.~Han, ``Ant colony optimization for traveling salesman problem based on parameters optimization,'' \textit{Appl. Soft Comput.}, vol.~107, p.~107439, 2021, doi: 10.1016/j.asoc.2021.107439.
+
+
 \bibitem{ref22}
 
 M. Dorigo and L.~M. Gambardella, ``Ant colony system: A cooperative learning approach to the traveling salesman problem,'' \textit{IEEE Trans. Evol. Comput.}, vol.~1, no.~1, pp.~53--66, 1997.
+
 
 \bibitem{ref23}
 
 T. St\"utzle and H.~H. Hoos, ``MAX--MIN ant system,'' \textit{Future Gener. Comput. Syst.}, vol.~16, no.~8, pp.~889--914, 2000.
 
+
 \bibitem{ref24}
 
 P. Hansen and N. Mladenovi\'c, ``Variable neighborhood search: Principles and applications,'' \textit{Eur. J. Oper. Res.}, vol.~130, no.~3, pp.~449--467, 2001.
+
 
 \bibitem{ref25}
 
 N.~A. Kyriakakis, M. Marinaki, and Y. Marinakis, ``A hybrid ant colony optimization--variable neighborhood descent approach for the cumulative capacitated vehicle routing problem,'' \textit{Comput. Oper. Res.}, vol.~134, p.~105397, 2021.
 
+
+\bibitem{ref43}
+
+X.~Zhou, H.~Ma, J.~Gu, H.~Chen, and W.~Deng, ``Parameter adaptation-based ant colony optimization with dynamic hybrid mechanism,'' \textit{Eng. Appl. Artif. Intell.}, vol.~114, p.~105139, 2022, doi: 10.1016/j.engappai.2022.105139.
+
+
 \bibitem{ref26}
 
-``An improvement to the 2-opt heuristic algorithm for approximation of optimal TSP tour,'' \textit{Appl. Sci.}, vol.~13, no.~12, p.~7339, 2023, doi: 10.3390/app13127339.
+F.~Uddin, N.~Riaz, A.~Manan, I.~Mahmood, O.-Y. Song, A.~J. Malik, and A.~A. Abbasi, ``An improvement to the 2-opt heuristic algorithm for approximation of optimal TSP tour,'' \textit{Appl. Sci.}, vol.~13, no.~12, p.~7339, 2023, doi: 10.3390/app13127339.
+
 
 \bibitem{ref27}
 
-``Matrix-based ant colony system for traveling salesman problem,'' in \textit{Proc. IEEE Int. Conf. Syst., Man, Cybern. (SMC)}, 2024.
+X.~Li, J.-Y. Li, C.~Chen, Z.-H. Zhan, S.~Kwong, and J.~Zhang, ``Matrix-based ant colony system for traveling salesman problem,'' in \textit{Proc. IEEE Int. Conf. Syst., Man, Cybern. (SMC)}, 2024, pp.~1358--1363, doi: 10.1109/SMC54092.2024.10831943.
+
 
 \bibitem{ref28}
 
-``nLKH-ACS: A niching Lin-Kernighan--Helsgaun-based ant colony system for multisolution traveling salesman problems,'' \textit{IEEE Trans. Evol. Comput.}, 2024.
+T.~Huang, Z.-Q. Zhang, Y.-J. Gong, and J.~Liu, ``nLKH-ACS: A niching Lin-Kernighan--Helsgaun-based ant colony system for multisolution traveling salesman problems,'' \textit{IEEE Trans. Evol. Comput.}, vol.~29, no.~6, pp.~2596--2610, 2024, doi: 10.1109/TEVC.2024.3507777.
+
 
 \bibitem{ref29}
 
-``CAACS: A carbon aware ant colony system,'' \textit{Sci. Rep.}, 2025.
+M.~Lin and L.~P. Schaposnik, ``A carbon aware ant colony system for the sustainable generalized traveling salesman problem,'' \textit{Sci. Rep.}, vol.~15, p.~21928, 2025, doi: 10.1038/s41598-025-08276-9.
+
 
 \bibitem{ref30}
 
-``Ant colony optimization for multiple traveling salesmen problem with revisitable cities,'' in \textit{Proc. IEEE}, 2024.
+B.~Sun, W.-J. Yu, Z.-J. Wang, and J.-Y. Li, ``Ant colony optimization for multiple traveling salesmen problem with revisitable cities,'' in \textit{Proc. IEEE Int. Conf. Mach. Intell. Theory Appl. (MiTA)}, 2024, pp.~1--6, doi: 10.1109/MiTA60795.2024.10751693.
 
-\bibitem{ref31}
 
-B. Yao, Q. Hu, L. Zhang, and J. Tian, ``Improved ant colony optimization for seafood product delivery routing problem,'' \textit{Promet--Traffic Transp.}, vol.~26, no.~1, 2014.
+\bibitem{ref40}
+
+B.~Behdani and J.~C. Smith, ``An integer-programming-based approach to the close-enough traveling salesman problem,'' \textit{INFORMS J. Comput.}, vol.~26, no.~3, pp.~415--432, 2014, doi: 10.1287/ijoc.2013.0574.
+
 
 \bibitem{ref32}
 

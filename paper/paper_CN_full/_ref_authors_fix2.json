@@ -1,0 +1,381 @@
+{
+  "ref8": {
+    "openalex_error": "HTTP Error 400: Bad Request",
+    "crossref": [
+      {
+        "title": "A Comprehensive Review of Improved A* Path Planning Algorithms and Their Hybrid Integrations",
+        "year": 2025,
+        "authors": [
+          "Doan Thanh Xuan",
+          "Nguyen Thanh Hung",
+          "Vu Toan Thang"
+        ],
+        "venue": "Automation",
+        "doi": "10.3390/automation6040052",
+        "volume": "6",
+        "issue": "4",
+        "first_page": "52"
+      },
+      {
+        "title": "Hierarchical hybrid path planning method based on improved sampling and potential field fusion",
+        "year": 2026,
+        "authors": [
+          "Fucai Xie",
+          "Haijia Zhong",
+          "Haiyan Luo",
+          "Yixin Chen"
+        ],
+        "venue": "Fifth International Conference on Artificial Intelligence, Automation, and Algorithms (AI2A 2025)",
+        "doi": "10.1117/12.3097487",
+        "volume": null,
+        "issue": null,
+        "first_page": "10"
+      },
+      {
+        "title": "A Comprehensive Review of Dynamic Path Planning Algorithms for Mobile Robots",
+        "year": 2025,
+        "authors": [
+          "Md Zahid Hasan",
+          "Majura F. Selekwa"
+        ],
+        "venue": "Volume 5: Dynamics, Vibration, and Control",
+        "doi": "10.1115/imece2025-167117",
+        "volume": null,
+        "issue": null,
+        "first_page": null
+      },
+      {
+        "title": "Hybrid path planning framework to integrate improved A*-DWA algorithms for enhancing path safety and efficiency",
+        "year": 2025,
+        "authors": [
+          "Hee-Mun Park",
+          "Seung-Wan Cho",
+          "Kyung-Min Seo"
+        ],
+        "venue": "Applied Ocean Research",
+        "doi": "10.1016/j.apor.2025.104497",
+        "volume": "157",
+        "issue": null,
+        "first_page": "104497"
+      },
+      {
+        "title": "A comprehensive review of path planning algorithms for autonomous navigation",
+        "year": 2025,
+        "authors": [
+          "Sangeeth Venu",
+          "Muralimohan Gurusamy"
+        ],
+        "venue": "Results in Engineering",
+        "doi": "10.1016/j.rineng.2025.107750",
+        "volume": "28",
+        "issue": null,
+        "first_page": "107750"
+      }
+    ]
+  },
+  "ref15": {
+    "openalex_error": "HTTP Error 400: Bad Request",
+    "crossref_error": "HTTP Error 429: Too Many Requests"
+  },
+  "ref17": {
+    "openalex": [
+      {
+        "title": "A new genetic algorithm approach to smooth path planning for mobile robots",
+        "year": 2016,
+        "authors": [
+          "Baoye Song",
+          "Zidong Wang",
+          "Li Sheng"
+        ],
+        "venue": "Assembly Automation",
+        "doi": "https://doi.org/10.1108/aa-11-2015-094",
+        "volume": "36",
+        "issue": "2",
+        "first_page": "138",
+        "last_page": "145"
+      },
+      {
+        "title": "Path Planning of Mobile Robot Based on Improved PRM Based on Cubic Spline",
+        "year": 2022,
+        "authors": [
+          "Xiaolu Ma",
+          "Rui Gong",
+          "Yibo Tan",
+          "Hong Mei",
+          "Chengcheng Li"
+        ],
+        "venue": "Wireless Communications and Mobile Computing",
+        "doi": "https://doi.org/10.1155/2022/1632698",
+        "volume": "2022",
+        "issue": "1",
+        "first_page": null,
+        "last_page": null
+      },
+      {
+        "title": "Path planning algorithms in the autonomous driving system: A comprehensive review",
+        "year": 2024,
+        "authors": [
+          "Mohamed Reda",
+          "Ahmed Onsy",
+          "Amira Y. Haikal",
+          "Ali Ghanbari"
+        ],
+        "venue": "Robotics and Autonomous Systems",
+        "doi": "https://doi.org/10.1016/j.robot.2024.104630",
+        "volume": "174",
+        "issue": null,
+        "first_page": "104630",
+        "last_page": "104630"
+      },
+      {
+        "title": "Path Smoothing Techniques in Robot Navigation: State-of-the-Art, Current and Future Challenges",
+        "year": 2018,
+        "authors": [
+          "Abhijeet A. Ravankar",
+          "Ankit A. Ravankar",
+          "Yukinori Kobayashi",
+          "Yohei HOSHINO",
+          "Chao-Chung Peng"
+        ],
+        "venue": "Sensors",
+        "doi": "https://doi.org/10.3390/s18093170",
+        "volume": "18",
+        "issue": "9",
+        "first_page": "3170",
+        "last_page": "3170"
+      },
+      {
+        "title": "An Improved Grey Wolf Optimization with Multi-Strategy Ensemble for Robot Path Planning",
+        "year": 2022,
+        "authors": [
+          "Lin Dong",
+          "Xianfeng Yuan",
+          "Bingshuo Yan",
+          "Yong Hua Song",
+          "Qingyang Xu",
+          "Xiongyan Yang"
+        ],
+        "venue": "Sensors",
+        "doi": "https://doi.org/10.3390/s22186843",
+        "volume": "22",
+        "issue": "18",
+        "first_page": "6843",
+        "last_page": "6843"
+      }
+    ],
+    "crossref": [
+      {
+        "title": "Enhancing the safety and smoothness of path planning through an integration of Dijkstra’s algorithm and piecewise cubic Bezier optimization",
+        "year": 2025,
+        "authors": [
+          "Javed Ahmad",
+          "Mohd Nadhir Ab Wahab"
+        ],
+        "venue": "Expert Systems with Applications",
+        "doi": "10.1016/j.eswa.2025.128315",
+        "volume": "289",
+        "issue": null,
+        "first_page": "128315"
+      },
+      {
+        "title": "3D Cubic Bezier Curves for Multi-target Path Planning for Autonomous Underwater Vehicles",
+        "year": 2019,
+        "authors": [
+          "Qingyang Li"
+        ],
+        "venue": "OCEANS 2019 - Marseille",
+        "doi": "10.1109/oceanse.2019.8867197",
+        "volume": null,
+        "issue": null,
+        "first_page": "1-5"
+      },
+      {
+        "title": "Lane change path planning based on piecewise Bezier curve for autonomous vehicle",
+        "year": 2013,
+        "authors": [
+          "Jiajia Chen",
+          "Pan Zhao",
+          "Tao Mei",
+          "Huawei Liang"
+        ],
+        "venue": "Proceedings of 2013 IEEE International Conference on Vehicular Electronics and Safety",
+        "doi": "10.1109/icves.2013.6619595",
+        "volume": null,
+        "issue": null,
+        "first_page": "17-22"
+      },
+      {
+        "title": "C2 Piecewise Cubic Bezier Curve Based Smoothing Path for Mobile Robot",
+        "year": 2021,
+        "authors": [
+          "Phan Gia Luan",
+          "Nguyen Truong Thinh"
+        ],
+        "venue": "International Journal of Mechanical Engineering and Robotics Research",
+        "doi": "10.18178/ijmerr.10.9.519-525",
+        "volume": null,
+        "issue": null,
+        "first_page": "519-525"
+      },
+      {
+        "title": "Enhanced Q-learning for intralogistics path planning with dynamic safety constraints and geometric path smoothness optimization",
+        "year": 2026,
+        "authors": [
+          "Yanhe Jia",
+          "Xuewei Li"
+        ],
+        "venue": "Engineering Research Express",
+        "doi": "10.1088/2631-8695/ae77a5",
+        "volume": "8",
+        "issue": "12",
+        "first_page": "125207"
+      }
+    ]
+  },
+  "ref18": {
+    "openalex_error": "HTTP Error 400: Bad Request",
+    "crossref": [
+      {
+        "title": "Adaptive A*/NSGA-II framework for multi-goal navigation of mobile robots",
+        "year": 2026,
+        "authors": [
+          "Osman Emre Turan",
+          "Oguz Misir",
+          "Mustafa Ozden"
+        ],
+        "venue": "Measurement Science and Technology",
+        "doi": "10.1088/1361-6501/ae9209",
+        "volume": "37",
+        "issue": "32",
+        "first_page": "326303"
+      },
+      {
+        "title": "Robot Topological Mapping and Goal-Oriented Navigation Based on Rat Spatial Cognition",
+        "year": 2010,
+        "authors": [
+          "Alejandra Barrera"
+        ],
+        "venue": "Mobile Robots Navigation",
+        "doi": "10.5772/9000",
+        "volume": null,
+        "issue": null,
+        "first_page": null
+      },
+      {
+        "title": "Adaptive Control and Navigation of Autonomous Mobile Robots",
+        "year": 2000,
+        "authors": [
+          "Paolo Gaudiano"
+        ],
+        "venue": "",
+        "doi": "10.21236/ada381430",
+        "volume": null,
+        "issue": null,
+        "first_page": null
+      },
+      {
+        "title": "Adaptive Navigation for Mobile Robots: A Neuro-Fuzzy Rule-Based Approach",
+        "year": 2024,
+        "authors": [
+          "Ali Majali"
+        ],
+        "venue": "",
+        "doi": "10.36227/techrxiv.172503261.19134363/v1",
+        "volume": null,
+        "issue": null,
+        "first_page": null
+      },
+      {
+        "title": "Enhanced Pure Pursuit Path Tracking Algorithm for Mobile Robots Optimized by NSGA-II with High-Precision GNSS Navigation",
+        "year": 2025,
+        "authors": [
+          "Xiongwen Jiang",
+          "Taiga Kuroiwa",
+          "Yu Cao",
+          "Linfeng Sun",
+          "Haohao Zhang",
+          "Takahiro Kawaguchi",
+          "Seiji Hashimoto"
+        ],
+        "venue": "Sensors",
+        "doi": "10.3390/s25030745",
+        "volume": "25",
+        "issue": "3",
+        "first_page": "745"
+      }
+    ]
+  },
+  "ref8b": {
+    "openalex_error": "HTTP Error 400: Bad Request",
+    "crossref": [
+      {
+        "title": "A Comprehensive Review of Improved A* Path Planning Algorithms and Their Hybrid Integrations",
+        "year": 2025,
+        "authors": [
+          "Doan Thanh Xuan",
+          "Nguyen Thanh Hung",
+          "Vu Toan Thang"
+        ],
+        "venue": "Automation",
+        "doi": "10.3390/automation6040052",
+        "volume": "6",
+        "issue": "4",
+        "first_page": "52"
+      },
+      {
+        "title": "A Novel Algorithm for Robot Path Planning Based on Hybrid Strategy Improved Wild Horse Optimizer",
+        "year": 2023,
+        "authors": [
+          "Juntao Zhao",
+          "Xiaochuan Luo",
+          "Yong Li"
+        ],
+        "venue": "",
+        "doi": "10.22541/au.169261601.15323867/v1",
+        "volume": null,
+        "issue": null,
+        "first_page": null
+      },
+      {
+        "title": "Path Planning of USV Based on Improved Hybrid Genetic Algorithm",
+        "year": 2019,
+        "authors": [
+          "Weicheng Zhang",
+          "Yanmin Xu",
+          "Jinpeng Xie"
+        ],
+        "venue": "2019 European Navigation Conference (ENC)",
+        "doi": "10.1109/euronav.2019.8714160",
+        "volume": null,
+        "issue": null,
+        "first_page": "1-7"
+      },
+      {
+        "title": "Path planning for construction site inspection robots based on the hybrid optimization of improved APF and improved ACO",
+        "year": 2026,
+        "authors": [
+          "Yu Hu"
+        ],
+        "venue": "Discover Artificial Intelligence",
+        "doi": "10.1007/s44163-026-01100-x",
+        "volume": "6",
+        "issue": "1",
+        "first_page": null
+      },
+      {
+        "title": "Improved Generative Adversarial Network with Hybrid Attention Mechanism for Path Planning",
+        "year": 2023,
+        "authors": [
+          "Yi-Fan Zhang",
+          "Tao Sun",
+          "Song Ma"
+        ],
+        "venue": "2023 42nd Chinese Control Conference (CCC)",
+        "doi": "10.23919/ccc58697.2023.10240348",
+        "volume": null,
+        "issue": null,
+        "first_page": null
+      }
+    ]
+  }
+}

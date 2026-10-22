@@ -44,7 +44,7 @@ fprintf('代价变化: %+.4f (%.2f%%)\n', costSimple-costOriginal, ...
     (costSimple-costOriginal)/costOriginal*100);
 
 %% 绘图
-figH = figure('Position', [100, 100, 700, 600], 'Color', 'w');
+figH = figure('Position', [100, 100, 700, 700], 'Color', 'w');
 ax = axes(figH);
 hold(ax, 'on');
 
@@ -84,5 +84,11 @@ title(ax, sprintf('Path Simplification (SimplifyPath)\nOriginal: %d pts, cost=%.
 hOrig = plot(ax, NaN, NaN, '--', 'Color', [0.9, 0.2, 0.2], 'LineWidth', 1.0, 'DisplayName', 'Original Path');
 hSimp = plot(ax, NaN, NaN, '-', 'Color', [0.2, 0.7, 0.2], 'LineWidth', 1.5, 'DisplayName', 'Simplified Path');
 legend(ax, [hOrig, hSimp], 'Location', 'southoutside', 'Orientation', 'horizontal');
+
+xlim(ax, [0, n]);
+ylim(ax, [0, n]);
+axis(ax, 'equal');                 % x/y 数据单位等比例
+axis(ax, 'square');                % 显示框为正方形
+
 
 hold(ax, 'off');

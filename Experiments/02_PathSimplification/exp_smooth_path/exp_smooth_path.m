@@ -82,4 +82,9 @@ hSimp = plot(ax, NaN, NaN, '--', 'Color', [0.9, 0.2, 0.2], 'LineWidth', 1.0, 'Di
 hSmth = plot(ax, NaN, NaN, '-', 'Color', [0.2, 0.7, 0.2], 'LineWidth', 1.5, 'DisplayName', 'Smoothed Path');
 legend(ax, [hSimp, hSmth], 'Location', 'southoutside', 'Orientation', 'horizontal');
 
+xlim(ax, [0, n]);
+ylim(ax, [0, n]);
+axis(ax, 'equal');                 % x/y 数据单位等比例
+axis(ax, 'square');                % 显示框为正方形
+
 hold(ax, 'off');
