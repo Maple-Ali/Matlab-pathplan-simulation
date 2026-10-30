@@ -1,0 +1,103 @@
+\documentclass[lettersize,journal]{IEEEtran}
+
+\usepackage{amsmath,amsfonts,amssymb}
+
+\usepackage{algorithmic}
+
+\usepackage{algorithm}
+
+\usepackage{array}
+
+\usepackage[caption=false,font=normalsize,labelfont=sf,textfont=sf]{subfig}
+
+\usepackage{textcomp}
+
+\usepackage{stfloats}
+
+\usepackage{url}
+
+\usepackage{verbatim}
+
+\usepackage{graphicx}
+
+\usepackage{cite}
+
+\usepackage{booktabs}
+
+\usepackage{multirow}
+
+\usepackage{bm}
+
+\usepackage{color}
+
+\usepackage{float}
+
+\usepackage{flafter}
+
+\usepackage{makecell}
+
+\usepackage{setspace}
+
+\usepackage[hidelinks,unicode]{hyperref}
+\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\renewcommand{\algorithmicensure}{\textbf{Output:}}
+
+\hyphenation{op-tical net-works semi-conduc-tor IEEE-Xplore}
+
+\begin{document}
+
+\title{Multi-Goal Traversal Planning in Cluttered Environments via Improved A* and MMAS-VND-CL}
+
+\author{Author Name~\IEEEmembership{Member,~IEEE}%
+\thanks{Author affiliation and correspondence information to be supplied.}%
+\thanks{Manuscript received 2026; revised 2026.}}
+
+\markboth{Journal Preprint}%
+{Multi-Goal Traversal Planning via Improved A* and MMAS-VND-CL}
+
+\maketitle
+
+\begin{abstract}
+
+A two-layer multi-goal traversal planning framework is proposed to jointly address obstacle-avoiding point-to-point path finding and target visitation ordering in cluttered environments. An improved A* planner based on Jump Point Search (JPS) computes pairwise paths; continuous trajectories are then generated through safety-distance-aware path simplification and arc-length parameterized cubic spline smoothing, and the lengths of the processed trajectories form an obstacle-constrained cost matrix. An MMAS-VND-CL solver that integrates Max--Min Ant System (MMAS), candidate-list-accelerated Variable Neighborhood Descent (VND), pseudo-random transition, and progressive scheduling is subsequently employed to solve the open traveling salesman problem with fixed start and goal via a virtual-node transformation. Experiments show that, on Map 2, the improved A* attains a planning time of 11.85\,ms, lower than classical A* (29.19\,ms) and Dijkstra (202.29\,ms); the processed trajectories are approximately 4.7\%--5.3\% shorter than the raw grid paths of the compared baselines. On the standard closed-loop TSP benchmark kroB100, the solver reaches the known optimal tour cost of 22141 in 97.5\% of 40 runs, with a mean cost about 9.8\% lower than the compared ACO implementation. Ablation studies indicate that VND and the MMAS pheromone bounds are the principal components affecting solution quality and stability. A satellite-image grid scenario further demonstrates the practicality of the framework.
+
+\end{abstract}
+
+\begin{IEEEkeywords}
+
+multi-goal traversal, path planning, ant colony optimization, open traveling salesman problem, obstacle avoidance
+
+\end{IEEEkeywords}
+
+\section{Introduction}
+
+Multi-goal traversal path planning is a fundamental problem in autonomous mobile robotics, with broad applications in autonomous shuttle services, logistics and warehouse management, infrastructure inspection, and search-and-rescue operations \textcolor{blue}{\cite{ref1,ref2,ref33,ref37,ref38}}. In tasks such as passenger pickup and drop-off, equipment inspection, and item delivery, a robot must depart from a designated start location, visit a sequence of intermediate target points, and finally reach a designated goal. The planner must address two subproblems that are distinct yet coupled:
+
+\begin{enumerate}
+
+\item finding collision-free paths between consecutive point pairs in cluttered environments;
+
+\item determining the optimal visitation order of the intermediate target points.
+
+\end{enumerate}
+
+The first subproblem is geometric: it requires reasoning about obstacle geometry and path continuity in physical space. The second is a combinatorial optimization problem, analogous to classical NP-hard problems such as the traveling salesman problem (TSP). The two subproblems interact: the traversal cost between any two points depends on the obstacles lying between them, while the optimal visitation order in turn depends on these pairwise traversal costs.
+
+In general, existing multi-goal navigation methods tend to handle only one of the two subproblems in isolation. A large body of TSP research assumes that pairwise costs are given by Euclidean distance or a known distance matrix \textcolor{blue}{\cite{ref4,ref36}}, overlooking the fact that, in obstacle-rich environments, the shortest collision-free path between two points can be far longer than their straight-line distance \textcolor{blue}{\cite{ref39}}. On the other hand, mature path-planning algorithms such as A*, Dijkstra, and rapidly-exploring random trees (RRT) and their variants can efficiently compute optimal or near-optimal collision-free paths between point pairs on grid maps, but these planners do not optimize the visitation order of multiple goals \textcolor{blue}{\cite{ref5,ref6,ref7}}. A few studies have explored obstacle-aware TSP variants under specific geometric assumptions (e.g., TSP with obstacles, Dubins TSP); however, a general framework that integrates a grid-based global planner with a high-performance TSP solver for multi-goal traversal in cluttered environments is still lacking.
+
+To address these constraints and fully exploit the strengths of both algorithm families, this paper proposes a collaborative optimization framework for multi-goal traversal path planning in cluttered environments. The framework consists of two algorithmic layers connected by a precomputed cost matrix. The first layer is an improved A* global planner based on Jump Point Search (JPS), which exploits grid symmetry to skip redundant node expansions and expands only jump points, thereby greatly reducing the search-tree size; this planner is combined with a safety-aware path simplification procedure and an arc-length parameterized cubic spline smoothing pipeline. The second layer is an improved ant colony optimization (ACO) solver for the open TSP. It converts the open TSP into a standard closed-loop TSP by means of a virtual (dummy) node, thus fully exploiting closed-loop TSP search operators. The solver integrates Max--Min Ant System (MMAS) pheromone management, an Ant Colony System (ACS)-style pseudo-random transition rule, a Variable Neighborhood Descent (VND) local search engine accelerated by a $k$-nearest-neighbor candidate list, and a sigmoid-based progressive local-search schedule with an adaptive stopping criterion.
+
+To tackle the above issues, this paper develops a two-layer planning framework comprising pairwise path search and visitation-order optimization. The former generates feasible paths according to the obstacle layout and computes the corresponding costs; the latter takes this cost matrix as input to determine the visitation order of the targets. On this basis, the path-processing pipeline and the ant-colony ordering solver are improved, respectively. The main contributions are as follows.
+
+\begin{enumerate}
+
+\item A hierarchical solution procedure for multi-goal traversal with fixed start and goal. The lengths of continuous trajectories of obstacle-constrained pairwise paths serve as traversal costs between targets, yielding a cost matrix that links geometric path planning and visitation-order optimization and thereby mitigating the neglect of obstacle-detour costs incurred by Euclidean-distance-based ordering.
+
+\item An improved A* path-planning and post-processing pipeline based on JPS. Incorporating tie-breaking, search-failure fallback, safety-distance-aware path simplification, and arc-length parameterized cubic spline smoothing, the pipeline reduces node expansions while producing continuous paths for cost computation; its planning efficiency and path length are analyzed through grid-map experiments.
+
+\item An MMAS-VND-CL visitation-order solver. A virtual node handles the fixed-endpoint constraint of the open TSP; MMAS pheromone bounds, ACS-style pseudo-random transition, candidate-list-accelerated VND, sigmoid scheduling, and an adaptive stopping criterion are integrated. Parameter-sensitivity and ablation experiments analyze the effects of individual components on solution quality, stability, and runtime.
+
+\end{enumerate}
+
+The remainder of this paper is organized as follows. Section~\textcolor{blue}{\ref{sec:related}} reviews related work on global path planning, TSP metaheuristics, and multi-goal traversal with obstacles; Section~\textcolor{blue}{\ref{sec:form}} formalizes the problem; Section~\textcolor{blue}{\ref{sec:method}} details the methodology, including the improved A* planner, the path post-processing pipeline, the improved ACO solver, and the collaborative optimization framework; Section~\textcolor{blue}{\ref{sec:exp}} reports experimental results along four evaluation dimensions: global path-planning comparison, parameter sensitivity analysis, ablation studies, and multi-goal traversal comparison among different TSP solvers; Section~\textcolor{blue}{\ref{sec:concl}} concludes the paper and outlines future work.
+

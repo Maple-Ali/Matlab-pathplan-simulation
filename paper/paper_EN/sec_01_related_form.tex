@@ -1,0 +1,79 @@
+\section{Related Work}
+\label{sec:related}
+
+\subsection{Existing Path Search Methods and Their Limitations}
+
+Global path planning aims to find a collision-free path between two points in a known static environment, and classical graph-search algorithms constitute the mainstream approach to grid-based planning\textcolor{blue}{\cite{ref33,ref34,ref35}}. Dijkstra's algorithm expands uniformly and is therefore inefficient on large maps\textcolor{blue}{\cite{ref6}}; A* guides the search with a heuristic and preserves optimality whenever $h(n)$ is admissible\textcolor{blue}{\cite{ref5}}, yet a fixed heuristic weight entails a trade-off: a weight of 1 expands too many nodes, whereas a larger weight sacrifices optimality\textcolor{blue}{\cite{ref8}}. Variants such as weighted A* and anytime repairing A* apply a uniform weight throughout the search\textcolor{blue}{\cite{ref8,ref10}}, whereas a practically useful weight intuitively depends on the distance to the goal. Jump point search (JPS) exploits grid symmetry to expand only jump points, thereby greatly compressing the search tree\textcolor{blue}{\cite{ref11,ref12,ref44}}; recent variants further introduce bidirectional search and any-angle refinement\textcolor{blue}{\cite{ref13,ref14,ref15}}, and the improved A* developed in this paper is built on this principle. Sampling-based planners such as RRT\textcolor{blue}{\cite{ref7}} and PRM offer probabilistic completeness and perform well in high-dimensional configuration spaces, but the solution paths they produce in grid environments are typically longer and less consistent.
+
+Post-processing of grid paths is a well-established practice, including collinearity or line-of-sight pruning\textcolor{blue}{\cite{ref16}} and smoothing methods such as cubic splines, B-splines, and clothoids\textcolor{blue}{\cite{ref17,ref18,ref41}}. However, pruning and smoothing are usually treated as independent a posteriori steps and are not incorporated into the computation of the multi-objective cost. Using the continuous path length obtained after post-processing to guide the combinatorial optimization is a distinguishing feature of the proposed framework.
+
+\subsection{Existing Visit-Order Optimization Methods and Their Deficiencies}
+
+The traveling salesman problem is among the most extensively studied problems in combinatorial optimization\textcolor{blue}{\cite{ref4,ref36}}. Exact algorithms are typically applicable only to small instances; larger instances usually resort to metaheuristics such as genetic algorithms\textcolor{blue}{\cite{ref19}} and ant colony optimization\textcolor{blue}{\cite{ref21,ref42}}. The pseudo-random proportional transition rule of the ant colony system (ACS)\textcolor{blue}{\cite{ref22}} and the explicit pheromone lower and upper bounds of the max--min ant colony system (MMAS)\textcolor{blue}{\cite{ref23}} improve convergence speed and search stability, respectively; the ordering solver adopted in this paper builds on both as modular components.
+
+For the problem addressed in this paper, existing ordering methods suffer from two deficiencies. First, mainstream solvers assume by default that the pairwise cost is the Euclidean distance or a known distance matrix, whereas in obstacle environments the true traversal cost is determined by obstacle-avoidance paths. Second, embedding local search such as 2-opt and variable neighborhood descent (VND) into ant colony algorithms can substantially improve solution quality\textcolor{blue}{\cite{ref24,ref25,ref43}}, yet VND evaluates $O(K^2)$ candidate moves per operator and becomes a bottleneck when $K > 100$; candidate-list techniques can mitigate this cost by restricting neighborhood evaluation to the nearest neighbors\textcolor{blue}{\cite{ref26}}. Moreover, gradual scheduling of local search has received limited attention: most implementations apply local search to a fixed fraction of ants throughout the entire run, whereas recent ant colony variants focus mainly on parallelization, niching, and sustainability mechanisms\textcolor{blue}{\cite{ref27,ref28,ref29,ref30}}. To address these deficiencies, this paper incorporates obstacle cost through safety-aware arc-length pricing, accelerates VND with candidate lists (Section~\textcolor{blue}{\ref{subsec:vnd}}) to reduce the local-search complexity to $O(K \cdot k)$, and schedules the timing of local-search effort with a sigmoid scheme (Section~\textcolor{blue}{\ref{subsec:sigmoid}}).
+
+\subsection{Combining the Two Method Families Under Obstacle Constraints}
+
+The intersection of path planning and traveling-salesman optimization has been explored under various names\textcolor{blue}{\cite{ref4,ref36}}. Under continuous planar polygonal obstacles, pairwise traversal costs depend on obstacle-avoidance geometry rather than on the Euclidean metric\textcolor{blue}{\cite{ref39}}; Dubins variants account for minimum turning-radius constraints, and neighborhood or close-enough variants generalize targets from points to regions\textcolor{blue}{\cite{ref40}}. These formulations rely on continuous geometric representations and assume specific obstacle shapes, and hence are difficult to apply directly to grid navigation in which obstacles are represented by arbitrary occupancy patterns.
+
+Two-layer architectures that couple a path planner with a traveling-salesman solver have several precedents\textcolor{blue}{\cite{ref1,ref2}}. However, such methods typically employ off-the-shelf planners and solvers without optimizing either layer for the multi-target traversal context. The cost matrix is computed from raw grid paths and thus overestimates true path lengths due to discretization artifacts, and the traveling-salesman solver lacks the problem-specific enhancements provided by our framework, such as open traveling-salesman encoding and candidate-list acceleration.
+
+Open traveling-salesman variants---in which the start and end are distinct fixed locations---are particularly relevant to autonomous navigation tasks in which a robot departs from a warehouse and reaches a destination. Much of the classical traveling-salesman literature, including most TSPLIB benchmark instances, addresses the closed-loop traveling salesman problem. The open traveling salesman problem requires a different encoding and cost-evaluation function: we formalize it in Section~\textcolor{blue}{\ref{subsec:otspp}} and give an algorithmic realization through a virtual-node method in Section~\textcolor{blue}{\ref{subsec:virtual}}, a technique analogous to that employed in the open vehicle routing problem\textcolor{blue}{\cite{ref32}}.
+
+In summary, A*-class methods yield high-quality point-to-point paths, whereas open traveling-salesman metaheuristics excel at combinatorial ordering; neither used in isolation can cover the complete multi-target traversal task in obstacle environments. This paper positions itself as integrating jump-point-search global planning, safety-aware post-processing, and open traveling-salesman ant colony optimization into a complete synergistic pipeline, with corresponding engineering improvements at the component level. Relative to existing integration precedents\textcolor{blue}{\cite{ref1,ref2}}, this paper constructs the cost matrix from the continuous trajectory arc length after safety-aware post-processing rather than from raw grid path lengths, and compares multiple implementations of the ordering module under a unified geometric interface. Experimental attribution of each increment is given in Section~\textcolor{blue}{\ref{sec:exp}}.
+
+\section{Problem Formulation}
+\label{sec:form}
+
+This section formalizes the multi-target traversal path-planning problem in obstacle environments. We first establish a grid-based environment model, then define the open traveling salesman problem with fixed start and end, and finally present the complete optimization objective.
+
+\subsection{Grid Map and Obstacle Representation}
+
+The operating environment is modeled as a two-dimensional square grid map of $n \times n$ cells, with $r \in \{1, \dots, n\}$ and $c \in \{1, \dots, n\}$ the row and column indices, respectively. Each grid cell $\mathbf{M}(r, c)$ takes the value 0 or 1, representing free space and occupied space, respectively. The map is assumed to be static and fully known prior to planning.
+
+For diagonal moves, the two adjacent orthogonal cells must also both be free; otherwise the robot would cut across an obstacle corner, which is physically infeasible for a non-point robot.
+
+Grid coordinates $(r, c)$ are mapped to continuous world coordinates $(x, y)$ by $x = c - 0.5$ and $y = r - 0.5$, with the origin of the continuous frame placed at the lower-left corner of the grid (cell $(1,1)$ maps to $(0.5, 0.5)$), consistent with the standard convention for robot localization on occupancy grid maps.
+
+\subsection{Open Traveling Salesman Problem with Fixed Start and End}
+\label{subsec:otspp}
+
+The task specification comprises a start $S$, $K$ intermediate target points $\mathcal{T} = \{T_1, T_2, \dots, T_K\}$, and a goal $G$. All points are specified in grid coordinates $[r, c]$. The complete point set is denoted $\mathcal{P} = \{p_1, \dots, p_N\}$ ($N = K + 2$), where $p_1 = S$, $p_i = T_{i-1}$ ($i = 2, \dots, K+1$), and $p_N = G$. The start and the end are distinct and occupy the boundary positions of any feasible solution.
+
+A valid path is defined by the visit order $\bm{\pi} = (\pi_1, \pi_2, \dots, \pi_N)$, a permutation of the index set $\{1, 2, \dots, N\}$ that satisfies the boundary constraints:
+
+\begin{equation}
+\begin{cases}
+\pi = 1, & \text{Start node} \\
+\pi = N, & \text{End node} \\
+\end{cases}
+\label{eq:boundary}
+\end{equation}
+
+The intermediate indices $\{\pi_2, \dots, \pi_{N-1}\}$ form a permutation of $\{2, \dots, N-1\}$ and encode the ordered visitation of the targets. This is the formalization of the \textbf{open traveling salesman problem} as a Hamilton path with fixed endpoints, in contrast to the classical closed-loop traveling salesman problem, in which the route forms a circuit and the start node may be chosen arbitrarily\textcolor{blue}{\cite{ref4,ref36}}.
+
+\subsection{Optimization Objective}
+
+For any ordered pair $(p_i, p_j)$, let $\mathcal{P}(p_i, p_j)$ denote the shortest collision-free path from $p_i$ to $p_j$ in the grid map $\mathbf{M}$ (a sequence of grid cells computed by the global path planner). Its length $L\big(\mathcal{P}(p_i, p_j)\big)$ is the sum of the edge costs along that sequence. If no collision-free path exists between $p_i$ and $p_j$, then $\mathcal{P}(p_i, p_j) = \varnothing$ and $L(\varnothing) = \infty$.
+
+The total cost of path $\bm{\pi}$ is the sum of the lengths of its $N-1$ consecutive path segments:
+
+\begin{equation}
+C(\bm{\pi}) = \sum_{k=1}^{N-1} L\big(\mathcal{P}(p_{\pi_k}, p_{\pi_{k+1}})\big)
+\label{eq:totalcost}
+\end{equation}
+
+The multi-target traversal problem in obstacle environments is stated as:
+
+\begin{align}
+\bm{\pi}^{*} &= \arg\min_{\bm{\pi} \in \Pi} \; C(\bm{\pi})
+\label{eq:opt}\\
+\text{s.t.} \quad &\pi_1 = 1,\; \pi_N = N \nonumber\\
+&\{\pi_2, \dots, \pi_{N-1}\} = \{2, \dots, N-1\} \nonumber\\
+&\mathcal{P}(p_{\pi_k}, p_{\pi_{k+1}}) \neq \varnothing \quad \forall k \in \{1, \dots, N-1\} \nonumber
+\end{align}
+
+Here $\Pi$ is the set of all permutations of $\{1, \dots, N\}$ that satisfy the boundary constraints. The optimization in~\textcolor{blue}{\eqref{eq:opt}} couples two interacting subproblems: finding the shortest collision-free path for each segment, which is solved by the global planner, and determining the optimal ordering of the intermediate targets, which is solved by the traveling-salesman solver. The cost-matrix elements $\mathbf{D}(i, j) = L(\mathcal{P}(p_i, p_j))$ form the interface between the two subproblems, encoding the full obstacle-constrained distance topology as an $N \times N$ matrix. This decomposition is exact: for a given cost matrix $\mathbf{D}$, the optimization in~\textcolor{blue}{\eqref{eq:opt}} reduces to the open traveling salesman problem; for a given visit order $\bm{\pi}$, each segment is an independent global planning problem. In the implementation of this paper, $L\big(\mathcal{P}(p_i, p_j)\big)$ is computed as the Euclidean arc length of the continuous trajectory after simplification and smoothing, so that the cost matrix more closely reflects the actually executed path. The exactness of the above decomposition holds for any consistent pairwise distance metric.
+
+In the special case of no intermediate targets, the problem reduces to a single-pair shortest-path query: $\bm{\pi}^{*} = (1, N)$ and $C(\bm{\pi}^{*}) = L(\mathcal{P}(S, G))$, i.e., the classical single-pair path-planning problem.
