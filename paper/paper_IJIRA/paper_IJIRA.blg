@@ -1,0 +1,51 @@
+This is BibTeX, Version 0.99e (TeX Live 2026)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: paper_IJIRA.aux
+The style file: sn-basic.bst
+Database file #1: references.bib
+sn-basic.bst [2024/07/19 v1.1 bibliography style]
+Reallocated wiz_functions (elt_size=4) to 6000 items from 3000.
+Warning--to sort, need author or key in ref15
+Warning--empty author in ref15
+You've used 40 entries,
+            3567 wiz_defined-function locations,
+            976 strings with 12060 characters,
+and the built_in function-call counts, 31562 in all, are:
+= -- 2943
+> -- 1167
+< -- 24
++ -- 475
+- -- 341
+* -- 2573
+:= -- 4563
+add.period$ -- 64
+call.type$ -- 40
+change.case$ -- 327
+chr.to.int$ -- 40
+cite$ -- 44
+duplicate$ -- 2377
+empty$ -- 2615
+format.name$ -- 476
+if$ -- 6621
+int.to.chr$ -- 1
+int.to.str$ -- 1
+missing$ -- 310
+newline$ -- 129
+num.names$ -- 156
+pop$ -- 867
+preamble$ -- 1
+purify$ -- 276
+quote$ -- 0
+skip$ -- 801
+stack$ -- 0
+substring$ -- 2450
+swap$ -- 824
+text.length$ -- 7
+text.prefix$ -- 0
+top$ -- 1
+type$ -- 357
+warning$ -- 2
+while$ -- 215
+width$ -- 0
+write$ -- 474
+(There were 2 warnings)

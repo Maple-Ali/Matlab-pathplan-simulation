@@ -1,0 +1,129 @@
+\begin{thebibliography}{40}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{{#1}}
+\providecommand{\urlprefix}{URL }
+\providecommand{\doi}[1]{\url{https://doi.org/#1}}
+\providecommand{\eprint}[2][]{\url{#2}}
+ \bibcommenthead
+
+\bibitem[{ref(2025)}]{ref15}
+ (2025) Adaptive weight optimization based jump point {Theta*} algorithm in mobile robot path planning for intricate environments. Discover Appl Sci 7:11. \doi{10.1007/s42452-025-07932-z}
+
+\bibitem[{Abdulsaheb and Kadhim(2023)}]{ref34}
+Abdulsaheb JA, Kadhim DJ (2023) Classical and heuristic approaches for mobile robot path planning: a survey. Robotics 12(4):93. \doi{10.3390/robotics12040093}
+
+\bibitem[{Ahmad and Ab~Wahab(2025)}]{ref17}
+Ahmad J, Ab~Wahab MN (2025) Enhancing the safety and smoothness of path planning through an integration of {Dijkstra}'s algorithm and piecewise cubic {B}ezier optimization. Expert Syst Appl 289:128315. \doi{10.1016/j.eswa.2025.128315}
+
+\bibitem[{Behdani and Smith(2014)}]{ref40}
+Behdani B, Smith JC (2014) An integer-programming-based approach to the close-enough traveling salesman problem. INFORMS J Comput 26(3):415--432. \doi{10.1287/ijoc.2013.0574}
+
+\bibitem[{Bolu and Kork{\c{c}}ak(2021)}]{ref38}
+Bolu A, Kork{\c{c}}ak {\"O} (2021) Adaptive task planning for multi-robot smart warehouse. IEEE Access 9:27346--27358. \doi{10.1109/ACCESS.2021.3058190}
+
+\bibitem[{Chen et~al.(2023)Chen, Frey, Arm, and Hutter}]{ref1}
+Chen C, Frey J, Arm P, et~al (2023) {SMUG} planner: a safe multi-goal planner for mobile robots in challenging environments. IEEE Robot Autom Lett 8(11):7170--7177. \doi{10.1109/LRA.2023.3311207}
+
+\bibitem[{Dijkstra(1959)}]{ref6}
+Dijkstra EW (1959) A note on two problems in connexion with graphs. Numer Math 1(1):269--271
+
+\bibitem[{Dorigo and Gambardella(1997)}]{ref22}
+Dorigo M, Gambardella LM (1997) Ant colony system: a cooperative learning approach to the traveling salesman problem. IEEE Trans Evol Comput 1(1):53--66
+
+\bibitem[{Dorigo et~al.(1996)Dorigo, Maniezzo, and Colorni}]{ref21}
+Dorigo M, Maniezzo V, Colorni A (1996) Ant system: optimization by a colony of cooperating agents. IEEE Trans Syst, Man, Cybern B 26(1):29--41
+
+\bibitem[{Faigl(2011)}]{ref39}
+Faigl J (2011) On the performance of self-organizing maps for the non-{E}uclidean traveling salesman problem in the polygonal domain. Inf Sci 181(19):4214--4229. \doi{10.1016/j.ins.2011.05.019}
+
+\bibitem[{Gao et~al.(2026)Gao, Ding, Zhang, and Wu}]{ref13}
+Gao C, Ding H, Zhang D, et~al (2026) Improved {JPS} and {DWA} path planning algorithm for mobile robots. Mechatronics 118:103540. \doi{10.1016/j.mechatronics.2026.103540}
+
+\bibitem[{Giang et~al.(2025)Giang, Binh, Luong, Hoang, and Huy}]{ref2}
+Giang TTC, Binh HTT, Luong HVD, et~al (2025) Fast marching firework method for multi-goal mobile robot path planning in complex obstacle maps. Intell Service Robot 18(6):1467--1484. \doi{10.1007/s11370-025-00654-6}
+
+\bibitem[{Guo et~al.(2025)Guo, Quan, and Bao}]{ref14}
+Guo R, Quan X, Bao C (2025) Research on mobile robot path planning based on an improved bidirectional jump point search algorithm. Electronics 14(8):1669. \doi{10.3390/electronics14081669}
+
+\bibitem[{Hansen and Mladenovi{\'c}(2001)}]{ref24}
+Hansen P, Mladenovi{\'c} N (2001) Variable neighborhood search: principles and applications. Eur J Oper Res 130(3):449--467
+
+\bibitem[{Harabor and Grastien(2011)}]{ref11}
+Harabor D, Grastien A (2011) Online graph pruning for pathfinding on grid maps. In: Proc. 25th {AAAI} Conf. Artif. Intell. ({AAAI}-11), pp 1114--1119
+
+\bibitem[{Harabor and Grastien(2014)}]{ref12}
+Harabor D, Grastien A (2014) Improving jump point search. In: Proc. 24th Int. Conf. Automated Planning Scheduling ({ICAPS}-14), pp 128--135
+
+\bibitem[{Harabor and Grastien(2021)}]{ref44}
+Harabor D, Grastien A (2021) The {JPS} pathfinding system. In: Proc. Int. Symp. Comb. Search ({SoCS}), pp 207--208, \doi{10.1609/socs.v3i1.18254}
+
+\bibitem[{Hart et~al.(1968)Hart, Nilsson, and Raphael}]{ref5}
+Hart PE, Nilsson NJ, Raphael B (1968) A formal basis for the heuristic determination of minimum cost paths. IEEE Trans Syst Sci Cybern 4(2):100--107
+
+\bibitem[{Holland(1975)}]{ref19}
+Holland JH (1975) Adaptation in Natural and Artificial Systems. Univ. Michigan Press, Ann Arbor, MI, USA
+
+\bibitem[{Huang et~al.(2024)Huang, Zhang, Gong, and Liu}]{ref28}
+Huang T, Zhang ZQ, Gong YJ, et~al (2024) {nLKH-ACS}: a niching {Lin-Kernighan--Helsgaun}-based ant colony system for multisolution traveling salesman problems. IEEE Trans Evol Comput 29(6):2596--2610. \doi{10.1109/TEVC.2024.3507777}
+
+\bibitem[{Huo et~al.(2024)Huo, Zhu, Dong, and Ren}]{ref41}
+Huo F, Zhu S, Dong H, et~al (2024) A new approach to smooth path planning of {Ackerman} mobile robot based on improved {ACO} algorithm and {B}-spline curve. Robot Auton Syst 175:104655. \doi{10.1016/j.robot.2024.104655}
+
+\bibitem[{Karur et~al.(2021)Karur, Sharma, Dharmatti, and Siegel}]{ref33}
+Karur K, Sharma N, Dharmatti C, et~al (2021) A survey of path planning algorithms for mobile robots. Vehicles 3(3):448--468. \doi{10.3390/vehicles3030027}
+
+\bibitem[{Katona et~al.(2024)Katona, Neamah, and K{\"o}r{\"o}ndi}]{ref35}
+Katona K, Neamah HA, K{\"o}r{\"o}ndi P (2024) Obstacle avoidance and path planning methods for autonomous navigation of mobile robot. Sensors 24(11):3573. \doi{10.3390/s24113573}
+
+\bibitem[{Kyriakakis et~al.(2021)Kyriakakis, Marinaki, and Marinakis}]{ref25}
+Kyriakakis NA, Marinaki M, Marinakis Y (2021) A hybrid ant colony optimization--variable neighborhood descent approach for the cumulative capacitated vehicle routing problem. Comput Oper Res 134:105397
+
+\bibitem[{LaValle(1998)}]{ref7}
+LaValle SM (1998) Rapidly-exploring random trees: a new tool for path planning. Tech. Rep. 98-11, Dept. Comput. Sci., Iowa State Univ., Ames, IA, USA
+
+\bibitem[{Li et~al.(2024)Li, Li, Chen, Zhan, Kwong, and Zhang}]{ref27}
+Li X, Li JY, Chen C, et~al (2024) Matrix-based ant colony system for traveling salesman problem. In: Proc. {IEEE} Int. Conf. Syst., Man, Cybern. ({SMC}), pp 1358--1363, \doi{10.1109/SMC54092.2024.10831943}
+
+\bibitem[{Likhachev et~al.(2003)Likhachev, Gordon, and Thrun}]{ref10}
+Likhachev M, Gordon G, Thrun S (2003) {ARA*}: anytime {A*} with provable bounds on sub-optimality. In: Adv. Neural Inf. Process. Syst. ({NIPS}), pp 767--774
+
+\bibitem[{Lin and Schaposnik(2025)}]{ref29}
+Lin M, Schaposnik LP (2025) A carbon aware ant colony system for the sustainable generalized traveling salesman problem. Sci Rep 15:21928. \doi{10.1038/s41598-025-08276-9}
+
+\bibitem[{Munasinghe et~al.(2026)Munasinghe, Perera, Anavatti, and Garratt}]{ref16}
+Munasinghe I, Perera AG, Anavatti S, et~al (2026) {UGV} path optimization in {UAV}-assisted environments using visibility-aware path simplification. J Sens Actuator Netw 15(3):41. \doi{10.3390/jsan15030041}
+
+\bibitem[{Pop et~al.(2023)Pop, Cosma, Sabo, and Pop~Sitar}]{ref36}
+Pop PC, Cosma O, Sabo C, et~al (2023) A comprehensive survey on the generalized traveling salesman problem. Eur J Oper Res 314(3):819--835. \doi{10.1016/j.ejor.2023.07.022}
+
+\bibitem[{Saller et~al.(2025)Saller, Koehler, and Karrenbauer}]{ref4}
+Saller S, Koehler J, Karrenbauer A (2025) A survey on approximability of traveling salesman problems using the {TSP-T3CO} definition scheme. Ann Oper Res 351(3):2129--2190. \doi{10.1007/s10479-025-06641-5}
+
+\bibitem[{St{\"u}tzle and Hoos(2000)}]{ref23}
+St{\"u}tzle T, Hoos HH (2000) {MAX--MIN} ant system. Future Gener Comput Syst 16(8):889--914
+
+\bibitem[{Sun et~al.(2024)Sun, Yu, Wang, and Li}]{ref30}
+Sun B, Yu WJ, Wang ZJ, et~al (2024) Ant colony optimization for multiple traveling salesmen problem with revisitable cities. In: Proc. {IEEE} Int. Conf. Mach. Intell. Theory Appl. ({MiTA}), pp 1--6, \doi{10.1109/MiTA60795.2024.10751693}
+
+\bibitem[{Turan et~al.(2026)Turan, Misir, and Ozden}]{ref18}
+Turan OE, Misir O, Ozden M (2026) Adaptive {A*/NSGA-II} framework for multi-goal navigation of mobile robots. Meas Sci Technol \doi{10.1088/1361-6501/ae9209}
+
+\bibitem[{Uddin et~al.(2023)Uddin, Riaz, Manan, Mahmood, Song, Malik, and Abbasi}]{ref26}
+Uddin F, Riaz N, Manan A, et~al (2023) An improvement to the 2-opt heuristic algorithm for approximation of optimal {TSP} tour. Appl Sci 13(12):7339. \doi{10.3390/app13127339}
+
+\bibitem[{Wang and Meng(2022)}]{ref37}
+Wang J, Meng MQH (2022) Real-time decision making and path planning for robotic autonomous luggage trolley collection at airports. IEEE Trans Syst, Man, Cybern: Syst 52(4):2174--2183. \doi{10.1109/TSMC.2020.3048984}
+
+\bibitem[{Wang and Han(2021)}]{ref42}
+Wang Y, Han Z (2021) Ant colony optimization for traveling salesman problem based on parameters optimization. Appl Soft Comput 107:107439. \doi{10.1016/j.asoc.2021.107439}
+
+\bibitem[{Xuan et~al.(2025)Xuan, Hung, and Thang}]{ref8}
+Xuan DT, Hung NT, Thang VT (2025) A comprehensive review of improved {A*} path planning algorithms and their hybrid integrations. Automation 6(4):52. \doi{10.3390/automation6040052}
+
+\bibitem[{Yao et~al.(2019)Yao, Chen, Song, and Yang}]{ref32}
+Yao B, Chen C, Song X, et~al (2019) Fresh seafood delivery routing problem using an improved ant colony optimization. Ann Oper Res 273(1--2):163--186. \doi{10.1007/s10479-017-2531-2}
+
+\bibitem[{Zhou et~al.(2022)Zhou, Ma, Gu, Chen, and Deng}]{ref43}
+Zhou X, Ma H, Gu J, et~al (2022) Parameter adaptation-based ant colony optimization with dynamic hybrid mechanism. Eng Appl Artif Intell 114:105139. \doi{10.1016/j.engappai.2022.105139}
+
+\end{thebibliography}
