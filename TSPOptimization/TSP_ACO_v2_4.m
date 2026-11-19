@@ -62,7 +62,7 @@ stagnationLim = 70;      % 最优解连续停滞上限 (代)
 minIter      = 30;       % 最少迭代代数
 
 % ===== 方案 A：MMAS 限幅 + 动态更新 =====
-enableMMAS = 0;   % 1=启用MMAS限幅与动态更新，0=禁用
+enableMMAS = 1;   % 1=启用MMAS限幅与动态更新，0=禁用
 
 trackHistory = (nargout >= 3);
 if trackHistory, tStart = tic;

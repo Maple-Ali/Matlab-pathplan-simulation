@@ -1,0 +1,201 @@
+### ref1 (2023, IEEE Robot. Autom. Lett.) cited=2
+T: {SMUG} planner: a safe multi-goal planner for mobile robots in challenging environments
+  > 以旅行商问题为主线的研究以欧氏距离或给定距离矩阵为代价\cite{ref4,ref36}，无法反映障碍环境下的绕行，而真实通行路径可能数倍于直线距离\cite{ref39}；以栅格寻径为主线的研究能够给出高质量的点对路径，但不优化访问顺序\cite{ref5,ref6,ref7,ref33}；少数两层集成工作验证了“先建代价、再排序”的可行性\cite{ref1,ref2,ref18}，但其代价多
+  > 结合路径规划器与旅行商求解器的两层架构已有若干先例：面向挑战环境的SMUG规划器\cite{ref1}、面向复杂障碍地图的快速行进烟花法\cite{ref2}，以及以NSGA-II完成顺序优化的自适应A*框架\cite{ref18}，都采用了“先构建点对或目标间代价、再求解访问顺序”的结构。
+
+### ref2 (2025, Intell. Serv. Robot.) cited=2
+T: Fast marching firework method for multi-goal mobile robot path planning in complex obstacle maps
+  > 以旅行商问题为主线的研究以欧氏距离或给定距离矩阵为代价\cite{ref4,ref36}，无法反映障碍环境下的绕行，而真实通行路径可能数倍于直线距离\cite{ref39}；以栅格寻径为主线的研究能够给出高质量的点对路径，但不优化访问顺序\cite{ref5,ref6,ref7,ref33}；少数两层集成工作验证了“先建代价、再排序”的可行性\cite{ref1,ref2,ref18}，但其代价多
+  > 结合路径规划器与旅行商求解器的两层架构已有若干先例：面向挑战环境的SMUG规划器\cite{ref1}、面向复杂障碍地图的快速行进烟花法\cite{ref2}，以及以NSGA-II完成顺序优化的自适应A*框架\cite{ref18}，都采用了“先构建点对或目标间代价、再求解访问顺序”的结构。
+
+### ref33 (2021, Vehicles) cited=2
+T: A survey of path planning algorithms for mobile robots
+  > 以旅行商问题为主线的研究以欧氏距离或给定距离矩阵为代价\cite{ref4,ref36}，无法反映障碍环境下的绕行，而真实通行路径可能数倍于直线距离\cite{ref39}；以栅格寻径为主线的研究能够给出高质量的点对路径，但不优化访问顺序\cite{ref5,ref6,ref7,ref33}；少数两层集成工作验证了“先建代价、再排序”的可行性\cite{ref1,ref2,ref18}，但其代价多
+  > 全局路径规划旨在已知静态环境中寻找两点之间的无碰撞路径，经典图搜索算法是栅格规划的主流方法\cite{ref33,ref34,ref35}。
+
+### ref37 (2022, IEEE Trans. Syst., Man, Cybern.: Syst.) cited=1
+T: Real-time decision making and path planning for robotic autonomous luggage trolley collection at airports
+  > 在服务机器人领域，末端配送、仓储拣选、园区接驳与基础设施巡检等任务，正由“单点往返”转向“一次出行、多点作业”：机器人从固定站点出发，依次访问一组分散的作业点，最终停靠在指定位置\cite{ref37,ref38}。
+
+### ref38 (2021, IEEE Access) cited=1
+T: Adaptive task planning for multi-robot smart warehouse
+  > 在服务机器人领域，末端配送、仓储拣选、园区接驳与基础设施巡检等任务，正由“单点往返”转向“一次出行、多点作业”：机器人从固定站点出发，依次访问一组分散的作业点，最终停靠在指定位置\cite{ref37,ref38}。
+
+### ref4 (2025, Ann. Oper. Res.) cited=5
+T: A survey on approximability of traveling salesman problems using the {TSP-T3CO} definition scheme
+  > 因此，决定系统可用性的往往不是单个子问题解得多好，而是“$N^2$次几何查询的预算”与“组合搜索的预算”能否被合理分配；在以欧氏距离或给定距离矩阵为代价的传统旅行商研究中，这一层预算分配问题较少被直接讨论\cite{ref4,ref36,ref39}。
+  > 以旅行商问题为主线的研究以欧氏距离或给定距离矩阵为代价\cite{ref4,ref36}，无法反映障碍环境下的绕行，而真实通行路径可能数倍于直线距离\cite{ref39}；以栅格寻径为主线的研究能够给出高质量的点对路径，但不优化访问顺序\cite{ref5,ref6,ref7,ref33}；少数两层集成工作验证了“先建代价、再排序”的可行性\cite{ref1,ref2,ref18}，但其代价多
+  > 旅行商问题是组合优化领域中研究最为深入的问题之一\cite{ref4,ref36}。
+  > 路径规划与旅行商优化的交叉领域已在多个名义下得到探索\cite{ref4,ref36}。
+  > 这是\textbf{开放旅行商问题}的形式化，区别于经典闭环旅行商问题——后者的路径构成环路且起始节点可任意选取\textcolor{blue}{\cite{ref4,ref36}}。
+
+### ref36 (2024, Eur. J. Oper. Res.) cited=6
+T: A comprehensive survey on the generalized traveling salesman problem
+  > 因此，决定系统可用性的往往不是单个子问题解得多好，而是“$N^2$次几何查询的预算”与“组合搜索的预算”能否被合理分配；在以欧氏距离或给定距离矩阵为代价的传统旅行商研究中，这一层预算分配问题较少被直接讨论\cite{ref4,ref36,ref39}。
+  > 以旅行商问题为主线的研究以欧氏距离或给定距离矩阵为代价\cite{ref4,ref36}，无法反映障碍环境下的绕行，而真实通行路径可能数倍于直线距离\cite{ref39}；以栅格寻径为主线的研究能够给出高质量的点对路径，但不优化访问顺序\cite{ref5,ref6,ref7,ref33}；少数两层集成工作验证了“先建代价、再排序”的可行性\cite{ref1,ref2,ref18}，但其代价多
+  > 旅行商问题是组合优化领域中研究最为深入的问题之一\cite{ref4,ref36}。
+  > 路径规划与旅行商优化的交叉领域已在多个名义下得到探索\cite{ref4,ref36}。
+  > 在连续平面多边形障碍下，点对通行代价依赖避障几何而非欧氏度量\cite{ref39}；Dubins旅行商问题进一步引入最小转弯半径约束，使代价同时依赖进入与离开航向；邻域与贴近变体则把目标由点泛化为区域，以定位精度的让步换取更短的回路\cite{ref36,ref40,ref46}。
+  > 这是\textbf{开放旅行商问题}的形式化，区别于经典闭环旅行商问题——后者的路径构成环路且起始节点可任意选取\textcolor{blue}{\cite{ref4,ref36}}。
+
+### ref39 (2011, Inf. Sci.) cited=3
+T: On the performance of self-organizing maps for the non-{E}uclidean traveling salesman problem in the polygonal domain
+  > 因此，决定系统可用性的往往不是单个子问题解得多好，而是“$N^2$次几何查询的预算”与“组合搜索的预算”能否被合理分配；在以欧氏距离或给定距离矩阵为代价的传统旅行商研究中，这一层预算分配问题较少被直接讨论\cite{ref4,ref36,ref39}。
+  > 以旅行商问题为主线的研究以欧氏距离或给定距离矩阵为代价\cite{ref4,ref36}，无法反映障碍环境下的绕行，而真实通行路径可能数倍于直线距离\cite{ref39}；以栅格寻径为主线的研究能够给出高质量的点对路径，但不优化访问顺序\cite{ref5,ref6,ref7,ref33}；少数两层集成工作验证了“先建代价、再排序”的可行性\cite{ref1,ref2,ref18}，但其代价多
+  > 在连续平面多边形障碍下，点对通行代价依赖避障几何而非欧氏度量\cite{ref39}；Dubins旅行商问题进一步引入最小转弯半径约束，使代价同时依赖进入与离开航向；邻域与贴近变体则把目标由点泛化为区域，以定位精度的让步换取更短的回路\cite{ref36,ref40,ref46}。
+
+### ref5 (1968, IEEE Trans. Syst. Sci. Cybern.) cited=2
+T: A formal basis for the heuristic determination of minimum cost paths
+  > 以旅行商问题为主线的研究以欧氏距离或给定距离矩阵为代价\cite{ref4,ref36}，无法反映障碍环境下的绕行，而真实通行路径可能数倍于直线距离\cite{ref39}；以栅格寻径为主线的研究能够给出高质量的点对路径，但不优化访问顺序\cite{ref5,ref6,ref7,ref33}；少数两层集成工作验证了“先建代价、再排序”的可行性\cite{ref1,ref2,ref18}，但其代价多
+  > Dijkstra算法按代价均匀扩展，在大规模地图上效率较低\cite{ref6}；A*以启发式引导搜索，在$h(n)$可采纳时保持最优性\cite{ref5}；加权A*以固定的放大权重换取速度，任意时间修复A*（ARA*）则从较大的初始权重出发逐步收紧，在给定预算内返回有界次优的任意时间解\cite{ref8,ref10}；两者都未利用“离目标越近、代价估计越可靠”这一结构。
+
+### ref6 (1959, Numer. Math.) cited=2
+T: A note on two problems in connexion with graphs
+  > 以旅行商问题为主线的研究以欧氏距离或给定距离矩阵为代价\cite{ref4,ref36}，无法反映障碍环境下的绕行，而真实通行路径可能数倍于直线距离\cite{ref39}；以栅格寻径为主线的研究能够给出高质量的点对路径，但不优化访问顺序\cite{ref5,ref6,ref7,ref33}；少数两层集成工作验证了“先建代价、再排序”的可行性\cite{ref1,ref2,ref18}，但其代价多
+  > Dijkstra算法按代价均匀扩展，在大规模地图上效率较低\cite{ref6}；A*以启发式引导搜索，在$h(n)$可采纳时保持最优性\cite{ref5}；加权A*以固定的放大权重换取速度，任意时间修复A*（ARA*）则从较大的初始权重出发逐步收紧，在给定预算内返回有界次优的任意时间解\cite{ref8,ref10}；两者都未利用“离目标越近、代价估计越可靠”这一结构。
+
+### ref7 (1998, ) cited=2
+T: Rapidly-exploring random trees: a new tool for path planning
+  > 以旅行商问题为主线的研究以欧氏距离或给定距离矩阵为代价\cite{ref4,ref36}，无法反映障碍环境下的绕行，而真实通行路径可能数倍于直线距离\cite{ref39}；以栅格寻径为主线的研究能够给出高质量的点对路径，但不优化访问顺序\cite{ref5,ref6,ref7,ref33}；少数两层集成工作验证了“先建代价、再排序”的可行性\cite{ref1,ref2,ref18}，但其代价多
+  > 采样类规划器如RRT\cite{ref7}与概率路线图（PRM）提供概率完备性，在高维构型空间中表现良好，但栅格环境中的解路径通常更长且一致性较差。
+
+### ref34 (2023, Robotics) cited=1
+T: Classical and heuristic approaches for mobile robot path planning: a survey
+  > 全局路径规划旨在已知静态环境中寻找两点之间的无碰撞路径，经典图搜索算法是栅格规划的主流方法\cite{ref33,ref34,ref35}。
+
+### ref35 (2024, Sensors) cited=1
+T: Obstacle avoidance and path planning methods for autonomous navigation of mobile robot
+  > 全局路径规划旨在已知静态环境中寻找两点之间的无碰撞路径，经典图搜索算法是栅格规划的主流方法\cite{ref33,ref34,ref35}。
+
+### ref8 (2025, Automation) cited=1
+T: A comprehensive review of improved {A*} path planning algorithms and their hybrid integrations
+  > Dijkstra算法按代价均匀扩展，在大规模地图上效率较低\cite{ref6}；A*以启发式引导搜索，在$h(n)$可采纳时保持最优性\cite{ref5}；加权A*以固定的放大权重换取速度，任意时间修复A*（ARA*）则从较大的初始权重出发逐步收紧，在给定预算内返回有界次优的任意时间解\cite{ref8,ref10}；两者都未利用“离目标越近、代价估计越可靠”这一结构。
+
+### ref10 (2003, Adv. Neural Inf. Process. Syst. ({NIPS})) cited=1
+T: {ARA*}: anytime {A*} with provable bounds on sub-optimality
+  > Dijkstra算法按代价均匀扩展，在大规模地图上效率较低\cite{ref6}；A*以启发式引导搜索，在$h(n)$可采纳时保持最优性\cite{ref5}；加权A*以固定的放大权重换取速度，任意时间修复A*（ARA*）则从较大的初始权重出发逐步收紧，在给定预算内返回有界次优的任意时间解\cite{ref8,ref10}；两者都未利用“离目标越近、代价估计越可靠”这一结构。
+
+### ref11 (2011, Proc. 25th {AAAI} Conf. Artif. Intell. () cited=2
+T: Online graph pruning for pathfinding on grid maps
+  > 跳点搜索（JPS）利用栅格对称性仅扩展跳点，大幅压缩搜索树\cite{ref11,ref12,ref44}，近期变体进一步引入双向搜索与任意角度精化\cite{ref13,ref14,ref15}，本文的改进A*即建立在这一原理之上。
+  > 为此本文采用基于跳跃点搜索（Jump Point Search, JPS）的改进A*算法\textcolor{blue}{\cite{ref11,ref12}}。
+
+### ref12 (2014, Proceedings of the International Confere) cited=2
+T: Improving jump point search
+  > 跳点搜索（JPS）利用栅格对称性仅扩展跳点，大幅压缩搜索树\cite{ref11,ref12,ref44}，近期变体进一步引入双向搜索与任意角度精化\cite{ref13,ref14,ref15}，本文的改进A*即建立在这一原理之上。
+  > 为此本文采用基于跳跃点搜索（Jump Point Search, JPS）的改进A*算法\textcolor{blue}{\cite{ref11,ref12}}。
+
+### ref44 (2012, Proc. 5th Annu. Symp. Comb. Search ({SoC) cited=1
+T: The {JPS} pathfinding system
+ISSUES: YEAR: bib=2012 crossref=2021
+  > 跳点搜索（JPS）利用栅格对称性仅扩展跳点，大幅压缩搜索树\cite{ref11,ref12,ref44}，近期变体进一步引入双向搜索与任意角度精化\cite{ref13,ref14,ref15}，本文的改进A*即建立在这一原理之上。
+
+### ref13 (2026, Mechatronics) cited=1
+T: Improved {JPS} and {DWA} path planning algorithm for mobile robots
+  > 跳点搜索（JPS）利用栅格对称性仅扩展跳点，大幅压缩搜索树\cite{ref11,ref12,ref44}，近期变体进一步引入双向搜索与任意角度精化\cite{ref13,ref14,ref15}，本文的改进A*即建立在这一原理之上。
+
+### ref14 (2025, Electronics) cited=1
+T: Research on mobile robot path planning based on an improved bidirectional jump point search algorithm
+  > 跳点搜索（JPS）利用栅格对称性仅扩展跳点，大幅压缩搜索树\cite{ref11,ref12,ref44}，近期变体进一步引入双向搜索与任意角度精化\cite{ref13,ref14,ref15}，本文的改进A*即建立在这一原理之上。
+
+### ref15 (2025, Discover Appl. Sci.) cited=1
+T: Adaptive weight optimization based jump point {Theta*} algorithm in mobile robot path planning for intricate environments
+  > 跳点搜索（JPS）利用栅格对称性仅扩展跳点，大幅压缩搜索树\cite{ref11,ref12,ref44}，近期变体进一步引入双向搜索与任意角度精化\cite{ref13,ref14,ref15}，本文的改进A*即建立在这一原理之上。
+
+### ref16 (2026, J. Sens. Actuator Netw.) cited=1
+T: {UGV} path optimization in {UAV}-assisted environments using visibility-aware path simplification
+  > 栅格路径的后处理是成熟的工程实践，包括共线性或视线裁剪\cite{ref16}以及三次样条、B样条、回旋曲线等平滑方法\cite{ref17,ref41}。
+
+### ref17 (2025, Expert Syst. Appl.) cited=1
+T: Enhancing the safety and smoothness of path planning through an integration of {Dijkstra}'s algorithm and piecewise cubic {B}ezier optimization
+  > 栅格路径的后处理是成熟的工程实践，包括共线性或视线裁剪\cite{ref16}以及三次样条、B样条、回旋曲线等平滑方法\cite{ref17,ref41}。
+
+### ref18 (2026, Meas. Sci. Technol.) cited=2
+T: Adaptive {A*/NSGA-II} framework for multi-goal navigation of mobile robots
+  > 以旅行商问题为主线的研究以欧氏距离或给定距离矩阵为代价\cite{ref4,ref36}，无法反映障碍环境下的绕行，而真实通行路径可能数倍于直线距离\cite{ref39}；以栅格寻径为主线的研究能够给出高质量的点对路径，但不优化访问顺序\cite{ref5,ref6,ref7,ref33}；少数两层集成工作验证了“先建代价、再排序”的可行性\cite{ref1,ref2,ref18}，但其代价多
+  > 结合路径规划器与旅行商求解器的两层架构已有若干先例：面向挑战环境的SMUG规划器\cite{ref1}、面向复杂障碍地图的快速行进烟花法\cite{ref2}，以及以NSGA-II完成顺序优化的自适应A*框架\cite{ref18}，都采用了“先构建点对或目标间代价、再求解访问顺序”的结构。
+
+### ref41 (2024, Robot. Auton. Syst.) cited=1
+T: A new approach to smooth path planning of {Ackerman} mobile robot based on improved {ACO} algorithm and {B}-spline curve
+  > 栅格路径的后处理是成熟的工程实践，包括共线性或视线裁剪\cite{ref16}以及三次样条、B样条、回旋曲线等平滑方法\cite{ref17,ref41}。
+
+### ref19 (1975, ) cited=1
+T: Adaptation in Natural and Artificial Systems
+  > 精确算法通常仅适用于小规模实例，更大规模通常采用元启发式方法，如遗传算法\cite{ref19}与蚁群优化\cite{ref21,ref42}。
+
+### ref21 (1996, IEEE Trans. Syst., Man, Cybern. B) cited=1
+T: Ant system: optimization by a colony of cooperating agents
+  > 精确算法通常仅适用于小规模实例，更大规模通常采用元启发式方法，如遗传算法\cite{ref19}与蚁群优化\cite{ref21,ref42}。
+
+### ref42 (2021, Appl. Soft Comput.) cited=1
+T: Ant colony optimization for traveling salesman problem based on parameters optimization
+  > 精确算法通常仅适用于小规模实例，更大规模通常采用元启发式方法，如遗传算法\cite{ref19}与蚁群优化\cite{ref21,ref42}。
+
+### ref22 (1997, IEEE Trans. Evol. Comput.) cited=2
+T: Ant colony system: a cooperative learning approach to the traveling salesman problem
+  > 蚁群系统（ACS）的伪随机比例转移规则\cite{ref22}与最大-最小蚁群系统（MMAS）的显式信息素上下界\cite{ref23}分别改善了收敛速度与搜索稳定性，本文的排序求解器即以二者为组件基础。
+  > 蚁群系统（ACS）的伪随机比例规则\textcolor{blue}{\cite{ref22}}以可控概率贪心选择最优候选、其余情形按轮盘探索，平衡收敛与多样性。
+
+### ref23 (2000, Future Gener. Comput. Syst.) cited=2
+T: {MAX--MIN} ant system
+ISSUES: TITLE: bib='{MAX--MIN} ant system' crossref='– Ant System'
+  > 蚁群系统（ACS）的伪随机比例转移规则\cite{ref22}与最大-最小蚁群系统（MMAS）的显式信息素上下界\cite{ref23}分别改善了收敛速度与搜索稳定性，本文的排序求解器即以二者为组件基础。
+  > 最大-最小蚁群系统（MMAS）\textcolor{blue}{\cite{ref23}}将信息素限制在显式区间$[\tau_{\min}, \tau_{\max}]$内以防止单边支配与灭绝，并聚焦最优解沉积。
+
+### ref24 (2001, Eur. J. Oper. Res.) cited=2
+T: Variable neighborhood search: principles and applications
+  > 其二，将2-opt、可变邻域下降（VND）等局部搜索嵌入蚁群虽可显著提升解质量\cite{ref24,ref25,ref43}，但VND的每个算子需评估$O(N^2)$个候选移动，随目标数增大迅速成为瓶颈；候选列表把评估限制在$k$个最近邻内，可将单算子复杂度降至$O(Nk)$\cite{ref26}。
+  > 可变邻域下降（Variable Neighborhood Descent, VND）\textcolor{blue}{\cite{ref24}}正是这样一类方法，它依次调用多种邻域结构，每种结构对应一类路径变换，并在当前结构无法继续改进时切换到下一种，直至所有邻域均无法产生更优解。
+
+### ref25 (2021, Comput. Oper. Res.) cited=2
+T: A hybrid ant colony optimization--variable neighborhood descent approach for the cumulative capacitated vehicle routing problem
+  > 其二，将2-opt、可变邻域下降（VND）等局部搜索嵌入蚁群虽可显著提升解质量\cite{ref24,ref25,ref43}，但VND的每个算子需评估$O(N^2)$个候选移动，随目标数增大迅速成为瓶颈；候选列表把评估限制在$k$个最近邻内，可将单算子复杂度降至$O(Nk)$\cite{ref26}。
+  > 已有研究表明，将MMAS或ACS与VND混合在车辆路径问题中效果显著\textcolor{blue}{\cite{ref25}}。
+
+### ref43 (2022, Eng. Appl. Artif. Intell.) cited=1
+T: Parameter adaptation-based ant colony optimization with dynamic hybrid mechanism
+  > 其二，将2-opt、可变邻域下降（VND）等局部搜索嵌入蚁群虽可显著提升解质量\cite{ref24,ref25,ref43}，但VND的每个算子需评估$O(N^2)$个候选移动，随目标数增大迅速成为瓶颈；候选列表把评估限制在$k$个最近邻内，可将单算子复杂度降至$O(Nk)$\cite{ref26}。
+
+### ref26 (2023, Appl. Sci.) cited=2
+T: An improvement to the 2-opt heuristic algorithm for approximation of optimal {TSP} tour
+  > 其二，将2-opt、可变邻域下降（VND）等局部搜索嵌入蚁群虽可显著提升解质量\cite{ref24,ref25,ref43}，但VND的每个算子需评估$O(N^2)$个候选移动，随目标数增大迅速成为瓶颈；候选列表把评估限制在$k$个最近邻内，可将单算子复杂度降至$O(Nk)$\cite{ref26}。
+  > 为此，本文先引入预计算的候选列表以过滤缺乏前景的邻域评估，该思路在旅行商问题的局部搜索中已有广泛应用\textcolor{blue}{\cite{ref26}}。
+
+### ref27 (2024, Proc. {IEEE} Int. Conf. Syst., Man, Cybe) cited=1
+T: Matrix-based ant colony system for traveling salesman problem
+  > 此外，局部搜索的渐进调度受到的关注较少，多数实现全程对固定比例的蚂蚁施加局部搜索；近期蚁群变体多关注并行化、小生境与可持续性机制\cite{ref27,ref28,ref29,ref30}。
+
+### ref28 (2025, IEEE Trans. Evol. Comput.) cited=1
+T: {nLKH-ACS}: a niching {Lin-Kernighan--Helsgaun}-based ant colony system for multisolution traveling salesman problems
+  > 此外，局部搜索的渐进调度受到的关注较少，多数实现全程对固定比例的蚂蚁施加局部搜索；近期蚁群变体多关注并行化、小生境与可持续性机制\cite{ref27,ref28,ref29,ref30}。
+
+### ref29 (2025, Sci. Rep.) cited=1
+T: A carbon aware ant colony system for the sustainable generalized traveling salesman problem
+  > 此外，局部搜索的渐进调度受到的关注较少，多数实现全程对固定比例的蚂蚁施加局部搜索；近期蚁群变体多关注并行化、小生境与可持续性机制\cite{ref27,ref28,ref29,ref30}。
+
+### ref30 (2024, Proc. {IEEE} Int. Conf. Mach. Intell. Th) cited=1
+T: Ant colony optimization for multiple traveling salesmen problem with revisitable cities
+  > 此外，局部搜索的渐进调度受到的关注较少，多数实现全程对固定比例的蚂蚁施加局部搜索；近期蚁群变体多关注并行化、小生境与可持续性机制\cite{ref27,ref28,ref29,ref30}。
+
+### ref40 (2014, INFORMS J. Comput.) cited=1
+T: An integer-programming-based approach to the close-enough traveling salesman problem
+  > 在连续平面多边形障碍下，点对通行代价依赖避障几何而非欧氏度量\cite{ref39}；Dubins旅行商问题进一步引入最小转弯半径约束，使代价同时依赖进入与离开航向；邻域与贴近变体则把目标由点泛化为区域，以定位精度的让步换取更短的回路\cite{ref36,ref40,ref46}。
+
+### ref32 (2019, Ann. Oper. Res.) cited=2
+T: Fresh seafood delivery routing problem using an improved ant colony optimization
+ISSUES: ISSUE: bib=1--2 crossref=1-2
+  > 经典旅行商文献与多数TSPLIB基准实例针对的是闭环问题，开放变体需要不同的编码与代价评估方式；本文在第~\ref{subsec:otspp}节将其形式化，并在第~\ref{subsec:virtual}节以虚拟节点法实现，该处理与开放车辆路径问题中的哑节点技术同源\cite{ref32}。
+  > 为此，本文采用虚拟节点法将开放旅行商问题转化为标准闭环旅行商问题\textcolor{blue}{\cite{ref32}}。
+
+### ref45 (2025, Journal of Automation and Intelligence) cited=1
+T: Large language models for robotics: Opportunities, challenges, and perspectives
+  > 这一转变体现在两个方向：任务侧，以大模型为代表的规划层越来越多地以“目标集合”而非单一目标的形式向机器人下发指令\cite{ref45}；场景侧，上述任务普遍要求沿途多点作业、终点不再返回，“开放”的多点航线因而成为常态。
+
+### ref46 (2014, Proc. IEEE/RSJ Int. Conf. Intell. Robots) cited=1
+T: Multi-goal path planning based on the generalized traveling salesman problem with neighborhoods
+  > 在连续平面多边形障碍下，点对通行代价依赖避障几何而非欧氏度量\cite{ref39}；Dubins旅行商问题进一步引入最小转弯半径约束，使代价同时依赖进入与离开航向；邻域与贴近变体则把目标由点泛化为区域，以定位精度的让步换取更短的回路\cite{ref36,ref40,ref46}。
+
+### ref47 (2025, Intell. Serv. Robot.) cited=2
+T: A reinforcement learning approach for multi-goal motion planning of autonomous ground vehicles in cluttered environments
+  > 而在多目标导航一侧，逐目标重算整条路径的开销同样被反复指出：目标序列一旦改变，就需要重新求解相应的点对路径\cite{ref47}。
+  > 另一条路线以学习代替显式搜索：文献\cite{ref47}将多目标时序规划转化为值函数的复用问题，避免为每个新目标重新求解完整路径，在杂乱环境中取得了良好效果；其代价是依赖训练数据、解的质量随地图分布变化，且不直接给出逐段路径的几何可行性证明。

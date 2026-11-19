@@ -143,9 +143,12 @@
 一个有效路径由访问顺序$\bm{\pi} = (\pi_1, \pi_2, \dots, \pi_N)$定义，该顺序是索引集$\{1, 2, \dots, N\}$的排列，满足边界约束：
 
 \begin{equation}
+\pi =
 \begin{cases}
-\pi = 1, & \text{Start node} \\
-\pi = N, & \text{End node} \\
+1, & \text{Start node} \\
+N, & \text{End node} \\
+% \pi = 1, & \text{Start node} \\
+% \pi = N, & \text{End node} \\
 \end{cases}
 \label{eq:boundary}
 \end{equation}
@@ -189,7 +192,7 @@ C(\bm{\pi}) = \sum_{k=1}^{N-1} L\big(\mathcal{P}(p_{\pi_k}, p_{\pi_{k+1}})\big)
 
 \subsubsection{跳点搜索}
 
-传统A*需逐格扩展邻居，在大规模开阔区域中节点扩展量与地图面积成正比。为此本文采用基于跳跃点搜索（Jump Point Search, JPS）的改进A*算法\textcolor{blue}{\cite{ref11,ref12}}。JPS利用栅格对称性做邻居剪枝，按扩展方向仅保留自然邻居与因障碍产生的被迫邻居，跳跃函数$\mathrm{jump}(r, c, dr, dc)$沿方向推进至到达目标、遇障碍或发现被迫邻居为止，中间节点不进入开放集；跳点成本按曼哈顿或对角距离累计；搜索完成后经父指针回溯并在相邻跳点间直线插值补全路径。剪枝规则示意如图~\textcolor{blue}{\ref{fig:jps_pruning}}。本文在此基础上做三方面改进。
+传统A*需逐格扩展邻居，在大规模开阔区域中节点扩展量与地图面积成正比。为此本文采用基于跳跃点搜索（Jump Point Search, JPS）的改进A*算法\textcolor{blue}{\cite{ref11,ref12}}。JPS利用栅格对称性做邻居剪枝，按扩展方向仅保留自然邻居与因障碍产生的被迫邻居，跳跃函数$\mathrm{jump}(r, c, dr, dc)$沿方向推进至到达目标、遇障碍或发现被迫邻居为止，中间节点不进入开放集；跳点成本按曼哈顿或对角距离累计；搜索完成后经父指针回溯并在相邻跳点间直线插值补全路径。剪枝规则示意如图~\textcolor{blue}{\ref{fig:jps_pruning}}。
 
 \begin{figure}[!t]
 
@@ -199,7 +202,7 @@ C(\bm{\pi}) = \sum_{k=1}^{N-1} L\big(\mathcal{P}(p_{\pi_k}, p_{\pi_{k+1}})\big)
 \label{fig:jps_pruning}
 \end{figure}
 
-由于JPS的跳跃特性，重建路径中的对角线移动可能穿越障碍物拐角。为此，本文算法在路径重建阶段检测此类情形，\textcolor{red}{并将对应移动替换为沿栅格边界的L形路径，}从而避免碰撞。
+由于JPS的跳跃特性，重建路径中的对角线移动可能穿越障碍物拐角。为此，本文算法在路径重建阶段检测此类情形，并将对应移动替换为沿栅格边界的L形路径，从而避免碰撞。
 
 \subsubsection{打破平局策略}
 当开放集中的多个节点具有相同的$f$值时，标准A*的选择顺序取决于具体实现（通常是先入先出或随机），本质上是任意的。然而，在$f$值相同的节点中，$h$值较小的节点意味着其实际代价$g = f - h$较大，即该节点距起点更远、更接近目标。优先扩展此类节点可将搜索方向导向目标，且不影响最优性保证。为此，本文提出的改进A*算法采用``$f$值相同时优先选择$h$值更小的节点''的打破平局策略，节点比较规则定义为：
@@ -820,7 +823,7 @@ Map & Algorithm & Best cost & \makecell{Path\\Mean/std.dev} & \makecell{Run Time
    & GA & 411.07 & 496.28/46.93 & 4181.1 & 0 \\
    & SA & 365.13 & 413.82/25.83 & 784.6 & 0 \\
 \midrule
- \multirow{4}{*}{Map 2} & MMAS-VND-CL & \textbf{623.78} & \textbf{623.78}/\textbf{0.00} & 241.5 & \textbf{100} \\
+ \multirow{4}{*}{Map 2} & MMAS-VND-CL & \textbf{623.78} & \textbf{623.78}/\textbf{0.00} & 282.9 & \textbf{100} \\
    & ACO & 641.09 & 691.64/18.61 & \textbf{223.2} & 0 \\
    & GA & 710.83 & 868.79/66.45 & 6693.6 & 0 \\
    & SA & 655.71 & 687.25/13.02 & 506.3 & 0 \\
